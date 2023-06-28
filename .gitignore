@@ -1,0 +1,15 @@
+Library/
+Temp/
+*sln
+*csproj
+Logs/
+obj/
+Build/
+.idea/
+.vscode/
+.vs/
+.vsconfig/
+.vsconfig
+UserSettings
+**/InitTestScene*
+Assets/Textures/
