@@ -20,13 +20,22 @@ namespace Waterworld
         public void Execute(int i) => generator.Execute<VertexStream>(i, stream);
 
         public static JobHandle ScheduleParallel(
-            Mesh mesh, Mesh.MeshData meshData, int resolution, float xDim, float zDim, JobHandle dependency
+            Mesh mesh, 
+            Mesh.MeshData meshData, 
+            int resolution, 
+            float xDim, 
+            float zDim,
+            float tiling,
+            float height,
+            JobHandle dependency
         )
         {
             var job = new MeshJob<G>();
             job.generator.Resolution = resolution;
             job.generator.dimZ = zDim;
             job.generator.dimX = xDim;
+            job.generator.tiling = tiling;
+            job.generator.height = height;
             job.stream.Setup(
                 meshData,
                 mesh.bounds = job.generator.Bounds,

@@ -20,6 +20,10 @@ namespace Waterworld
 
         float dimX { get; set; }
 
+        float tiling { get; set; }
+
+        float height { get; set; }
+
 
         void Execute<S>(int i,
         VertexStream stream);
