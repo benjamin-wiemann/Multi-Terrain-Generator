@@ -3,7 +3,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 
-namespace Waterworld
+namespace LiquidPlanet
 {
 
 
@@ -27,15 +27,17 @@ namespace Waterworld
             float zDim,
             float tiling,
             float height,
+            NativeArray<float> noiseMap,
             JobHandle dependency
         )
         {
             var job = new MeshJob<G>();
-            job.generator.Resolution = resolution;
-            job.generator.dimZ = zDim;
-            job.generator.dimX = xDim;
-            job.generator.tiling = tiling;
-            job.generator.height = height;
+            job.generator.resolution = resolution;
+            job.generator.DimZ = zDim;
+            job.generator.DimX = xDim;
+            job.generator.Tiling = tiling;
+            job.generator.Height = height;
+            job.generator.NoiseMap = noiseMap;
             job.stream.Setup(
                 meshData,
                 mesh.bounds = job.generator.Bounds,

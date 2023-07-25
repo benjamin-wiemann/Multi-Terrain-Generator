@@ -1,6 +1,7 @@
+using Unity.Collections;
 using UnityEngine;
 
-namespace Waterworld
+namespace LiquidPlanet
 {
 
     public interface IMeshGenerator
@@ -14,16 +15,17 @@ namespace Waterworld
 
         Bounds Bounds { get; }
 
-        int Resolution { get; set; }
+        int resolution { get; set; }
 
-        float dimZ { get; set; }
+        float DimZ { get; set; }
 
-        float dimX { get; set; }
+        float DimX { get; set; }
 
-        float tiling { get; set; }
+        float Tiling { get; set; }
 
-        float height { get; set; }
+        float Height { get; set; }
 
+        public NativeArray<float> NoiseMap { set; }
 
         void Execute<S>(int i,
         VertexStream stream);

@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
-namespace Waterworld
+namespace LiquidPlanet
 {
 
     public struct VertexStream

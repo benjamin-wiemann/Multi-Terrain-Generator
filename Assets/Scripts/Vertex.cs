@@ -1,6 +1,6 @@
 using Unity.Mathematics;
 
-namespace Waterworld
+namespace LiquidPlanet
 {
 
     public struct Vertex
