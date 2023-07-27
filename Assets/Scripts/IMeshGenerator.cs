@@ -15,7 +15,7 @@ namespace LiquidPlanet
 
         Bounds Bounds { get; }
 
-        int resolution { get; set; }
+        int Resolution { get; set; }
 
         float DimZ { get; set; }
 
@@ -25,10 +25,11 @@ namespace LiquidPlanet
 
         float Height { get; set; }
 
-        public NativeArray<float> NoiseMap { set; }
+        //public NativeArray<float> NoiseMap { set; }
 
-        void Execute<S>(int i,
-        VertexStream stream);
+        void Execute<S>( int i,
+        VertexStream stream,
+        NativeArray<float> noiseMap );
     }
 }
 

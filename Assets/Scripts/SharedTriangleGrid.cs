@@ -7,6 +7,7 @@ using UnityEditor.PackageManager.UI;
 using Unity.Collections;
 using UnityEngine.UIElements;
 using Unity.Collections.LowLevel.Unsafe;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 namespace LiquidPlanet
 {
@@ -19,9 +20,9 @@ namespace LiquidPlanet
 
         public int JobLength => NumZ + 1;
 
-        public Bounds Bounds => new Bounds(new Vector3(0f, 0f, DimZ/2), new Vector3((1f + 0.5f / resolution) * DimX, 0f, DimZ)); //dimZ * sqrt(3f) / 2f));
+        public Bounds Bounds => new Bounds(new Vector3(0f, 0f, DimZ/2), new Vector3((1f + 0.5f / Resolution) * DimX, 0f, DimZ)); //dimZ * sqrt(3f) / 2f));
 
-        public int resolution { get; set; }
+        public int Resolution { get; set; }
 
         public float DimZ { get; set; }
 
@@ -30,19 +31,29 @@ namespace LiquidPlanet
 
         public float Height {  get; set; }
 
-        public NativeArray<float> NoiseMap { set=>_noiseMap = value; }
-
         // number of triangle pairs in x direction
-        public int NumX => (int)round(resolution * DimX);
+        public int NumX => (int)round(Resolution * DimX);
 
         // number of triangle pairs in z direction is higher, since its height is smaller than its width
-        public int NumZ => (int)round(resolution * DimZ * 2f / sqrt(3f));
+        public int NumZ => (int)round(Resolution * DimZ * 2f / sqrt(3f));
 
-        [ReadOnly]
-        private NativeArray<float> _noiseMap;
+        public SharedTriangleGrid(            
+            int resolution,
+            float xDim,
+            float zDim,
+            float tiling,
+            float height
+        )
+        {
+            Resolution = resolution;
+            DimZ = zDim;
+            DimX = xDim;
+            Tiling = tiling;
+            Height = height;            
+        }
 
         
-        public void Execute<S>(int z, VertexStream stream)
+        public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap)
         {
 
             float triangleWidth = DimX / NumX;
@@ -73,7 +84,7 @@ namespace LiquidPlanet
 
             vertex.position.x = xOffset;
             vertex.position.z = z * triangleHeigth;
-            vertex.position.y = GetNoiseValue(vertex.position.x, vertex.position.z);
+            vertex.position.y = GetNoiseValue(vertex.position.x, vertex.position.z, noiseMap);
 
             vertex.texCoord0.x = uOffset / Tiling;
             vertex.texCoord0.y = (vertex.position.z / Tiling);
@@ -84,8 +95,7 @@ namespace LiquidPlanet
             for (int x = 1; x <= NumX; x++, vi++, ti += 2)
             {
                 vertex.position.x = (float) x * triangleWidth + xOffset;
-
-                vertex.position.y = GetNoiseValue(vertex.position.x, vertex.position.z);
+                vertex.position.y = GetNoiseValue(vertex.position.x, vertex.position.z, noiseMap);
 
                 vertex.texCoord0.x = (vertex.position.x / Tiling);
                 stream.SetVertex(vi, vertex);
@@ -103,11 +113,11 @@ namespace LiquidPlanet
 
         }
 
-        float GetNoiseValue(float x, float z)
+        float GetNoiseValue(float x, float z, NativeArray<float> noiseMap)
         {
-            return _noiseMap[
-                (int)math.round((x + DimX / 2) * (float)resolution) +
-                (int)math.round(z * (float)resolution) * resolution];
+            return noiseMap[
+                (int)math.round((x + DimX / 2) * (float)Resolution) +
+                (int)math.round(z * (float)Resolution) * Resolution];
         }
     }
 }

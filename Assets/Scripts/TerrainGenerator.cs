@@ -1,8 +1,9 @@
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.Mathematics;
+using static Unity.Mathematics.math;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 namespace LiquidPlanet
 {
@@ -36,23 +37,27 @@ namespace LiquidPlanet
         int octaves;
 
         [SerializeField, Range(0, 1)]
-        public float persistance;
+        float persistance;
 
         [SerializeField]
-        public float lacunarity;
+        float lacunarity;
 
         [SerializeField]
-        public uint seed;
+        uint seed;
 
         [SerializeField]    
-        public Vector2 offset;
+        Vector2 offset;
 
         public bool autoUpdate;
 
         private Mesh mesh;
         private bool meshChanged = true;
 
-        NativeArray<float> noiseMap;
+        NativeArray<float> _noiseMap;
+
+        NativeArray<float> _maxNoiseValues;
+
+        NativeArray<float> _minNoiseValues;
 
         void Start()
         {
@@ -71,69 +76,83 @@ namespace LiquidPlanet
             }            
         }
 
-        //private void Update()
-        //{
-        //    if (meshX != meshXOld
-        //        || meshZ != meshZOld
-        //        || meshResolution != meshResolutionOld
-        //        || tiling != tilingOld
-        //        || height != heightOld)
-        //    {
-        //        meshChanged = true;
-        //    }
-        //    if (meshChanged)
-        //    {
-        //        GenerateMesh();
-        //        meshChanged = false;
-        //        meshXOld = meshX;
-        //        meshZOld = meshZ;
-        //        meshResolutionOld = meshResolution;
-        //        tilingOld = tiling;   
-        //        heightOld = height;
-        //    }
-        //}
 
         public void GenerateMesh()
         {
-            if (noiseMap.IsCreated)
+            if (_noiseMap.IsCreated)
             {
-                noiseMap.Dispose();
+                _noiseMap.Dispose();
             }
-            int countZ = Mathf.RoundToInt(meshZ * meshResolution) + 1;
-            int countX = Mathf.RoundToInt(meshX * meshResolution) + 1;
-            noiseMap = new ( countX * countZ, Allocator.Persistent);
+            if (_minNoiseValues.IsCreated)
+            {
+                _minNoiseValues.Dispose();
+            }
+            if (_maxNoiseValues.IsCreated)
+            {
+                _maxNoiseValues.Dispose();
+            }
+            SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
+                meshResolution,
+                meshX,
+                meshZ,
+                tiling,
+                height
+            );
+            int numVerticesX = triangleGrid.NumX + 1;
+            int numVerticesZ = triangleGrid.NumX + 1;
+            _noiseMap = new(
+                numVerticesX * numVerticesZ,
+                Allocator.Persistent);
+            _minNoiseValues = new(numVerticesZ, Allocator.Persistent);
+            _maxNoiseValues = new(numVerticesZ, Allocator.Persistent);
             NoiseJob.ScheduleParallel(
-                noiseMap,
-                countX,
-                countZ,
+                _noiseMap,
+                _maxNoiseValues,
+                _minNoiseValues,
+                numVerticesX,
+                numVerticesZ,
                 seed,
                 noiseScale,
                 octaves,
                 persistance,
                 lacunarity,
                 offset,
-                default).Complete();
-            //for (int y = 0; y < countZ; y++)
-            //{
-            //    for (int x = 0; x < countX; x++)
-            //    {
-            //        noiseMap[y * countX + x] = math.unlerp(minNoiseHeight, maxNoiseHeight, noiseMap[y * countZ + x]);
-            //    }
-            //}
+                default).Complete();        
+            NormalizeNoise(numVerticesX, numVerticesZ);
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
             MeshJob<SharedTriangleGrid>.ScheduleParallel(
+                triangleGrid,
+                _noiseMap,
                 mesh,
-                meshData,
-                meshResolution,
-                meshX,
-                meshZ,
-                tiling,
-                height,
-                noiseMap,
+                meshData,   
                 default).Complete();
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
             mesh.RecalculateBounds();
+        }
+
+        void NormalizeNoise(int mapWidth, int mapHeight)
+        {
+            float maxNoiseValue = float.MinValue;
+            float minNoiseValue = float.MaxValue;
+            for (int i = 0; i < _maxNoiseValues.Length; i++)
+            {
+                if (maxNoiseValue < _maxNoiseValues[i])
+                {
+                    maxNoiseValue = _maxNoiseValues[i];
+                }
+                if (minNoiseValue > _minNoiseValues[i])
+                {
+                    minNoiseValue = _minNoiseValues[i];
+                }
+            }
+            for (int z = 0; z < mapHeight; z++)
+            {
+                for (int x = 0; x < mapWidth; x++)
+                {
+                    _noiseMap[z * mapWidth + x] = height * unlerp(minNoiseValue, maxNoiseValue, _noiseMap[z * mapWidth + x]);
+                }
+            }
         }
 
         void OnValidate()

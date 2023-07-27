@@ -12,39 +12,34 @@ namespace LiquidPlanet
             where G : struct, IMeshGenerator
     {
 
-        G generator;
+        G _generator;
 
         [WriteOnly]
-        VertexStream stream;
+        VertexStream _stream;
 
-        public void Execute(int i) => generator.Execute<VertexStream>(i, stream);
+        [ReadOnly]
+        NativeArray<float> _noiseMap;
+
+        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap);
 
         public static JobHandle ScheduleParallel(
-            Mesh mesh, 
-            Mesh.MeshData meshData, 
-            int resolution, 
-            float xDim, 
-            float zDim,
-            float tiling,
-            float height,
+            G generator,
             NativeArray<float> noiseMap,
+            Mesh mesh,
+            Mesh.MeshData meshData,
             JobHandle dependency
         )
         {
             var job = new MeshJob<G>();
-            job.generator.resolution = resolution;
-            job.generator.DimZ = zDim;
-            job.generator.DimX = xDim;
-            job.generator.Tiling = tiling;
-            job.generator.Height = height;
-            job.generator.NoiseMap = noiseMap;
-            job.stream.Setup(
+            job._generator = generator;
+            job._noiseMap = noiseMap;
+            job._stream.Setup(
                 meshData,
-                mesh.bounds = job.generator.Bounds,
-                job.generator.VertexCount,
-                job.generator.IndexCount
+                mesh.bounds = job._generator.Bounds,
+                job._generator.VertexCount,
+                job._generator.IndexCount
             );
-            return job.ScheduleParallel(job.generator.JobLength, 1, dependency);
+            return job.ScheduleParallel(job._generator.JobLength, 1, dependency);
         }
 
     }

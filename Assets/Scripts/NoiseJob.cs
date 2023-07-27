@@ -5,7 +5,6 @@ using Unity.Mathematics;
 using Unity.Collections;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
-using System.Net.NetworkInformation;
 
 namespace LiquidPlanet
 {
@@ -31,17 +30,25 @@ namespace LiquidPlanet
         private float2 offset;
 
         //NativeArray<float> NoiseMap { set=>_noiseMap = value; }
-        
+
         [WriteOnly, NativeDisableContainerSafetyRestriction]
         private NativeArray<float> _noiseMap;
 
         [NativeDisableContainerSafetyRestriction]
-        private NativeArray<float2> octaveOffsets;
+        private NativeArray<float2> _octaveOffsets;
+
+        [NativeDisableContainerSafetyRestriction]
+        private NativeArray<float> _maxNoiseHeights;
+
+        [NativeDisableContainerSafetyRestriction]
+        private NativeArray<float> _minNoiseHeights;
 
         //NativeArray<float> noiseMap = new(mapWidth * mapHeight, Allocator.Persistent);
 
-        public static JobHandle ScheduleParallel(
+        public static JobHandle ScheduleParallel(            
             NativeArray<float> noiseMapIn,
+            NativeArray<float> maxNoiseHeights,
+            NativeArray<float> minNoiseHeights,
             int mapWidth,
             int mapHeight,
             uint seed,
@@ -60,15 +67,16 @@ namespace LiquidPlanet
             noiseJob.scale = scale;
             noiseJob.mapHeight = mapHeight;
             noiseJob.mapWidth = mapWidth;
-            noiseJob.scale = scale;
             noiseJob.octaves = octaves;
-            noiseJob.octaveOffsets = new(octaves, Allocator.Persistent);
+            noiseJob._octaveOffsets = new(octaves, Allocator.Persistent);
+            noiseJob._maxNoiseHeights = maxNoiseHeights;
+            noiseJob._minNoiseHeights = minNoiseHeights;
             Unity.Mathematics.Random prng = new(seed);
             for (int i = 0; i < octaves; i++)
             {
                 float offsetX = prng.NextFloat(-100000, 100000) + offset.x;
                 float offsetY = prng.NextFloat(-100000, 100000) + offset.y;
-                noiseJob.octaveOffsets[i] = new float2(offsetX, offsetY);
+                noiseJob._octaveOffsets[i] = new float2(offsetX, offsetY);
             }
             noiseJob.persistance = persistance;
             noiseJob.lacunarity = lacunarity;
@@ -84,8 +92,8 @@ namespace LiquidPlanet
                 scale = 0.0001f;
             }
 
-            float maxNoiseHeight = float.MinValue;
-            float minNoiseHeight = float.MaxValue;
+            _maxNoiseHeights[y] = float.MinValue;
+            _minNoiseHeights[y] = float.MaxValue;
 
             float halfWidth = mapWidth / 2f;
             float halfHeight = mapHeight / 2f;
@@ -99,8 +107,8 @@ namespace LiquidPlanet
 
                 for (int i = 0; i < octaves; i++)
                 {
-                    float sampleX = (x - halfWidth) / scale * frequency + octaveOffsets[i].x;
-                    float sampleY = (y - halfHeight) / scale * frequency + octaveOffsets[i].y;
+                    float sampleX = (x - halfWidth) / scale * frequency + _octaveOffsets[i].x;
+                    float sampleY = (y - halfHeight) / scale * frequency + _octaveOffsets[i].y;
 
                     float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
                     noiseHeight += perlinValue * amplitude;
@@ -109,15 +117,15 @@ namespace LiquidPlanet
                     frequency *= lacunarity;
                 }
 
-                if (noiseHeight > maxNoiseHeight)
+                if (noiseHeight > _maxNoiseHeights[y])
                 {
-                    maxNoiseHeight = noiseHeight;
+                    _maxNoiseHeights[y] = noiseHeight;
                 }
-                else if (noiseHeight < minNoiseHeight)
+                else if (noiseHeight < _minNoiseHeights[y])
                 {
-                    minNoiseHeight = noiseHeight;
+                    _minNoiseHeights[y] = noiseHeight;
                 }
-                _noiseMap[y * mapWidth + x] = noiseHeight;
+                _noiseMap[y * mapWidth + x] = sin(2 * PI * lacunarity * x / mapWidth) + sin(2 * PI * lacunarity * y / mapHeight); //noiseHeight;
             }
             
         }
