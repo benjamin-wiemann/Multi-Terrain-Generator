@@ -7,7 +7,7 @@ namespace LiquidPlanet
 {
 
 
-    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob<G> : IJobFor
             where G : struct, IMeshGenerator
     {

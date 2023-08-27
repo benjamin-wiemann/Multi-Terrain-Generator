@@ -29,6 +29,8 @@ namespace LiquidPlanet
 
         private float2 offset;
 
+        private bool debug;
+
         //NativeArray<float> NoiseMap { set=>_noiseMap = value; }
 
         [WriteOnly, NativeDisableContainerSafetyRestriction]
@@ -57,7 +59,8 @@ namespace LiquidPlanet
             float persistance,
             float lacunarity,
             float2 offset,
-            JobHandle dependency
+            JobHandle dependency,
+            bool debug
         )
         {
             NoiseJob noiseJob = new();
@@ -81,6 +84,7 @@ namespace LiquidPlanet
             noiseJob.persistance = persistance;
             noiseJob.lacunarity = lacunarity;
             noiseJob.offset = offset;
+            noiseJob.debug = debug;
             return noiseJob.ScheduleParallel(mapHeight, 1, dependency);
         }
 
@@ -125,7 +129,15 @@ namespace LiquidPlanet
                 {
                     _minNoiseHeights[y] = noiseHeight;
                 }
-                _noiseMap[y * mapWidth + x] = sin(2 * PI * lacunarity * x / mapWidth) + sin(2 * PI * lacunarity * y / mapHeight); //noiseHeight;
+                if (debug)
+                {
+                    _noiseMap[y * mapWidth + x] = (y * mapWidth) * 10 / _noiseMap.Length; // sin(2 * PI * lacunarity * x / mapWidth); // + sin(2 * PI * lacunarity * y / mapHeight); //noiseHeight;
+                }
+                else
+                {
+                    _noiseMap[y * mapWidth + x] = noiseHeight;
+                }
+                
             }
             
         }

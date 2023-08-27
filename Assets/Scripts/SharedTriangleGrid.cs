@@ -8,6 +8,7 @@ using Unity.Collections;
 using UnityEngine.UIElements;
 using Unity.Collections.LowLevel.Unsafe;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
+using System;
 
 namespace LiquidPlanet
 {
@@ -84,7 +85,7 @@ namespace LiquidPlanet
 
             vertex.position.x = xOffset;
             vertex.position.z = z * triangleHeigth;
-            vertex.position.y = GetNoiseValue(vertex.position.x, vertex.position.z, noiseMap);
+            vertex.position.y = NativeArrayHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
 
             vertex.texCoord0.x = uOffset / Tiling;
             vertex.texCoord0.y = (vertex.position.z / Tiling);
@@ -95,7 +96,7 @@ namespace LiquidPlanet
             for (int x = 1; x <= NumX; x++, vi++, ti += 2)
             {
                 vertex.position.x = (float) x * triangleWidth + xOffset;
-                vertex.position.y = GetNoiseValue(vertex.position.x, vertex.position.z, noiseMap);
+                vertex.position.y = NativeArrayHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
 
                 vertex.texCoord0.x = (vertex.position.x / Tiling);
                 stream.SetVertex(vi, vertex);
@@ -113,11 +114,6 @@ namespace LiquidPlanet
 
         }
 
-        float GetNoiseValue(float x, float z, NativeArray<float> noiseMap)
-        {
-            return noiseMap[
-                (int)math.round((x + DimX / 2) * (float)Resolution) +
-                (int)math.round(z * (float)Resolution) * Resolution];
-        }
+ 
     }
 }

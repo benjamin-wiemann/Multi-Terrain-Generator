@@ -48,6 +48,9 @@ namespace LiquidPlanet
         [SerializeField]    
         Vector2 offset;
 
+        [SerializeField]
+        bool debugNoise = false;
+
         public bool autoUpdate;
 
         private Mesh mesh;
@@ -99,7 +102,7 @@ namespace LiquidPlanet
                 height
             );
             int numVerticesX = triangleGrid.NumX + 1;
-            int numVerticesZ = triangleGrid.NumX + 1;
+            int numVerticesZ = triangleGrid.NumZ + 1;
             _noiseMap = new(
                 numVerticesX * numVerticesZ,
                 Allocator.Persistent);
@@ -117,7 +120,8 @@ namespace LiquidPlanet
                 persistance,
                 lacunarity,
                 offset,
-                default).Complete();        
+                default,
+                debugNoise).Complete();        
             NormalizeNoise(numVerticesX, numVerticesZ);
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
