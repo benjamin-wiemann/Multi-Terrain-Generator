@@ -131,7 +131,7 @@ namespace LiquidPlanet
                 }
                 if (debug)
                 {
-                    _noiseMap[y * mapWidth + x] = (y * mapWidth) * 10 / _noiseMap.Length; // sin(2 * PI * lacunarity * x / mapWidth); // + sin(2 * PI * lacunarity * y / mapHeight); //noiseHeight;
+                    _noiseMap[y * mapWidth + x] = sin(2 * PI * lacunarity * x / mapWidth) + sin(2 * PI * lacunarity * y / mapHeight); 
                 }
                 else
                 {

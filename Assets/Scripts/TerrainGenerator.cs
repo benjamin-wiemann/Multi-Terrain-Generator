@@ -31,60 +31,70 @@ namespace LiquidPlanet
         float heightOld;
 
         [SerializeField]
-        float noiseScale;
+        float heightScale;
 
         [SerializeField]
-        int octaves;
+        int heightOctaves;
 
         [SerializeField, Range(0, 1)]
-        float persistance;
+        float heightPersistance;
 
         [SerializeField]
-        float lacunarity;
+        float heightLacunarity;
 
         [SerializeField]
         uint seed;
 
         [SerializeField]    
-        Vector2 offset;
+        Vector2 heightOffset;
 
         [SerializeField]
         bool debugNoise = false;
 
+        public int numPatches = 100;
+        public float xYPerlinOffset = 1;
+
+        public int noiseScale = 10;
+
         public bool autoUpdate;
 
-        private Mesh mesh;
-        private bool meshChanged = true;
+        Mesh _mesh;
 
-        NativeArray<float> _noiseMap;
+        NativeArray<float> _heightMap;
+
+        NativeArray<float> _terrainMap;
 
         NativeArray<float> _maxNoiseValues;
 
         NativeArray<float> _minNoiseValues;
 
-        void Start()
-        {
-            Init();
-        }
+        //void Start()
+        //{
+        //    Init();
+        //}
 
         public void Init()
         {
-            if(mesh == null)
+            if(_mesh == null)
             {
-                mesh = new Mesh
+                _mesh = new Mesh
                 {
                     name = "Procedural Mesh"
                 };
-                GetComponent<MeshFilter>().mesh = mesh;
+                GetComponent<MeshFilter>().mesh = _mesh;
             }            
         }
 
 
         public void GenerateMesh()
         {
-            if (_noiseMap.IsCreated)
+            if (_heightMap.IsCreated)
             {
-                _noiseMap.Dispose();
+                _heightMap.Dispose();
+            }
+            if (_terrainMap.IsCreated)
+            {
+                _terrainMap.Dispose();
             }
             if (_minNoiseValues.IsCreated)
             {
@@ -103,39 +113,58 @@ namespace LiquidPlanet
             );
             int numVerticesX = triangleGrid.NumX + 1;
             int numVerticesZ = triangleGrid.NumZ + 1;
-            _noiseMap = new(
+            _heightMap = new(
+                numVerticesX * numVerticesZ,
+                Allocator.Persistent);
+            _terrainMap = new(
                 numVerticesX * numVerticesZ,
                 Allocator.Persistent);
             _minNoiseValues = new(numVerticesZ, Allocator.Persistent);
             _maxNoiseValues = new(numVerticesZ, Allocator.Persistent);
             NoiseJob.ScheduleParallel(
-                _noiseMap,
+                _heightMap,
                 _maxNoiseValues,
                 _minNoiseValues,
                 numVerticesX,
                 numVerticesZ,
                 seed,
-                noiseScale,
-                octaves,
-                persistance,
-                lacunarity,
-                offset,
+                heightScale,
+                heightOctaves,
+                heightPersistance,
+                heightLacunarity,
+                heightOffset,
                 default,
-                debugNoise).Complete();        
-            NormalizeNoise(numVerticesX, numVerticesZ);
+                debugNoise).Complete();
+            NormalizeNoise(_heightMap, numVerticesX, numVerticesZ);
+            NoiseJob.ScheduleParallel(
+                _terrainMap,
+                _maxNoiseValues,
+                _minNoiseValues,
+                numVerticesX,
+                numVerticesZ,
+                seed^2,
+                heightScale,
+                heightOctaves,
+                heightPersistance,
+                heightLacunarity,
+                heightOffset,
+                default,
+                debugNoise).Complete();
+            NormalizeNoise(_terrainMap, numVerticesX, numVerticesZ);
+
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
             MeshJob<SharedTriangleGrid>.ScheduleParallel(
                 triangleGrid,
-                _noiseMap,
-                mesh,
+                _heightMap,
+                _mesh,
                 meshData,   
                 default).Complete();
-            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
-            mesh.RecalculateBounds();
+            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
+            _mesh.RecalculateBounds();
         }
 
-        void NormalizeNoise(int mapWidth, int mapHeight)
+        void NormalizeNoise(NativeArray<float> noiseMap, int mapWidth, int mapHeight)
         {
             float maxNoiseValue = float.MinValue;
             float minNoiseValue = float.MaxValue;
@@ -154,7 +183,7 @@ namespace LiquidPlanet
             {
                 for (int x = 0; x < mapWidth; x++)
                 {
-                    _noiseMap[z * mapWidth + x] = height * unlerp(minNoiseValue, maxNoiseValue, _noiseMap[z * mapWidth + x]);
+                    noiseMap[z * mapWidth + x] = height * unlerp(minNoiseValue, maxNoiseValue, noiseMap[z * mapWidth + x]);
                 }
             }
         }
@@ -169,13 +198,13 @@ namespace LiquidPlanet
             {
                 meshZ = 1;
             }
-            if (lacunarity < 1)
+            if (heightLacunarity < 1)
             {
-                lacunarity = 1;
+                heightLacunarity = 1;
             }
-            if (octaves < 0)
+            if (heightOctaves < 0)
             {
-                octaves = 0;
+                heightOctaves = 0;
             }
             if (seed == 0)
             {
