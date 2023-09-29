@@ -4,6 +4,7 @@ using static Unity.Mathematics.math;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
+using System.Collections.Generic;
 
 namespace LiquidPlanet
 {
@@ -51,14 +52,25 @@ namespace LiquidPlanet
         [SerializeField]
         bool debugNoise = false;
 
-        public int numPatches = 100;
-        public float xYPerlinOffset = 1;
+        [SerializeField]
+        List<TerrainType> terrainTypes;
+        
+        [SerializeField]
+        int terrainGranularity = 100;
 
-        public int noiseScale = 10;
+        [SerializeField]
+        float noiseScale = 10f;
 
+        [SerializeField]
+        float noiseOffset = 1f;
+
+        [SerializeField]
         public bool autoUpdate;
 
         Mesh _mesh;
+
+        [HideInInspector]
+        public TerrainSegmentator Segmentator { get; }
 
         NativeArray<float> _heightMap;
 
@@ -104,6 +116,8 @@ namespace LiquidPlanet
             {
                 _maxNoiseValues.Dispose();
             }
+            Segmentator.Dispose();
+
             SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
                 meshResolution,
                 meshX,
@@ -136,21 +150,15 @@ namespace LiquidPlanet
                 default,
                 debugNoise).Complete();
             NormalizeNoise(_heightMap, numVerticesX, numVerticesZ);
-            NoiseJob.ScheduleParallel(
-                _terrainMap,
-                _maxNoiseValues,
-                _minNoiseValues,
+
+            var segmentation = Segmentator.GetTerrainSegmentation(
                 numVerticesX,
                 numVerticesZ,
-                seed^2,
-                heightScale,
-                heightOctaves,
-                heightPersistance,
-                heightLacunarity,
-                heightOffset,
-                default,
-                debugNoise).Complete();
-            NormalizeNoise(_terrainMap, numVerticesX, numVerticesZ);
+                terrainTypes.Count,
+                terrainGranularity,
+                noiseOffset,
+                noiseScale                
+                );
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];

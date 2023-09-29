@@ -12,86 +12,69 @@ namespace LiquidPlanet
         int width;
         int height;
         int numPatches;
+        int numTerrainTypes;
         float perlinOffset;
         float noiseScale;
 
         NativeArray<float2> seedPoints;
-        int[,] voronoiDiagram;
+        NativeArray<int> segmentation;
 
         public static JobHandle ScheduleParallel(
-            NativeArray<float> terrainSegmentation,
+            NativeArray<int> terrainSegmentation,
             NativeArray<float2> seedPoints,
             int width,
             int height,
-            int numTerrains,
+            int numTerrainTypes,
+            int numPatches,
             float perlinOffset,
             float perlinScale,
             JobHandle dependency
         )
         {
             TerrainSegmentationJob job = new();
+            job.segmentation = terrainSegmentation;
+            job.seedPoints = seedPoints;
             job.width = width;
             job.height = height;
-            job.numPatches = numTerrains;
+            job.numTerrainTypes = numTerrainTypes;
+            job.numPatches = numPatches;
             job.perlinOffset = perlinOffset;
             job.noiseScale = perlinScale;
 
             return job.ScheduleParallel(height, 1, default);
         }
 
-        public void Execute( int index)
+        public void Execute( int y)
         {
-            int[,] diagram = new int[width, height];
-
             for (int x = 0; x < width; x++)
             {
-                for (int y = 0; y < height; y++)
-                {
-                    float minDistance = float.MaxValue;
-                    int minIndex = -1;
+                
+                float minDistance = float.MaxValue;
+                int minIndex = -1;
 
-                    for (int i = 0; i < seedPoints.Length; i++)
+                for (int i = 0; i < seedPoints.Length; i++)
+                {
+                    Vector2 seed = seedPoints[i];
+
+                    // Apply Perlin noise to perturb the position
+                    float noiseX = Mathf.PerlinNoise(x * 0.1f, y * 0.1f) * noiseScale - 1; // Adjust the scale and range as needed
+                    float noiseY = Mathf.PerlinNoise(x * 0.1f, y * 0.1f + perlinOffset) * noiseScale - 1; // Adjust the scale and range as needed
+
+                    float distance = Vector2.Distance(new Vector2(x + noiseX, y + noiseY), seed);
+
+                    if (distance < minDistance)
                     {
-                        Vector2 seed = seedPoints[i];
-
-                        // Apply Perlin noise to perturb the position
-                        float noiseX = Mathf.PerlinNoise(x * 0.1f, y * 0.1f) * noiseScale - 1; // Adjust the scale and range as needed
-                        float noiseY = Mathf.PerlinNoise(x * 0.1f, y * 0.1f + perlinOffset) * noiseScale - 1; // Adjust the scale and range as needed
-
-                        float distance = Vector2.Distance(new Vector2(x + noiseX, y + noiseY), seed);
-
-                        if (distance < minDistance)
-                        {
-                            minDistance = distance;
-                            minIndex = i;
-                        }
+                        minDistance = distance;
+                        minIndex = i;
                     }
-
-                    diagram[x, y] = minIndex;
                 }
+
+                segmentation[y * width + x] = minIndex % numTerrainTypes;
+                
             }
 
         }
 
-        Texture2D VisualizeVoronoiDiagram()
-        {
-            Color[] colors = new Color[] { Color.red, Color.green, Color.blue, Color.yellow, Color.magenta };
-
-            Texture2D texture = new Texture2D(width, height);
-
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    int patchIndex = voronoiDiagram[x, y] % colors.Length;
-                    Color color = colors[patchIndex];
-                    texture.SetPixel(x, y, color);
-                }
-            }
-
-            texture.Apply();
-            return texture;
-        }
 
         //void ApplyTextureToPlane(Texture2D texture)
         //{

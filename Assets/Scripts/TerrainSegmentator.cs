@@ -5,51 +5,69 @@ using Unity.Burst;
 using Unity.Mathematics;
 using LiquidPlanet;
 using Unity.Jobs;
+using System.Collections.Generic;
+using System;
 
-[BurstCompile]
-public struct TerrainSegmentator
+namespace LiquidPlanet
 {
-    NativeArray<float> terrainSegments;
-
-    NativeArray<float> GetTerrainSegmentation(
-        int width,
-        int height,
-        int numPatches,
-        float perlinOffset,
-        float perlinScale
-    )
+    [BurstCompile]
+    public struct TerrainSegmentator
     {
-        if( terrainSegments.IsCreated )
+        NativeArray<int> _segmentation;
+
+        public NativeArray<int> Segmentation { get => _segmentation; }
+
+
+        public NativeArray<int> GetTerrainSegmentation(
+            int width,
+            int height,
+            int numTerrainTypes,
+            int numPatches,
+            float perlinOffset,
+            float perlinScale
+        )
         {
-            terrainSegments.Dispose();
+            if (_segmentation.IsCreated)
+            {
+                _segmentation.Dispose();
+            }
+            _segmentation = new NativeArray<int>(width * height, Allocator.Persistent);
+
+            NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
+            GenerateRandomSeedPoints(seedPoints, numPatches, width, height);
+            TerrainSegmentationJob.ScheduleParallel(
+                _segmentation,
+                seedPoints,
+                width,
+                height,
+                numTerrainTypes,
+                numPatches,
+                perlinOffset,
+                perlinScale,
+                default).Complete();
+
+            seedPoints.Dispose();
+
+            return _segmentation;
         }
-        terrainSegments = new NativeArray<float>( width * height, Allocator.Persistent );
 
-        NativeArray<float2> seedPoints = new( numPatches, Allocator.Temp );
-        GenerateRandomSeedPoints(seedPoints, numPatches, width, height);
-        TerrainSegmentationJob.ScheduleParallel(
-            terrainSegments,
-            seedPoints,
-            width,
-            height,
-            numPatches,
-            perlinOffset,
-            perlinScale,
-            default).Complete();
+        void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, int numPatches, int width, int height)
+        {
+            var dateTime = DateTime.Now;
+            Unity.Mathematics.Random random = new((uint) dateTime.Ticks);
+            for (int i = 0; i < numPatches; i++)
+            {
+                float2 seed = random.NextFloat2(new float2(width, height));
+                seedPoints[i] = seed;
+            }
 
-        seedPoints.Dispose();
+        }
 
-        return terrainSegments;
+        public void Dispose()
+        {
+            if( _segmentation.IsCreated )
+                Segmentation.Dispose();
+        }
     }
 
-    void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, int numPatches, int width, int height)
-    {
-        Unity.Mathematics.Random random = new();
-        for (int i = 0; i < numPatches; i++)
-        {
-            float2 seed = random.NextFloat2(new float2(width, height));
-            seedPoints[i] = seed;
-        }
-
-    }
 }
