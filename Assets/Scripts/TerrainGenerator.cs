@@ -53,9 +53,6 @@ namespace LiquidPlanet
         bool debugNoise = false;
 
         [SerializeField]
-        List<TerrainType> terrainTypes;
-        
-        [SerializeField]
         int terrainGranularity = 100;
 
         [SerializeField]
@@ -64,6 +61,8 @@ namespace LiquidPlanet
         [SerializeField]
         float noiseOffset = 1f;
 
+        public List<TerrainType> terrainTypes;
+
         [SerializeField]
         public bool autoUpdate;
 
@@ -71,6 +70,10 @@ namespace LiquidPlanet
 
         [HideInInspector]
         public TerrainSegmentator Segmentator { get; }
+
+        public delegate void MeshGenerationFinishedEvent();
+        public static event MeshGenerationFinishedEvent OnMeshFinishedEvent;
+
 
         NativeArray<float> _heightMap;
 
@@ -154,10 +157,10 @@ namespace LiquidPlanet
             var segmentation = Segmentator.GetTerrainSegmentation(
                 numVerticesX,
                 numVerticesZ,
-                terrainTypes.Count,
+                terrainTypes,
                 terrainGranularity,
                 noiseOffset,
-                noiseScale                
+                noiseScale
                 );
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
@@ -169,7 +172,8 @@ namespace LiquidPlanet
                 meshData,   
                 default).Complete();
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
-            _mesh.RecalculateBounds();
+            //_mesh.RecalculateBounds();
+            OnMeshFinishedEvent?.Invoke();
         }
 
         void NormalizeNoise(NativeArray<float> noiseMap, int mapWidth, int mapHeight)

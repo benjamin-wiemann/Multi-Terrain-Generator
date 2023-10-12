@@ -16,7 +16,10 @@ namespace LiquidPlanet
         float perlinOffset;
         float noiseScale;
 
+        [ReadOnly]
         NativeArray<float2> seedPoints;
+
+        [WriteOnly, NativeDisableParallelForRestriction]
         NativeArray<int> segmentation;
 
         public static JobHandle ScheduleParallel(

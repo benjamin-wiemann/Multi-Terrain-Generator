@@ -18,22 +18,28 @@ namespace LiquidPlanet
 
         void Start()
         {
-            var segmentation = generator.Segmentator.Segmentation;    
-            GetComponent<Renderer>().material.mainTexture = VisualizeVoronoiDiagram( segmentation );
+            TerrainGenerator.OnMeshFinishedEvent += this.OnMeshGenerationFinished;
+            
         }
 
-        Texture2D VisualizeVoronoiDiagram( NativeArray<int> segmentation )
+        void OnMeshGenerationFinished()
         {
-            Color[] colors = new Color[] { Color.red, Color.green, Color.blue, Color.yellow, Color.magenta };
+            var segmentation = generator.Segmentator.Segmentation;
+            var terrainTypes = generator.terrainTypes;
+            GetComponent<Renderer>().material.mainTexture = VisualizeSegmentation(segmentation, terrainTypes);
+        }
 
+        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, List<TerrainType> terrainTypes )
+        {
+            
             Texture2D texture = new Texture2D(width, height);
 
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    int patchIndex = segmentation[y * width + x] % colors.Length;
-                    Color color = colors[patchIndex];
+                    int patchIndex = segmentation[y * width + x] % terrainTypes.Count;
+                    Color color = terrainTypes[patchIndex].Color;
                     texture.SetPixel(x, y, color);
                 }
             }

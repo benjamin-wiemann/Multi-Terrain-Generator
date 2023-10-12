@@ -7,8 +7,7 @@ namespace LiquidPlanet
     [System.Serializable]
     public class TerrainType
     {
-        [SerializeField]
-        Color color;
+        public Color Color;
 
     }
 }
