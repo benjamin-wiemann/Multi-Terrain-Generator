@@ -7,6 +7,8 @@ using Unity.Mathematics;
 
 namespace LiquidPlanet
 {
+
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentationJob : IJobFor
     {
         int width;

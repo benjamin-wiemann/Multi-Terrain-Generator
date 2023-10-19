@@ -192,13 +192,8 @@ namespace LiquidPlanet
                     minNoiseValue = _minNoiseValues[i];
                 }
             }
-            for (int y = 0; y < mapHeight; y++)
-            {
-                for (int x = 0; x < mapWidth; x++)
-                {
-                    noiseMap[y * mapWidth + x] = unlerp(minNoiseValue, maxNoiseValue, noiseMap[y * mapWidth + x]);
-                }
-            }
+            NormalizeNoiseJob.ScheduleParallel(noiseMap, maxNoiseValue, minNoiseValue, mapWidth, mapHeight, default).Complete();
+            
         }
 
         void OnValidate()
