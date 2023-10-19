@@ -26,7 +26,7 @@ namespace LiquidPlanet.EditorUI
             // Add properties from the first group
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(serializedObject.FindProperty("meshX"), true);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("meshZ"), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("meshY"), true);
             EditorGUI.indentLevel--;
 
             EditorGUILayout.EndVertical();

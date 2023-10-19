@@ -19,7 +19,7 @@ namespace LiquidPlanet
         float meshXOld;
 
         [SerializeField, Range(1, 100)]
-        float meshZ = 10;
+        float meshY = 10;
         float meshZOld;
 
         [SerializeField]
@@ -124,26 +124,26 @@ namespace LiquidPlanet
             SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
                 meshResolution,
                 meshX,
-                meshZ,
+                meshY,
                 tiling,
                 height
             );
             int numVerticesX = triangleGrid.NumX + 1;
-            int numVerticesZ = triangleGrid.NumZ + 1;
+            int numVerticesY = triangleGrid.NumY + 1;
             _heightMap = new(
-                numVerticesX * numVerticesZ,
+                numVerticesX * numVerticesY,
                 Allocator.Persistent);
             _terrainMap = new(
-                numVerticesX * numVerticesZ,
+                numVerticesX * numVerticesY,
                 Allocator.Persistent);
-            _minNoiseValues = new(numVerticesZ, Allocator.Persistent);
-            _maxNoiseValues = new(numVerticesZ, Allocator.Persistent);
+            _minNoiseValues = new(numVerticesY, Allocator.Persistent);
+            _maxNoiseValues = new(numVerticesY, Allocator.Persistent);
             NoiseJob.ScheduleParallel(
                 _heightMap,
                 _maxNoiseValues,
                 _minNoiseValues,
                 numVerticesX,
-                numVerticesZ,
+                numVerticesY,
                 seed,
                 heightScale,
                 heightOctaves,
@@ -152,11 +152,11 @@ namespace LiquidPlanet
                 heightOffset,
                 default,
                 debugNoise).Complete();
-            NormalizeNoise(_heightMap, numVerticesX, numVerticesZ);
+            NormalizeNoise(_heightMap, numVerticesX, numVerticesY);
 
             _terrainMap = Segmentator.GetTerrainSegmentation(
                 numVerticesX,
-                numVerticesZ,
+                numVerticesY,
                 terrainTypes,
                 terrainGranularity,
                 noiseOffset,
@@ -173,7 +173,7 @@ namespace LiquidPlanet
                 default).Complete();
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
             //_mesh.RecalculateBounds
-            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesZ, _heightMap, _terrainMap, terrainTypes);
+            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, terrainTypes);
             MeshFinishedEvent?.Invoke(this, args);
         }
 
@@ -196,7 +196,7 @@ namespace LiquidPlanet
             {
                 for (int x = 0; x < mapWidth; x++)
                 {
-                    noiseMap[y * mapWidth + x] = height * unlerp(minNoiseValue, maxNoiseValue, noiseMap[y * mapWidth + x]);
+                    noiseMap[y * mapWidth + x] = unlerp(minNoiseValue, maxNoiseValue, noiseMap[y * mapWidth + x]);
                 }
             }
         }
@@ -207,9 +207,9 @@ namespace LiquidPlanet
             {
                 meshX = 1;
             }
-            if (meshZ < 1)
+            if (meshY < 1)
             {
-                meshZ = 1;
+                meshY = 1;
             }
             if (heightLacunarity < 1)
             {

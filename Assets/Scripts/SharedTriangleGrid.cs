@@ -15,11 +15,11 @@ namespace LiquidPlanet
 
     public struct SharedTriangleGrid : IMeshGenerator
     {
-        public int VertexCount => (NumX + 1) * (NumZ + 1);
+        public int VertexCount => (NumX + 1) * (NumY + 1);
 
-        public int IndexCount => 6 * NumZ * NumX;
+        public int IndexCount => 6 * NumY * NumX;
 
-        public int JobLength => NumZ + 1;
+        public int JobLength => NumY + 1;
 
         public Bounds Bounds => new Bounds(new Vector3(0f, 0f, DimZ/2), new Vector3((1f + 0.5f / Resolution) * DimX, 0f, DimZ)); //dimZ * sqrt(3f) / 2f));
 
@@ -36,7 +36,7 @@ namespace LiquidPlanet
         public int NumX => (int)round(Resolution * DimX);
 
         // number of triangle pairs in z direction is higher, since its height is smaller than its width
-        public int NumZ => (int)round(Resolution * DimZ * 2f / sqrt(3f));
+        public int NumY => (int)round(Resolution * DimZ * 2f / sqrt(3f));
 
         public SharedTriangleGrid(            
             int resolution,
@@ -58,7 +58,7 @@ namespace LiquidPlanet
         {
 
             float triangleWidth = DimX / NumX;
-            float triangleHeigth = DimZ / NumZ;
+            float triangleHeigth = DimZ / NumY;
 
             int vi = (NumX + 1) * z, ti = 2 * NumX * (z - 1);
 
@@ -96,7 +96,7 @@ namespace LiquidPlanet
             for (int x = 1; x <= NumX; x++, vi++, ti += 2)
             {
                 vertex.position.x = (float) x * triangleWidth + xOffset;
-                vertex.position.y = NativeArrayHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
+                vertex.position.y = Height * NativeArrayHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
 
                 vertex.texCoord0.x = (vertex.position.x / Tiling);
                 stream.SetVertex(vi, vertex);
