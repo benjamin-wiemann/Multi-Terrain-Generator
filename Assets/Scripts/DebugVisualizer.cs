@@ -3,33 +3,91 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
+using Unity.VisualScripting;
+using System;
 
 namespace LiquidPlanet
 {
+    
     public class DebugVisualizer : MonoBehaviour
     {
+        enum DataView
+        {
+            HeightMap,
+            TerrainSegmentation
+        }
+
+        [SerializeField]
+        private DataView dataView;
 
         [SerializeField]
         private TerrainGenerator generator;
 
         int width;
-        int height;
-         
 
-        void Start()
+        int height;
+        
+        NativeArray<int> segmentation;
+
+        List<TerrainType> terrainTypes;
+
+        NativeArray<float> heigthMap;
+
+        bool listening = false;
+
+        void OnValidate()
         {
-            TerrainGenerator.OnMeshFinishedEvent += this.OnMeshGenerationFinished;
+            if (!listening)
+                TerrainGenerator.MeshFinishedEvent += this.OnMeshGenerationFinished;
+            if (segmentation.Length > 0 ) 
+            {
+                Visualize();
+            }
             
         }
 
-        void OnMeshGenerationFinished()
+        void OnMeshGenerationFinished(object sender, Event.MeshGenFinishedEventArgs args)
         {
-            var segmentation = generator.Segmentator.Segmentation;
-            var terrainTypes = generator.terrainTypes;
-            GetComponent<Renderer>().material.mainTexture = VisualizeSegmentation(segmentation, terrainTypes);
+            width = args.NumVerticesX; 
+            height = args.NumVerticesY;
+            segmentation = args.TerrainSegmentation;
+            terrainTypes = args.TerrainTypes;
+            heigthMap = args.HeightMap;
+            Visualize();
         }
 
-        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, List<TerrainType> terrainTypes )
+        void Visualize()
+        {
+            switch (dataView)
+            {
+                case DataView.TerrainSegmentation:
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeSegmentation(segmentation, terrainTypes, width, height);
+                    break;
+                case DataView.HeightMap:
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeHeightMap(heigthMap, width, height);
+                    break;
+            }
+        }
+
+        private Texture2D VisualizeHeightMap(NativeArray<float> heightMap, int width, int height)
+        {
+            Texture2D texture = new Texture2D(width, height);
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    float val = heightMap[y * width + x];
+                    Color color = new Color(val, val, val);
+                    texture.SetPixel(x, y, color);
+                }
+            }
+
+            texture.Apply();
+            return texture;
+        }
+
+        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, List<TerrainType> terrainTypes, int width, int height )
         {
             
             Texture2D texture = new Texture2D(width, height);
@@ -48,10 +106,10 @@ namespace LiquidPlanet
             return texture;
         }
 
-        // Update is called once per frame
-        void Update()
+        void OnDestroy( ) 
         {
-
+            TerrainGenerator.MeshFinishedEvent -= this.OnMeshGenerationFinished;
+            listening = false;
         }
     }
 

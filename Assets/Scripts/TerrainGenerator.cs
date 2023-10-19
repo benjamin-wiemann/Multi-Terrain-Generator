@@ -5,6 +5,9 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System;
+using LiquidPlanet.Event;
 
 namespace LiquidPlanet
 {
@@ -70,23 +73,20 @@ namespace LiquidPlanet
 
         [HideInInspector]
         public TerrainSegmentator Segmentator { get; }
-
-        public delegate void MeshGenerationFinishedEvent();
-        public static event MeshGenerationFinishedEvent OnMeshFinishedEvent;
-
-
+        
         NativeArray<float> _heightMap;
 
-        NativeArray<float> _terrainMap;
+        NativeArray<int> _terrainMap;
 
+        [HideInInspector]
+        public NativeArray<int> TerrainMap { get => _terrainMap; }
+       
         NativeArray<float> _maxNoiseValues;
 
         NativeArray<float> _minNoiseValues;
 
-        //void Start()
-        //{
-        //    Init();
-        //}
+        public static event EventHandler<MeshGenFinishedEventArgs> MeshFinishedEvent;
+        
 
         public void Init()
         {
@@ -154,7 +154,7 @@ namespace LiquidPlanet
                 debugNoise).Complete();
             NormalizeNoise(_heightMap, numVerticesX, numVerticesZ);
 
-            var segmentation = Segmentator.GetTerrainSegmentation(
+            _terrainMap = Segmentator.GetTerrainSegmentation(
                 numVerticesX,
                 numVerticesZ,
                 terrainTypes,
@@ -172,8 +172,9 @@ namespace LiquidPlanet
                 meshData,   
                 default).Complete();
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
-            //_mesh.RecalculateBounds();
-            OnMeshFinishedEvent?.Invoke();
+            //_mesh.RecalculateBounds
+            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesZ, _heightMap, _terrainMap, terrainTypes);
+            MeshFinishedEvent?.Invoke(this, args);
         }
 
         void NormalizeNoise(NativeArray<float> noiseMap, int mapWidth, int mapHeight)
@@ -191,11 +192,11 @@ namespace LiquidPlanet
                     minNoiseValue = _minNoiseValues[i];
                 }
             }
-            for (int z = 0; z < mapHeight; z++)
+            for (int y = 0; y < mapHeight; y++)
             {
                 for (int x = 0; x < mapWidth; x++)
                 {
-                    noiseMap[z * mapWidth + x] = height * unlerp(minNoiseValue, maxNoiseValue, noiseMap[z * mapWidth + x]);
+                    noiseMap[y * mapWidth + x] = height * unlerp(minNoiseValue, maxNoiseValue, noiseMap[y * mapWidth + x]);
                 }
             }
         }
