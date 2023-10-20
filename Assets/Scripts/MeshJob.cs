@@ -7,7 +7,7 @@ namespace LiquidPlanet
 {
 
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob<G> : IJobFor
             where G : struct, IMeshGenerator
     {
@@ -20,11 +20,15 @@ namespace LiquidPlanet
         [ReadOnly]
         NativeArray<float> _noiseMap;
 
+        [ReadOnly]
+        NativeArray<int> _terrainMap;
+
         public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap);
 
         public static JobHandle ScheduleParallel(
             G generator,
             NativeArray<float> noiseMap,
+            NativeArray<int> terrainMap,
             Mesh mesh,
             Mesh.MeshData meshData,
             JobHandle dependency
@@ -33,6 +37,7 @@ namespace LiquidPlanet
             var job = new MeshJob<G>();
             job._generator = generator;
             job._noiseMap = noiseMap;
+            job._terrainMap = terrainMap;
             job._stream.Setup(
                 meshData,
                 mesh.bounds = job._generator.Bounds,

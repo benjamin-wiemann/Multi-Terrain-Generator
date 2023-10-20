@@ -71,16 +71,10 @@ namespace LiquidPlanet
 
         Mesh _mesh;
 
-        [HideInInspector]
-        public TerrainSegmentator Segmentator { get; }
-        
         NativeArray<float> _heightMap;
 
         NativeArray<int> _terrainMap;
 
-        [HideInInspector]
-        public NativeArray<int> TerrainMap { get => _terrainMap; }
-       
         NativeArray<float> _maxNoiseValues;
 
         NativeArray<float> _minNoiseValues;
@@ -111,16 +105,6 @@ namespace LiquidPlanet
             {
                 _terrainMap.Dispose();
             }
-            if (_minNoiseValues.IsCreated)
-            {
-                _minNoiseValues.Dispose();
-            }
-            if (_maxNoiseValues.IsCreated)
-            {
-                _maxNoiseValues.Dispose();
-            }
-            Segmentator.Dispose();
-
             SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
                 meshResolution,
                 meshX,
@@ -154,7 +138,8 @@ namespace LiquidPlanet
                 debugNoise).Complete();
             NormalizeNoise(_heightMap, numVerticesX, numVerticesY);
 
-            _terrainMap = Segmentator.GetTerrainSegmentation(
+            TerrainSegmentator.GetTerrainSegmentation(
+                _terrainMap,
                 numVerticesX,
                 numVerticesY,
                 terrainTypes,
@@ -168,6 +153,7 @@ namespace LiquidPlanet
             MeshJob<SharedTriangleGrid>.ScheduleParallel(
                 triangleGrid,
                 _heightMap,
+                _terrainMap,
                 _mesh,
                 meshData,   
                 default).Complete();
@@ -175,6 +161,9 @@ namespace LiquidPlanet
             //_mesh.RecalculateBounds
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, terrainTypes);
             MeshFinishedEvent?.Invoke(this, args);
+            
+            _minNoiseValues.Dispose();
+            _maxNoiseValues.Dispose();
         }
 
         void NormalizeNoise(NativeArray<float> noiseMap, int mapWidth, int mapHeight)

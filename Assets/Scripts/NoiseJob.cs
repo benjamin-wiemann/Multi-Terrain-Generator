@@ -31,8 +31,6 @@ namespace LiquidPlanet
 
         private bool debug;
 
-        //NativeArray<float> NoiseMap { set=>_noiseMap = value; }
-
         [WriteOnly, NativeDisableContainerSafetyRestriction]
         private NativeArray<float> _noiseMap;
 
@@ -44,8 +42,6 @@ namespace LiquidPlanet
 
         [NativeDisableContainerSafetyRestriction]
         private NativeArray<float> _minNoiseHeights;
-
-        //NativeArray<float> noiseMap = new(mapWidth * mapHeight, Allocator.Persistent);
 
         public static JobHandle ScheduleParallel(            
             NativeArray<float> noiseMapIn,

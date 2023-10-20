@@ -13,12 +13,9 @@ namespace LiquidPlanet
     [BurstCompile]
     public struct TerrainSegmentator
     {
-        NativeArray<int> _segmentation;
-
-        public NativeArray<int> Segmentation { get => _segmentation; }
-
-
-        public NativeArray<int> GetTerrainSegmentation(
+        
+        public static void GetTerrainSegmentation(
+            NativeArray<int> terrainMap,
             int width,
             int height,
             List<TerrainType> terrainTypes,
@@ -27,16 +24,10 @@ namespace LiquidPlanet
             float perlinScale
         )
         {
-            if (_segmentation.IsCreated)
-            {
-                _segmentation.Dispose();
-            }
-            _segmentation = new NativeArray<int>(width * height, Allocator.Persistent);
-
             NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
             GenerateRandomSeedPoints(seedPoints, width, height);
             TerrainSegmentationJob.ScheduleParallel(
-                _segmentation,
+                terrainMap,
                 seedPoints,
                 width,
                 height,
@@ -47,11 +38,9 @@ namespace LiquidPlanet
                 default).Complete();
 
             seedPoints.Dispose();
-
-            return _segmentation;
         }
 
-        void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, int width, int height)
+        static void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, int width, int height)
         {
             var dateTime = DateTime.Now;
             Unity.Mathematics.Random random = new((uint) dateTime.Ticks);
@@ -63,11 +52,6 @@ namespace LiquidPlanet
 
         }
 
-        public void Dispose()
-        {
-            if( _segmentation.IsCreated )
-                Segmentation.Dispose();
-        }
     }
 
 }
