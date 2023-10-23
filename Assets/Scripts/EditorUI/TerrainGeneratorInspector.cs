@@ -21,7 +21,7 @@ namespace LiquidPlanet.EditorUI
             serializedObject.Update();
 
             EditorGUILayout.BeginVertical("box");
-            GUILayout.Label("Group 1 - Custom Group Name");
+            GUILayout.Label("Mesh size generation");
 
             // Add properties from the first group
             EditorGUI.indentLevel++;
@@ -33,11 +33,11 @@ namespace LiquidPlanet.EditorUI
 
             // Group 2: Second group with a custom name
             EditorGUILayout.BeginVertical("box");
-            GUILayout.Label("Group 2 - Another Custom Group Name");
+            GUILayout.Label("Terrain");
 
             // Add properties from the second group
             EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("terrainTypes"), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("_terrainTypes"), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("terrainGranularity"), true);
             EditorGUI.indentLevel--;
 

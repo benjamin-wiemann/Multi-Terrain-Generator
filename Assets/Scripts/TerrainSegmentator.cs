@@ -18,7 +18,7 @@ namespace LiquidPlanet
             NativeArray<int> terrainMap,
             int width,
             int height,
-            List<TerrainType> terrainTypes,
+            NativeList<TerrainTypeUnmanaged> terrainTypes,
             int numPatches,
             float perlinOffset,
             float perlinScale
@@ -31,7 +31,7 @@ namespace LiquidPlanet
                 seedPoints,
                 width,
                 height,
-                terrainTypes.Count,
+                terrainTypes.Length,
                 numPatches,
                 perlinOffset,
                 perlinScale,

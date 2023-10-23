@@ -1,13 +1,9 @@
 using Unity.Collections;
-using Unity.Jobs;
-using static Unity.Mathematics.math;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System;
 using LiquidPlanet.Event;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace LiquidPlanet
 {
@@ -64,7 +60,8 @@ namespace LiquidPlanet
         [SerializeField]
         float noiseOffset = 1f;
 
-        public List<TerrainType> terrainTypes;
+        //public NativeList<TerrainType> terrainTypes = new(Allocator.Persistent);
+        public List<TerrainType> _terrainTypes = new();
 
         [SerializeField]
         public bool autoUpdate;
@@ -122,6 +119,11 @@ namespace LiquidPlanet
                 Allocator.Persistent);
             _minNoiseValues = new(numVerticesY, Allocator.Persistent);
             _maxNoiseValues = new(numVerticesY, Allocator.Persistent);
+            NativeList<TerrainTypeUnmanaged> types = new(Allocator.Persistent);
+            foreach (TerrainType terrainType in _terrainTypes)
+            {
+                types.Add(TerrainTypeUnmanaged.Convert(terrainType));
+            }
             NoiseJob.ScheduleParallel(
                 _heightMap,
                 _maxNoiseValues,
@@ -142,7 +144,7 @@ namespace LiquidPlanet
                 _terrainMap,
                 numVerticesX,
                 numVerticesY,
-                terrainTypes,
+                types,
                 terrainGranularity,
                 noiseOffset,
                 noiseScale
@@ -154,16 +156,18 @@ namespace LiquidPlanet
                 triangleGrid,
                 _heightMap,
                 _terrainMap,
+                types,
                 _mesh,
                 meshData,   
                 default).Complete();
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
             //_mesh.RecalculateBounds
-            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, terrainTypes);
+            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types);
             MeshFinishedEvent?.Invoke(this, args);
             
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
+            types.Dispose();
         }
 
         void NormalizeNoise(NativeArray<float> noiseMap, int mapWidth, int mapHeight)
@@ -207,14 +211,27 @@ namespace LiquidPlanet
             {
                 seed = 1;
             }
+            if ( _terrainTypes.Count == 0 )
+            {
+                _terrainTypes.Add(new TerrainType() {
+                    _name = "Standard Terrain",
+                    _color = Color.green });
+            }
+            for (int i = 0; i < _terrainTypes.Count; i++) 
+            {
+                TerrainType type = _terrainTypes[i];
+                if (type._name == "" || type._name == null)
+                {
+                    type._name = "Terrain_" + i;
+                }else if (type._name.Length >= 125)
+                {
+                    type._name = type._name.Substring(0, 125);
+                }
+            }
         }
-
         void OnApplicationQuit()
         {
-            //if(noise)
-            //noiseMap.Dispose();
         }
-
     }
 }
 

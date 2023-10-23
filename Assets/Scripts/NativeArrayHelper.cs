@@ -5,7 +5,7 @@ using static Unity.Mathematics.math;
 
 namespace LiquidPlanet
 {
-    public class NativeArrayHelper
+    public static class NativeArrayHelper
     {
         public static float SampleValueAt(float xPos, float zPos, int resolution, int numX, NativeArray<float> noiseMap)
         {

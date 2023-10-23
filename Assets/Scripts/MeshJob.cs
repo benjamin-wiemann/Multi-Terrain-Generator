@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -23,12 +24,13 @@ namespace LiquidPlanet
         [ReadOnly]
         NativeArray<int> _terrainMap;
 
-        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap);
+        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap);
 
         public static JobHandle ScheduleParallel(
             G generator,
             NativeArray<float> noiseMap,
             NativeArray<int> terrainMap,
+            NativeList<TerrainTypeUnmanaged> terrainTypes,
             Mesh mesh,
             Mesh.MeshData meshData,
             JobHandle dependency
@@ -42,7 +44,8 @@ namespace LiquidPlanet
                 meshData,
                 mesh.bounds = job._generator.Bounds,
                 job._generator.VertexCount,
-                job._generator.IndexCount
+                job._generator.IndexCount,
+                terrainTypes
             );
             return job.ScheduleParallel(job._generator.JobLength, 1, dependency);
         }

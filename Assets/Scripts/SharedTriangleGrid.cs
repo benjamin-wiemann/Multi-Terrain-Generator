@@ -54,7 +54,7 @@ namespace LiquidPlanet
         }
 
         
-        public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap)
+        public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap, NativeArray<int> terrainMap)
         {
 
             float triangleWidth = DimX / NumX;

@@ -26,7 +26,7 @@ namespace LiquidPlanet
         [NativeDisableContainerSafetyRestriction]
         NativeArray<int3> triangles;
 
-        public void Setup(Mesh.MeshData meshData, Bounds bounds, int vertexCount, int indexCount)
+        public void Setup(Mesh.MeshData meshData, Bounds bounds, int vertexCount, int indexCount, NativeList<TerrainTypeUnmanaged> terrainTypes)
         {
             var descriptor = new NativeArray<VertexAttributeDescriptor>(
                 4, Allocator.Temp, NativeArrayOptions.UninitializedMemory

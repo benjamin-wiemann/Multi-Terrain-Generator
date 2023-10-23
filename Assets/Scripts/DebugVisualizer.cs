@@ -29,7 +29,7 @@ namespace LiquidPlanet
         
         NativeArray<int> segmentation;
 
-        List<TerrainType> terrainTypes;
+        NativeList<TerrainTypeUnmanaged> terrainTypes;
 
         NativeArray<float> heigthMap;
 
@@ -87,7 +87,7 @@ namespace LiquidPlanet
             return texture;
         }
 
-        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, List<TerrainType> terrainTypes, int width, int height )
+        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, NativeList<TerrainTypeUnmanaged> terrainTypes, int width, int height )
         {
             
             Texture2D texture = new Texture2D(width, height);
@@ -96,7 +96,7 @@ namespace LiquidPlanet
             {
                 for (int y = 0; y < height; y++)
                 {
-                    int patchIndex = segmentation[y * width + x] % terrainTypes.Count;
+                    int patchIndex = segmentation[y * width + x] % terrainTypes.Length;
                     Color color = terrainTypes[patchIndex].Color;
                     texture.SetPixel(x, y, color);
                 }

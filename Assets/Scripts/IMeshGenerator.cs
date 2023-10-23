@@ -29,7 +29,8 @@ namespace LiquidPlanet
 
         void Execute<S>( int i,
         VertexStream stream,
-        NativeArray<float> noiseMap );
+        NativeArray<float> noiseMap,
+        NativeArray<int> terrainMap);
     }
 }
 
