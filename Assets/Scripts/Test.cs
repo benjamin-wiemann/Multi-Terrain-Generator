@@ -11,6 +11,7 @@ public struct NameColorPair
 
 public class Test : MonoBehaviour
 {
+    [HideInInspector]
     public List<NameColorPair> nameColorPairs = new List<NameColorPair>();
 
     // You can add more functionality to manipulate the list if needed.

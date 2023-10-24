@@ -4,6 +4,7 @@ using Unity.Burst;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace LiquidPlanet
 {
@@ -13,10 +14,12 @@ namespace LiquidPlanet
     {
         int width;
         int height;
-        int numPatches;
-        int numTerrainTypes;
+        float borderGranularity;
         float perlinOffset;
         float noiseScale;
+
+        [NativeDisableContainerSafetyRestriction]
+        NativeArray<TerrainTypeUnmanaged> terrainTypes;
 
         [ReadOnly]
         NativeArray<float2> seedPoints;
@@ -29,8 +32,8 @@ namespace LiquidPlanet
             NativeArray<float2> seedPoints,
             int width,
             int height,
-            int numTerrainTypes,
-            int numPatches,
+            float borderGranularity,
+            NativeArray<TerrainTypeUnmanaged> terrainTypes,
             float perlinOffset,
             float perlinScale,
             JobHandle dependency
@@ -41,8 +44,8 @@ namespace LiquidPlanet
             job.seedPoints = seedPoints;
             job.width = width;
             job.height = height;
-            job.numTerrainTypes = numTerrainTypes;
-            job.numPatches = numPatches;
+            job.borderGranularity = borderGranularity;
+            job.terrainTypes = terrainTypes;
             job.perlinOffset = perlinOffset;
             job.noiseScale = perlinScale;
 
@@ -61,9 +64,8 @@ namespace LiquidPlanet
                 {
                     Vector2 seed = seedPoints[i];
 
-                    // Apply Perlin noise to perturb the position
-                    float noiseX = Mathf.PerlinNoise(x * 0.1f, y * 0.1f) * noiseScale - 1; // Adjust the scale and range as needed
-                    float noiseY = Mathf.PerlinNoise(x * 0.1f, y * 0.1f + perlinOffset) * noiseScale - 1; // Adjust the scale and range as needed
+                    float noiseX = Mathf.PerlinNoise(x * 0.1f * borderGranularity, y * 0.1f * borderGranularity) * noiseScale - 1; 
+                    float noiseY = Mathf.PerlinNoise(x * 0.1f * borderGranularity, y * 0.1f * borderGranularity + perlinOffset) * noiseScale - 1; 
 
                     float distance = Vector2.Distance(new Vector2(x + noiseX, y + noiseY), seed);
 
@@ -73,19 +75,19 @@ namespace LiquidPlanet
                         minIndex = i;
                     }
                 }
-
-                segmentation[y * width + x] = minIndex % numTerrainTypes;
+                int terrainIndex = minIndex % terrainTypes.Length;
+                segmentation[y * width + x] = terrainIndex;
+                if(x < width - 1 && y < height -1)
+                {
+                    TerrainTypeUnmanaged type = terrainTypes[terrainIndex];
+                    type.IncrementNumTrianglePairs();
+                    terrainTypes[terrainIndex] = type;
+                }                
                 
             }
 
         }
 
-
-        //void ApplyTextureToPlane(Texture2D texture)
-        //{
-        //    Material material = GetComponent<Renderer>().material;
-        //    material.mainTexture = texture;
-        //}
 
     }
 }

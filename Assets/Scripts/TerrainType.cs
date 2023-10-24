@@ -14,10 +14,19 @@ namespace LiquidPlanet
         public FixedString128Bytes Name { get; }
         public Color Color { get; }
 
+        public int _numTrianglePairs;
+        public int NumTrianglePairs { get => _numTrianglePairs; }
+
         TerrainTypeUnmanaged(string name, Color color)
         {
             Name = new FixedString128Bytes(name);
             Color = color;
+            _numTrianglePairs = 0;
+        }
+
+        public void IncrementNumTrianglePairs()
+        {
+            _numTrianglePairs++;
         }
 
         public static TerrainTypeUnmanaged Convert(TerrainType type)
@@ -32,8 +41,9 @@ namespace LiquidPlanet
     [System.Serializable]
     public class TerrainType
     {
-        
+        [SerializeField]
         public string _name;
+        [SerializeField]
         public Color _color;
 
     }

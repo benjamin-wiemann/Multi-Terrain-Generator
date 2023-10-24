@@ -5,7 +5,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.UIElements;
 
 namespace LiquidPlanet
 {
@@ -46,17 +45,22 @@ namespace LiquidPlanet
 
             meshData.SetIndexBufferParams(indexCount, IndexFormat.UInt32);
 
-            meshData.subMeshCount = 1;
-            meshData.SetSubMesh(
-                0, new SubMeshDescriptor(0, indexCount)
-                {
-                    bounds = bounds,
-                    vertexCount = vertexCount
-                },
-                MeshUpdateFlags.DontRecalculateBounds |
-                MeshUpdateFlags.DontValidateIndices
-            );
-
+            meshData.subMeshCount = terrainTypes.Length;
+            int startIndex = 0;
+            for( int i = 0; i < terrainTypes.Length; i++ )
+            {
+                meshData.SetSubMesh(
+                    i, new SubMeshDescriptor(startIndex, terrainTypes[i]._numTrianglePairs * 6)
+                    {
+                        bounds = bounds,
+                        vertexCount = vertexCount
+                    },
+                    MeshUpdateFlags.DontRecalculateBounds |
+                    MeshUpdateFlags.DontValidateIndices
+                );
+                startIndex += terrainTypes[i]._numTrianglePairs * 6;
+            }
+            
             stream0 = meshData.GetVertexData<Stream0>();
             triangles = meshData.GetIndexData<int>().Reinterpret<int3>(4);
         }

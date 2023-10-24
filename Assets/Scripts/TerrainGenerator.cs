@@ -10,11 +10,11 @@ namespace LiquidPlanet
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class TerrainGenerator : MonoBehaviour
     {
-        [SerializeField, Range(1, 100)]
+        [SerializeField, Range(1, 100), HideInInspector]
         float meshX = 10;
         float meshXOld;
 
-        [SerializeField, Range(1, 100)]
+        [SerializeField, Range(1, 100), HideInInspector]
         float meshY = 10;
         float meshZOld;
 
@@ -43,13 +43,16 @@ namespace LiquidPlanet
         float heightLacunarity;
 
         [SerializeField]
-        uint seed;
+        uint heigthSeed;
 
         [SerializeField]    
         Vector2 heightOffset;
 
         [SerializeField]
         bool debugNoise = false;
+
+        [SerializeField]
+        uint terrainSeed;
 
         [SerializeField]
         int terrainGranularity = 100;
@@ -60,8 +63,11 @@ namespace LiquidPlanet
         [SerializeField]
         float noiseOffset = 1f;
 
-        //public NativeList<TerrainType> terrainTypes = new(Allocator.Persistent);
-        public List<TerrainType> _terrainTypes = new();
+        [SerializeField]
+        float borderGranularity = 1;
+
+        [SerializeField]
+        List<TerrainType> _terrainTypes = new();
 
         [SerializeField]
         public bool autoUpdate;
@@ -113,24 +119,16 @@ namespace LiquidPlanet
             int numVerticesY = triangleGrid.NumY + 1;
             _heightMap = new(
                 numVerticesX * numVerticesY,
-                Allocator.Persistent);
-            _terrainMap = new(
-                numVerticesX * numVerticesY,
-                Allocator.Persistent);
+                Allocator.Persistent);            
             _minNoiseValues = new(numVerticesY, Allocator.Persistent);
-            _maxNoiseValues = new(numVerticesY, Allocator.Persistent);
-            NativeList<TerrainTypeUnmanaged> types = new(Allocator.Persistent);
-            foreach (TerrainType terrainType in _terrainTypes)
-            {
-                types.Add(TerrainTypeUnmanaged.Convert(terrainType));
-            }
+            _maxNoiseValues = new(numVerticesY, Allocator.Persistent);            
             NoiseJob.ScheduleParallel(
                 _heightMap,
                 _maxNoiseValues,
                 _minNoiseValues,
                 numVerticesX,
                 numVerticesY,
-                seed,
+                heigthSeed,
                 heightScale,
                 heightOctaves,
                 heightPersistance,
@@ -140,14 +138,25 @@ namespace LiquidPlanet
                 debugNoise).Complete();
             NormalizeNoise(_heightMap, numVerticesX, numVerticesY);
 
+            _terrainMap = new(
+                numVerticesX * numVerticesY,
+                Allocator.Persistent);
+            NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
+            foreach (TerrainType terrainType in _terrainTypes)
+            {
+                types.Add(TerrainTypeUnmanaged.Convert(terrainType));
+            }
+            
             TerrainSegmentator.GetTerrainSegmentation(
                 _terrainMap,
                 numVerticesX,
                 numVerticesY,
+                terrainSeed,
                 types,
                 terrainGranularity,
                 noiseOffset,
-                noiseScale
+                noiseScale,
+                borderGranularity
                 );
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
@@ -207,9 +216,9 @@ namespace LiquidPlanet
             {
                 heightOctaves = 0;
             }
-            if (seed == 0)
+            if (heigthSeed == 0)
             {
-                seed = 1;
+                heigthSeed = 1;
             }
             if ( _terrainTypes.Count == 0 )
             {
