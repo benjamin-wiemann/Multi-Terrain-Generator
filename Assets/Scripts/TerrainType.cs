@@ -14,25 +14,27 @@ namespace LiquidPlanet
         public FixedString128Bytes Name { get; }
         public Color Color { get; }
 
-        public int _numTrianglePairs;
+        int _numTrianglePairs;
         public int NumTrianglePairs { get => _numTrianglePairs; }
+
+        int _subMeshTriangleIndex;
+
+        public int SubMeshTriangleIndex { get => _subMeshTriangleIndex++; }
 
         TerrainTypeUnmanaged(string name, Color color)
         {
             Name = new FixedString128Bytes(name);
             Color = color;
             _numTrianglePairs = 0;
+            _subMeshTriangleIndex = 0;
         }
 
-        public void IncrementNumTrianglePairs()
-        {
-            _numTrianglePairs++;
-        }
+        public void IncrementNumTrianglePairs() => _numTrianglePairs++;
 
-        public static TerrainTypeUnmanaged Convert(TerrainType type)
-        {
-            return new TerrainTypeUnmanaged(type._name, type._color);
-        }
+        public void IncrementSubMeshTriangleIndex() => _subMeshTriangleIndex++;
+
+        public static TerrainTypeUnmanaged Convert(TerrainType type) => new TerrainTypeUnmanaged(type._name, type._color);
+        
     }
 
     /// <summary>

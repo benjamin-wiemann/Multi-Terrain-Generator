@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine;
 
@@ -8,7 +9,7 @@ namespace LiquidPlanet
 {
 
 
-    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob<G> : IJobFor
             where G : struct, IMeshGenerator
     {
@@ -24,7 +25,10 @@ namespace LiquidPlanet
         [ReadOnly]
         NativeArray<int> _terrainMap;
 
-        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap);
+        [NativeDisableContainerSafetyRestriction]
+        NativeArray<TerrainTypeUnmanaged> _terrainTypes;
+
+        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _terrainTypes);
 
         public static JobHandle ScheduleParallel(
             G generator,
@@ -40,6 +44,7 @@ namespace LiquidPlanet
             job._generator = generator;
             job._noiseMap = noiseMap;
             job._terrainMap = terrainMap;
+            job._terrainTypes = terrainTypes;
             job._stream.Setup(
                 meshData,
                 mesh.bounds = job._generator.Bounds,

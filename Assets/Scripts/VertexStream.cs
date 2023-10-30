@@ -26,7 +26,7 @@ namespace LiquidPlanet
         NativeArray<int3> triangles;
 
         public void Setup(Mesh.MeshData meshData, Bounds bounds, int vertexCount, int indexCount, NativeList<TerrainTypeUnmanaged> terrainTypes)
-        {
+        {            
             var descriptor = new NativeArray<VertexAttributeDescriptor>(
                 4, Allocator.Temp, NativeArrayOptions.UninitializedMemory
             );
@@ -50,7 +50,7 @@ namespace LiquidPlanet
             for( int i = 0; i < terrainTypes.Length; i++ )
             {
                 meshData.SetSubMesh(
-                    i, new SubMeshDescriptor(startIndex, terrainTypes[i]._numTrianglePairs * 6)
+                    i, new SubMeshDescriptor(startIndex, terrainTypes[i].NumTrianglePairs * 6)
                     {
                         bounds = bounds,
                         vertexCount = vertexCount
@@ -58,9 +58,9 @@ namespace LiquidPlanet
                     MeshUpdateFlags.DontRecalculateBounds |
                     MeshUpdateFlags.DontValidateIndices
                 );
-                startIndex += terrainTypes[i]._numTrianglePairs * 6;
+                startIndex += terrainTypes[i].NumTrianglePairs * 6;
             }
-            
+
             stream0 = meshData.GetVertexData<Stream0>();
             triangles = meshData.GetIndexData<int>().Reinterpret<int3>(4);
         }
@@ -74,6 +74,9 @@ namespace LiquidPlanet
             texCoord0 = vertex.texCoord0
         };
 
-        public void SetTriangle(int index, int3 triangle) => triangles[index] = triangle;
+        public void SetTriangle(int index, int3 triangle)
+        {
+            triangles[index] = triangle;
+        }
     }
 }

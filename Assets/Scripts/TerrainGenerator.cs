@@ -3,7 +3,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 using LiquidPlanet.Event;
-using static UnityEngine.Rendering.DebugUI;
 
 namespace LiquidPlanet
 {

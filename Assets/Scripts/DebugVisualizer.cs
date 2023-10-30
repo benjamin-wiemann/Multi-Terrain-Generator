@@ -18,28 +18,28 @@ namespace LiquidPlanet
         }
 
         [SerializeField]
-        private DataView dataView;
+        private DataView _dataView;
 
         [SerializeField]
-        private TerrainGenerator generator;
+        private TerrainGenerator _generator;
 
-        int width;
+        int _width;
 
-        int height;
+        int _height;
         
-        NativeArray<int> segmentation;
+        NativeArray<int> _segmentation;
 
-        NativeList<TerrainTypeUnmanaged> terrainTypes;
+        NativeList<TerrainTypeUnmanaged> _terrainTypes;
 
-        NativeArray<float> heigthMap;
+        NativeArray<float> _heigthMap;
 
-        bool listening = false;
+        bool _listening = false;
 
         void OnValidate()
         {
-            if (!listening)
+            if (!_listening)
                 TerrainGenerator.MeshFinishedEvent += this.OnMeshGenerationFinished;
-            if (segmentation.Length > 0 ) 
+            if (_segmentation.Length > 0 ) 
             {
                 Visualize();
             }
@@ -48,23 +48,23 @@ namespace LiquidPlanet
 
         void OnMeshGenerationFinished(object sender, Event.MeshGenFinishedEventArgs args)
         {
-            width = args.NumVerticesX; 
-            height = args.NumVerticesY;
-            segmentation = args.TerrainSegmentation;
-            terrainTypes = args.TerrainTypes;
-            heigthMap = args.HeightMap;
+            _width = args.NumVerticesX; 
+            _height = args.NumVerticesY;
+            _segmentation = args.TerrainSegmentation;
+            _terrainTypes.CopyFrom(args.TerrainTypes);
+            _heigthMap = args.HeightMap;
             Visualize();
         }
 
         void Visualize()
         {
-            switch (dataView)
+            switch (_dataView)
             {
                 case DataView.TerrainSegmentation:
-                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeSegmentation(segmentation, terrainTypes, width, height);
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeSegmentation(_segmentation, _terrainTypes, _width, _height);
                     break;
                 case DataView.HeightMap:
-                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeHeightMap(heigthMap, width, height);
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeHeightMap(_heigthMap, _width, _height);
                     break;
             }
         }
@@ -109,7 +109,7 @@ namespace LiquidPlanet
         void OnDestroy( ) 
         {
             TerrainGenerator.MeshFinishedEvent -= this.OnMeshGenerationFinished;
-            listening = false;
+            _listening = false;
         }
     }
 
