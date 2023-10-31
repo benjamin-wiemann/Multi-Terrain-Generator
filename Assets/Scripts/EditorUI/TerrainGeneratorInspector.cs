@@ -20,31 +20,31 @@ namespace LiquidPlanet.EditorUI
 
             serializedObject.Update();
 
-            EditorGUILayout.BeginVertical("box");
-            GUILayout.Label("Mesh size generation");
+            //EditorGUILayout.BeginVertical("box");
+            //GUILayout.Label("Mesh size generation");
 
-            // Add properties from the first group
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("meshX"), true);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("meshY"), true);
-            EditorGUI.indentLevel--;
+            //// Add properties from the first group
+            //EditorGUI.indentLevel++;
+            //EditorGUILayout.PropertyField(serializedObject.FindProperty("meshX"), true);
+            //EditorGUILayout.PropertyField(serializedObject.FindProperty("meshY"), true);
+            //EditorGUI.indentLevel--;
 
-            EditorGUILayout.EndVertical();
+            //EditorGUILayout.EndVertical();
 
-            // Group 2: Second group with a custom name
-            EditorGUILayout.BeginVertical("box");
-            GUILayout.Label("Terrain");
+            //// Group 2: Second group with a custom name
+            //EditorGUILayout.BeginVertical("box");
+            //GUILayout.Label("Terrain");
 
-            // Add properties from the second group
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_terrainTypes"), true);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("terrainGranularity"), true);
-            EditorGUI.indentLevel--;
+            //// Add properties from the second group
+            //EditorGUI.indentLevel++;
+            //EditorGUILayout.PropertyField(serializedObject.FindProperty("_terrainTypes"), true);
+            //EditorGUILayout.PropertyField(serializedObject.FindProperty("terrainGranularity"), true);
+            //EditorGUI.indentLevel--;
 
-            EditorGUILayout.EndVertical();
+            //EditorGUILayout.EndVertical();
 
             // Apply any changes to the serialized object
-            serializedObject.ApplyModifiedProperties();
+            //serializedObject.ApplyModifiedProperties();
 
             if (DrawDefaultInspector())
             {

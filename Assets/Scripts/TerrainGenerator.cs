@@ -9,64 +9,33 @@ namespace LiquidPlanet
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class TerrainGenerator : MonoBehaviour
     {
-        [SerializeField, Range(1, 100), HideInInspector]
-        float meshX = 10;
-        float meshXOld;
+        [Header("Mesh Properties")]
+        [SerializeField, 
+            Range(1, 100)]      float   _meshX = 10;
+        [SerializeField, 
+            Range(1, 100)]      float   _meshY = 10;
+        [SerializeField]        float   _tiling = 1;
+        [SerializeField]        int     _meshResolution = 10;
 
-        [SerializeField, Range(1, 100), HideInInspector]
-        float meshY = 10;
-        float meshZOld;
+        [Header("Height Map")]
+        [SerializeField, 
+            Range(0.1f, 20)]    float   _height = 1;
+        [SerializeField]        float   _heightScale;
+        [SerializeField]        int     _heightOctaves;
+        [SerializeField, 
+            Range(0, 1)]        float   _heightPersistance;
+        [SerializeField]        float   _heightLacunarity;
+        [SerializeField]        uint    _heigthSeed;
+        [SerializeField]        Vector2 _heightOffset;
+        [SerializeField]        bool    _debugNoise = false;
 
-        [SerializeField]
-        float tiling = 1;
-        float tilingOld;
-
-        [SerializeField]
-        int meshResolution = 10;
-        int meshResolutionOld;
-
-        [SerializeField, Range(0.1f, 20)]
-        float height = 1;
-        float heightOld;
-
-        [SerializeField]
-        float heightScale;
-
-        [SerializeField]
-        int heightOctaves;
-
-        [SerializeField, Range(0, 1)]
-        float heightPersistance;
-
-        [SerializeField]
-        float heightLacunarity;
-
-        [SerializeField]
-        uint heigthSeed;
-
-        [SerializeField]    
-        Vector2 heightOffset;
-
-        [SerializeField]
-        bool debugNoise = false;
-
-        [SerializeField]
-        uint terrainSeed;
-
-        [SerializeField]
-        int terrainGranularity = 100;
-
-        [SerializeField]
-        float noiseScale = 10f;
-
-        [SerializeField]
-        float noiseOffset = 1f;
-
-        [SerializeField]
-        float borderGranularity = 1;
-
-        [SerializeField]
-        List<TerrainType> _terrainTypes = new();
+        [Header("Terrain Segmentation")]
+        [SerializeField]        uint    _terrainSeed;
+        [SerializeField]        int     _terrainGranularity = 100;
+        [SerializeField]        float   _noiseScale = 10f;
+        [SerializeField]        float   _noiseOffset = 1f;
+        [SerializeField]        float   _borderGranularity = 1;
+        [SerializeField]        List<TerrainType> _terrainTypes = new();
 
         [SerializeField]
         public bool autoUpdate;
@@ -108,11 +77,11 @@ namespace LiquidPlanet
                 _terrainMap.Dispose();
             }
             SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
-                meshResolution,
-                meshX,
-                meshY,
-                tiling,
-                height
+                _meshResolution,
+                _meshX,
+                _meshY,
+                _tiling,
+                _height
             );
             int numVerticesX = triangleGrid.NumX + 1;
             int numVerticesY = triangleGrid.NumY + 1;
@@ -127,14 +96,14 @@ namespace LiquidPlanet
                 _minNoiseValues,
                 numVerticesX,
                 numVerticesY,
-                heigthSeed,
-                heightScale,
-                heightOctaves,
-                heightPersistance,
-                heightLacunarity,
-                heightOffset,
+                _heigthSeed,
+                _heightScale,
+                _heightOctaves,
+                _heightPersistance,
+                _heightLacunarity,
+                _heightOffset,
                 default,
-                debugNoise).Complete();
+                _debugNoise).Complete();
             NormalizeNoise(_heightMap, numVerticesX, numVerticesY);
 
             _terrainMap = new(
@@ -150,12 +119,12 @@ namespace LiquidPlanet
                 _terrainMap,
                 numVerticesX,
                 numVerticesY,
-                terrainSeed,
+                _terrainSeed,
                 types,
-                terrainGranularity,
-                noiseOffset,
-                noiseScale,
-                borderGranularity
+                _terrainGranularity,
+                _noiseOffset,
+                _noiseScale,
+                _borderGranularity
                 );
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
@@ -170,7 +139,7 @@ namespace LiquidPlanet
                 default).Complete();
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
             //_mesh.RecalculateBounds
-            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types);
+            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             MeshFinishedEvent?.Invoke(this, args);
             
             _minNoiseValues.Dispose();
@@ -199,25 +168,25 @@ namespace LiquidPlanet
 
         void OnValidate()
         {
-            if (meshX < 1)
+            if (_meshX < 1)
             {
-                meshX = 1;
+                _meshX = 1;
             }
-            if (meshY < 1)
+            if (_meshY < 1)
             {
-                meshY = 1;
+                _meshY = 1;
             }
-            if (heightLacunarity < 1)
+            if (_heightLacunarity < 1)
             {
-                heightLacunarity = 1;
+                _heightLacunarity = 1;
             }
-            if (heightOctaves < 0)
+            if (_heightOctaves < 0)
             {
-                heightOctaves = 0;
+                _heightOctaves = 0;
             }
-            if (heigthSeed == 0)
+            if (_heigthSeed == 0)
             {
-                heigthSeed = 1;
+                _heigthSeed = 1;
             }
             if ( _terrainTypes.Count == 0 )
             {
@@ -237,8 +206,10 @@ namespace LiquidPlanet
                 }
             }
         }
+
         void OnApplicationQuit()
         {
+
         }
     }
 }

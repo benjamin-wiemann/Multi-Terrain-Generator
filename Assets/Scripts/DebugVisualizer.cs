@@ -29,16 +29,28 @@ namespace LiquidPlanet
         
         NativeArray<int> _segmentation;
 
-        NativeList<TerrainTypeUnmanaged> _terrainTypes;
+        TerrainTypeUnmanaged[] _terrainTypes;
 
         NativeArray<float> _heigthMap;
 
         bool _listening = false;
 
+        private void OnEnable()
+        {
+            if (!_listening)
+            {
+                TerrainGenerator.MeshFinishedEvent += this.OnMeshGenerationFinished;
+                _listening = true;
+            }
+        }
+
         void OnValidate()
         {
             if (!_listening)
+            {
                 TerrainGenerator.MeshFinishedEvent += this.OnMeshGenerationFinished;
+                _listening = true;
+            }                
             if (_segmentation.Length > 0 ) 
             {
                 Visualize();
@@ -51,7 +63,7 @@ namespace LiquidPlanet
             _width = args.NumVerticesX; 
             _height = args.NumVerticesY;
             _segmentation = args.TerrainSegmentation;
-            _terrainTypes.CopyFrom(args.TerrainTypes);
+            _terrainTypes = args.TerrainTypes;
             _heigthMap = args.HeightMap;
             Visualize();
         }
@@ -87,7 +99,7 @@ namespace LiquidPlanet
             return texture;
         }
 
-        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, NativeList<TerrainTypeUnmanaged> terrainTypes, int width, int height )
+        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, TerrainTypeUnmanaged[] terrainTypes, int width, int height )
         {
             
             Texture2D texture = new Texture2D(width, height);
