@@ -10,7 +10,7 @@ using System;
 
 namespace LiquidPlanet
 {
-    [BurstCompile]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentator
     {
         

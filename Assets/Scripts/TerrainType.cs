@@ -44,6 +44,8 @@ namespace LiquidPlanet
     public class TerrainType
     {
         [SerializeField]
+        public bool active = true;
+        [SerializeField]
         public string _name;
         [SerializeField]
         public Color _color;

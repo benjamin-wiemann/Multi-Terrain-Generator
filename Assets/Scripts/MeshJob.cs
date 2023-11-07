@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -9,7 +9,7 @@ namespace LiquidPlanet
 {
 
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob<G> : IJobFor
             where G : struct, IMeshGenerator
     {
@@ -26,9 +26,9 @@ namespace LiquidPlanet
         NativeArray<int> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeArray<TerrainTypeUnmanaged> _terrainTypes;
+        NativeArray<int> _subMeshTriangleIndices;
 
-        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _terrainTypes);
+        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _subMeshTriangleIndices);
 
         public static JobHandle ScheduleParallel(
             G generator,
@@ -44,7 +44,12 @@ namespace LiquidPlanet
             job._generator = generator;
             job._noiseMap = noiseMap;
             job._terrainMap = terrainMap;
-            job._terrainTypes = terrainTypes;
+            job._subMeshTriangleIndices = new( terrainTypes.Length, Allocator.Persistent);
+            job._subMeshTriangleIndices[0] = 0;
+            for (int i = 1; i < terrainTypes.Length; i++)
+            {
+                job._subMeshTriangleIndices[i] = terrainTypes[i-1].NumTrianglePairs + job._subMeshTriangleIndices[i-1];
+            }
             job._stream.Setup(
                 meshData,
                 mesh.bounds = job._generator.Bounds,
@@ -52,7 +57,12 @@ namespace LiquidPlanet
                 job._generator.IndexCount,
                 terrainTypes
             );
-            return job.ScheduleParallel(job._generator.JobLength, 1, dependency);
+            job.Run(job._generator.JobLength);
+            //return job.Schedule(job._generator.JobLength, dependency);            
+
+            job._stream.SetSubMeshes(meshData, terrainTypes, generator.Bounds, job._generator.VertexCount);
+            //return job.ScheduleParallel(job._generator.JobLength, 1, dependency);
+            return default;
         }
 
     }

@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 using LiquidPlanet.Event;
+using UnityEngine.Events;
 
 namespace LiquidPlanet
 {
@@ -10,35 +11,37 @@ namespace LiquidPlanet
     public class TerrainGenerator : MonoBehaviour
     {
         [Header("Mesh Properties")]
-        [SerializeField, 
-            Range(1, 100)]      float   _meshX = 10;
-        [SerializeField, 
-            Range(1, 100)]      float   _meshY = 10;
-        [SerializeField]        float   _tiling = 1;
-        [SerializeField]        int     _meshResolution = 10;
+        [SerializeField,
+            Range(1, 100)] float _meshX = 10;
+        [SerializeField,
+            Range(1, 100)] float _meshY = 10;
+        [SerializeField] float _tiling = 1;
+        [SerializeField] int _meshResolution = 10;
 
         [Header("Height Map")]
-        [SerializeField, 
-            Range(0.1f, 20)]    float   _height = 1;
-        [SerializeField]        float   _heightScale;
-        [SerializeField]        int     _heightOctaves;
-        [SerializeField, 
-            Range(0, 1)]        float   _heightPersistance;
-        [SerializeField]        float   _heightLacunarity;
-        [SerializeField]        uint    _heigthSeed;
-        [SerializeField]        Vector2 _heightOffset;
-        [SerializeField]        bool    _debugNoise = false;
+        [SerializeField,
+            Range(0.1f, 20)] float _height = 1;
+        [SerializeField] float _heightScale;
+        [SerializeField] int _heightOctaves;
+        [SerializeField,
+            Range(0, 1)] float _heightPersistance;
+        [SerializeField] float _heightLacunarity;
+        [SerializeField] uint _heigthSeed;
+        [SerializeField] Vector2 _heightOffset;
+        [SerializeField] bool _debugNoise = false;
 
         [Header("Terrain Segmentation")]
-        [SerializeField]        uint    _terrainSeed;
-        [SerializeField]        int     _terrainGranularity = 100;
-        [SerializeField]        float   _noiseScale = 10f;
-        [SerializeField]        float   _noiseOffset = 1f;
-        [SerializeField]        float   _borderGranularity = 1;
-        [SerializeField]        List<TerrainType> _terrainTypes = new();
+        [SerializeField] uint _terrainSeed;
+        [SerializeField] int _terrainGranularity = 100;
+        [SerializeField] float _noiseScale = 10f;
+        [SerializeField] float _noiseOffset = 1f;
+        [SerializeField] float _borderGranularity = 1;
+        [SerializeField] List<TerrainType> _terrainTypes = new();
 
         [SerializeField]
         public bool autoUpdate;
+        [SerializeField]
+        MeshFinishedEvent _onMeshFinished;
 
         Mesh _mesh;
 
@@ -50,8 +53,16 @@ namespace LiquidPlanet
 
         NativeArray<float> _minNoiseValues;
 
-        public static event EventHandler<MeshGenFinishedEventArgs> MeshFinishedEvent;
+        [System.Serializable]
+        public class MeshFinishedEvent : UnityEvent<MeshGenFinishedEventArgs> { }
+
+        //public static event EventHandler<MeshGenFinishedEventArgs> MeshFinishedEvent;
         
+
+        //private void OnEnable()
+        //{
+        //    TerrainGenerator._onMeshFinished = new();
+        //}
 
         public void Init()
         {
@@ -112,7 +123,10 @@ namespace LiquidPlanet
             NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
             foreach (TerrainType terrainType in _terrainTypes)
             {
-                types.Add(TerrainTypeUnmanaged.Convert(terrainType));
+                if (terrainType.active)
+                {
+                    types.Add(TerrainTypeUnmanaged.Convert(terrainType));
+                }                
             }
             
             TerrainSegmentator.GetTerrainSegmentation(
@@ -140,7 +154,7 @@ namespace LiquidPlanet
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
             //_mesh.RecalculateBounds
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
-            MeshFinishedEvent?.Invoke(this, args);
+            _onMeshFinished?.Invoke(args);
             
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();

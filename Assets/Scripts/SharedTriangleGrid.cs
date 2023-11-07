@@ -21,7 +21,7 @@ namespace LiquidPlanet
 
         public int JobLength => NumY + 1;
 
-        public Bounds Bounds => new Bounds(new Vector3(0f, 0f, DimZ/2), new Vector3((1f + 0.5f / Resolution) * DimX, 0f, DimZ)); 
+        public Bounds Bounds => new Bounds(new Vector3(0f, Height, DimZ/2), new Vector3((1f + 0.5f / Resolution) * DimX, Height, DimZ)); 
 
         public int Resolution { get; set; }
 
@@ -55,7 +55,7 @@ namespace LiquidPlanet
 
         
         public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap, NativeArray<int> terrainMap,
-            NativeArray<TerrainTypeUnmanaged> terrainTypes)
+            NativeArray<int> subMeshTriangleIndices)
         {
 
             float triangleWidth = DimX / NumX;
@@ -81,7 +81,7 @@ namespace LiquidPlanet
             xOffset = xOffset - DimX / 2;
 
             var vertex = new Vertex();
-            vertex.normal.y = 1f;
+            vertex.normal.y = 1f;   
             vertex.tangent.xw = float2(1f, -1f);
 
             vertex.position.x = xOffset;
@@ -104,15 +104,15 @@ namespace LiquidPlanet
                 if (z > 0)
                 {
                     int subMeshIndex = NativeArrayHelper.SelectClosest(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, terrainMap);
-                    TerrainTypeUnmanaged terrainType = terrainTypes[subMeshIndex];
+                    //TerrainTypeUnmanaged terrainType = terrainTypes[subMeshIndex];
                     stream.SetTriangle(
-                        terrainType.SubMeshTriangleIndex, vi + tA 
+                        subMeshTriangleIndices[subMeshIndex]++, vi + tA 
                     );
                     //terrainTypes[subMeshIndex].IncrementSubMeshTriangleIndex();
                     stream.SetTriangle(
-                        terrainType.SubMeshTriangleIndex, vi + tB 
+                        subMeshTriangleIndices[subMeshIndex]++, vi + tB 
                     );
-                    terrainTypes[subMeshIndex] = terrainType;
+                    //terrainTypes[subMeshIndex] = terrainType;
                     //terrainTypes[subMeshIndex].IncrementSubMeshTriangleIndex();
                 }
             }

@@ -8,7 +8,8 @@ using System;
 
 namespace LiquidPlanet
 {
-    
+
+    [ExecuteInEditMode]
     public class DebugVisualizer : MonoBehaviour
     {
         enum DataView
@@ -33,24 +34,9 @@ namespace LiquidPlanet
 
         NativeArray<float> _heigthMap;
 
-        bool _listening = false;
-
-        private void OnEnable()
-        {
-            if (!_listening)
-            {
-                TerrainGenerator.MeshFinishedEvent += this.OnMeshGenerationFinished;
-                _listening = true;
-            }
-        }
 
         void OnValidate()
         {
-            if (!_listening)
-            {
-                TerrainGenerator.MeshFinishedEvent += this.OnMeshGenerationFinished;
-                _listening = true;
-            }                
             if (_segmentation.Length > 0 ) 
             {
                 Visualize();
@@ -58,7 +44,7 @@ namespace LiquidPlanet
             
         }
 
-        void OnMeshGenerationFinished(object sender, Event.MeshGenFinishedEventArgs args)
+        public void OnMeshGenerationFinished(Event.MeshGenFinishedEventArgs args)
         {
             _width = args.NumVerticesX; 
             _height = args.NumVerticesY;
@@ -118,11 +104,6 @@ namespace LiquidPlanet
             return texture;
         }
 
-        void OnDestroy( ) 
-        {
-            TerrainGenerator.MeshFinishedEvent -= this.OnMeshGenerationFinished;
-            _listening = false;
-        }
     }
 
 }

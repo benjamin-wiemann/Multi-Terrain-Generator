@@ -5,6 +5,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using static UnityEngine.Mesh;
 
 namespace LiquidPlanet
 {
@@ -44,25 +45,49 @@ namespace LiquidPlanet
             descriptor.Dispose();
 
             meshData.SetIndexBufferParams(indexCount, IndexFormat.UInt32);
+            
+            //for (int i = 0; i < triangles.Length; i++)
+            //    triangles[i] = new int3(0,0,0);
 
+            //meshData.subMeshCount = terrainTypes.Length;
+            //int startIndex = 0;
+            //for( int i = 0; i < terrainTypes.Length; i++ )
+            //{
+            //    var subMeshDescriptor = new SubMeshDescriptor(startIndex, terrainTypes[i].NumTrianglePairs * 6 )
+            //    {
+            //        //bounds = bounds,
+            //        vertexCount = vertexCount
+            //    };
+            //    meshData.SetSubMesh(
+            //        i, subMeshDescriptor,
+            //        //MeshUpdateFlags.DontRecalculateBounds |
+            //        MeshUpdateFlags.DontValidateIndices
+            //    );
+            //    startIndex += terrainTypes[i].NumTrianglePairs * 6;
+            //}
+
+            stream0 = meshData.GetVertexData<Stream0>();
+            triangles = meshData.GetIndexData<int>().Reinterpret<int3>(4);
+        }
+
+        public void SetSubMeshes( MeshData meshData, NativeArray<TerrainTypeUnmanaged> terrainTypes, Bounds bounds, int vertexCount)
+        {
             meshData.subMeshCount = terrainTypes.Length;
             int startIndex = 0;
-            for( int i = 0; i < terrainTypes.Length; i++ )
+            for (int i = 0; i < terrainTypes.Length; i++)
             {
+                var subMeshDescriptor = new SubMeshDescriptor(startIndex, terrainTypes[i].NumTrianglePairs * 6)
+                {
+                    bounds = bounds,
+                    vertexCount = vertexCount
+                };
                 meshData.SetSubMesh(
-                    i, new SubMeshDescriptor(startIndex, terrainTypes[i].NumTrianglePairs * 6)
-                    {
-                        bounds = bounds,
-                        vertexCount = vertexCount
-                    },
+                    i, subMeshDescriptor,
                     MeshUpdateFlags.DontRecalculateBounds |
                     MeshUpdateFlags.DontValidateIndices
                 );
                 startIndex += terrainTypes[i].NumTrianglePairs * 6;
             }
-
-            stream0 = meshData.GetVertexData<Stream0>();
-            triangles = meshData.GetIndexData<int>().Reinterpret<int3>(4);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

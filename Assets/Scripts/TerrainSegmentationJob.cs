@@ -49,7 +49,9 @@ namespace LiquidPlanet
             job.perlinOffset = perlinOffset;
             job.noiseScale = perlinScale;
 
-            return job.ScheduleParallel(height, 1, default);
+            //return job.ScheduleParallel(height, 1, default);
+            job.Run(height);
+            return default;
         }
 
         public void Execute( int y)
