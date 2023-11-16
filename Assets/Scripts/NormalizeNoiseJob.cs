@@ -24,8 +24,8 @@ namespace LiquidPlanet
 
         public static JobHandle ScheduleParallel(            
             NativeArray<float> noiseMapIn,
-            float maxNoise,
-            float minNoise,
+            NativeArray<float> maxNoiseValues,
+            NativeArray<float> minNoiseValues,
             int mapWidth,
             int mapHeight,
             JobHandle dependency            
@@ -33,8 +33,21 @@ namespace LiquidPlanet
         {
             NormalizeNoiseJob normalizeJob = new();
             normalizeJob._noiseMap = noiseMapIn;
-            normalizeJob._maxNoiseHeight = maxNoise;
-            normalizeJob._minNoiseHeight = minNoise;
+            float maxNoiseValue = float.MinValue;
+            float minNoiseValue = float.MaxValue;
+            for (int i = 0; i < maxNoiseValues.Length; i++)
+            {
+                if (maxNoiseValue < maxNoiseValues[i])
+                {
+                    maxNoiseValue = maxNoiseValues[i];
+                }
+                if (minNoiseValue > minNoiseValues[i])
+                {
+                    minNoiseValue = minNoiseValues[i];
+                }
+            }
+            normalizeJob._maxNoiseHeight = maxNoiseValue;
+            normalizeJob._minNoiseHeight = minNoiseValue;
             normalizeJob._mapWidth = mapWidth;
             return normalizeJob.ScheduleParallel(mapHeight, 1, dependency);
         }

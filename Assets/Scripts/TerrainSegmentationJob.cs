@@ -12,20 +12,23 @@ namespace LiquidPlanet
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentationJob : IJobFor
     {
-        int width;
-        int height;
-        float borderGranularity;
-        float perlinOffset;
-        float noiseScale;
+        int _width;
+        int _height;
+        float _borderGranularity;
+        float _perlinOffset;
+        float _noiseScale;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeArray<TerrainTypeUnmanaged> terrainTypes;
+        NativeArray<TerrainTypeUnmanaged> _terrainTypes;
 
         [ReadOnly]
-        NativeArray<float2> seedPoints;
+        NativeArray<float2> _seedPoints;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        NativeArray<int> segmentation;
+        NativeArray<int> _segmentation;
+
+        [NativeDisableParallelForRestriction]
+        NativeArray<int> _terrainCounters;
 
         public static JobHandle ScheduleParallel(
             NativeArray<int> terrainSegmentation,
@@ -34,21 +37,24 @@ namespace LiquidPlanet
             int height,
             float borderGranularity,
             NativeArray<TerrainTypeUnmanaged> terrainTypes,
+            NativeArray<int> terrainCounters,
             float perlinOffset,
             float perlinScale,
             JobHandle dependency
         )
         {
             TerrainSegmentationJob job = new();
-            job.segmentation = terrainSegmentation;
-            job.seedPoints = seedPoints;
-            job.width = width;
-            job.height = height;
-            job.borderGranularity = borderGranularity;
-            job.terrainTypes = terrainTypes;
-            job.perlinOffset = perlinOffset;
-            job.noiseScale = perlinScale;
+            job._segmentation = terrainSegmentation;
+            job._seedPoints = seedPoints;
+            job._width = width;
+            job._height = height;
+            job._borderGranularity = borderGranularity;
+            job._terrainTypes = terrainTypes;
+            job._perlinOffset = perlinOffset;
+            job._noiseScale = perlinScale;
 
+            // count the occurences of each terrain for each job execution
+            job._terrainCounters = terrainCounters;
             //return job.ScheduleParallel(height, 1, default);
             job.Run(height);
             return default;
@@ -56,18 +62,23 @@ namespace LiquidPlanet
 
         public void Execute( int y)
         {
-            for (int x = 0; x < width; x++)
+            // Initialize terrain counters for every job
+            for (int i = 0; i < _terrainTypes.Length; i++)
+            {
+                _terrainCounters[y * _terrainTypes.Length + i] = 0;
+            }            
+            for (int x = 0; x < _width; x++)
             {
                 
                 float minDistance = float.MaxValue;
                 int minIndex = -1;
 
-                for (int i = 0; i < seedPoints.Length; i++)
+                for (int i = 0; i < _seedPoints.Length; i++)
                 {
-                    Vector2 seed = seedPoints[i];
+                    Vector2 seed = _seedPoints[i];
 
-                    float noiseX = Mathf.PerlinNoise(x * 0.1f * borderGranularity, y * 0.1f * borderGranularity) * noiseScale - 1; 
-                    float noiseY = Mathf.PerlinNoise(x * 0.1f * borderGranularity, y * 0.1f * borderGranularity + perlinOffset) * noiseScale - 1; 
+                    float noiseX = Mathf.PerlinNoise(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity) * _noiseScale - 1; 
+                    float noiseY = Mathf.PerlinNoise(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity + _perlinOffset) * _noiseScale - 1; 
 
                     float distance = Vector2.Distance(new Vector2(x + noiseX, y + noiseY), seed);
 
@@ -77,13 +88,11 @@ namespace LiquidPlanet
                         minIndex = i;
                     }
                 }
-                int terrainIndex = minIndex % terrainTypes.Length;
-                segmentation[y * width + x] = terrainIndex;
-                if(x < width - 1 && y < height -1)
-                {
-                    TerrainTypeUnmanaged type = terrainTypes[terrainIndex];
-                    type.IncrementNumTrianglePairs();
-                    terrainTypes[terrainIndex] = type;
+                int terrainIndex = minIndex % _terrainTypes.Length;
+                _segmentation[y * _width + x] = terrainIndex;
+                if(x < _width - 1 && y < _height -1)
+                {                                                             
+                    _terrainCounters[y * _terrainTypes.Length + terrainIndex]++;
                 }                
                 
             }

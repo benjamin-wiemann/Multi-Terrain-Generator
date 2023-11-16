@@ -104,16 +104,12 @@ namespace LiquidPlanet
                 if (z > 0)
                 {
                     int subMeshIndex = NativeArrayHelper.SelectClosest(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, terrainMap);
-                    //TerrainTypeUnmanaged terrainType = terrainTypes[subMeshIndex];
                     stream.SetTriangle(
                         subMeshTriangleIndices[subMeshIndex]++, vi + tA 
-                    );
-                    //terrainTypes[subMeshIndex].IncrementSubMeshTriangleIndex();
+                    );                    
                     stream.SetTriangle(
                         subMeshTriangleIndices[subMeshIndex]++, vi + tB 
                     );
-                    //terrainTypes[subMeshIndex] = terrainType;
-                    //terrainTypes[subMeshIndex].IncrementSubMeshTriangleIndex();
                 }
             }
 

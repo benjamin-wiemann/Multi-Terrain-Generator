@@ -28,6 +28,8 @@ namespace LiquidPlanet
         {
             NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
             GenerateRandomSeedPoints(seedPoints, seed, width, height);
+
+            var terrainOccurenceCounter = new NativeArray<int>(terrainTypes.Length * height, Allocator.Persistent);
             TerrainSegmentationJob.ScheduleParallel(
                 terrainMap,
                 seedPoints,
@@ -35,11 +37,26 @@ namespace LiquidPlanet
                 height,
                 borderGranularity,
                 terrainTypes,
+                terrainOccurenceCounter,
                 perlinOffset,
                 perlinScale,
                 default).Complete();
-
+            AddUpTerrainCounters(width, terrainTypes, terrainOccurenceCounter);
+            terrainOccurenceCounter.Dispose();
             seedPoints.Dispose();
+        }
+
+        private static void AddUpTerrainCounters(int width, NativeList<TerrainTypeUnmanaged> terrainTypes, NativeArray<int> terrainOccurenceCounter)
+        {
+            for (int i = 0; i < terrainTypes.Length; i++)
+            {
+                TerrainTypeUnmanaged type = terrainTypes[i];
+                for (int j = 0; j < width; j++)
+                {
+                    type.NumTrianglePairs += terrainOccurenceCounter[j * terrainTypes.Length + i];
+                }
+                terrainTypes[i] = type;
+            }
         }
 
         static void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, uint seed, int width, int height)

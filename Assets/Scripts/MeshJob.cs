@@ -9,7 +9,7 @@ namespace LiquidPlanet
 {
 
 
-    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob<G> : IJobFor
             where G : struct, IMeshGenerator
     {
@@ -57,12 +57,14 @@ namespace LiquidPlanet
                 job._generator.IndexCount,
                 terrainTypes
             );
+            JobHandle handle;
             job.Run(job._generator.JobLength);
+            handle = default;
             //return job.Schedule(job._generator.JobLength, dependency);            
 
+            //var handle = job.ScheduleParallel(job._generator.JobLength, 1, dependency);
             job._stream.SetSubMeshes(meshData, terrainTypes, generator.Bounds, job._generator.VertexCount);
-            //return job.ScheduleParallel(job._generator.JobLength, 1, dependency);
-            return default;
+            return handle;
         }
 
     }

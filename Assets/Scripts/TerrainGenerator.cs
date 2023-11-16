@@ -115,7 +115,9 @@ namespace LiquidPlanet
                 _heightOffset,
                 default,
                 _debugNoise).Complete();
-            NormalizeNoise(_heightMap, numVerticesX, numVerticesY);
+            NormalizeNoiseJob.ScheduleParallel(
+                _heightMap, _maxNoiseValues, _minNoiseValues, numVerticesX, numVerticesY, default
+                ).Complete();
 
             _terrainMap = new(
                 numVerticesX * numVerticesY,
@@ -161,24 +163,6 @@ namespace LiquidPlanet
             types.Dispose();
         }
 
-        void NormalizeNoise(NativeArray<float> noiseMap, int mapWidth, int mapHeight)
-        {
-            float maxNoiseValue = float.MinValue;
-            float minNoiseValue = float.MaxValue;
-            for (int i = 0; i < _maxNoiseValues.Length; i++)
-            {
-                if (maxNoiseValue < _maxNoiseValues[i])
-                {
-                    maxNoiseValue = _maxNoiseValues[i];
-                }
-                if (minNoiseValue > _minNoiseValues[i])
-                {
-                    minNoiseValue = _minNoiseValues[i];
-                }
-            }
-            NormalizeNoiseJob.ScheduleParallel(noiseMap, maxNoiseValue, minNoiseValue, mapWidth, mapHeight, default).Complete();
-            
-        }
 
         void OnValidate()
         {
