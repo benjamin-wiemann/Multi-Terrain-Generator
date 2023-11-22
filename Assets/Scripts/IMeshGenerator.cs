@@ -31,7 +31,7 @@ namespace LiquidPlanet
             VertexStream stream,
             NativeArray<float> noiseMap,
             NativeArray<int> terrainMap,
-            NativeArray<int> submeshTriangleIndices );
+            NativeList<int> submeshTriangleIndices );
     }
 }
 

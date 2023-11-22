@@ -1,9 +1,14 @@
+﻿using System;
+using System.Threading;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.UIElements;
+
 using static Unity.Mathematics.math;
 
 namespace LiquidPlanet
 {
-    public static class NativeArrayHelper
+    public static class NativeCollectionHelper
     {
         /// <summary>
         /// Interpolates a float value from a NativeArray given a two dimensional coordinate
@@ -32,6 +37,21 @@ namespace LiquidPlanet
             int x = (int) round( xPos * resolution);
             int y = (int) round( yPos * resolution);
             return integerMap[ y * width + x];
+        }
+
+        /// <summary>
+        /// Increments NativeList element at given index
+        /// </summary>
+        /// <param name="integers"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public static unsafe int IncrementAt(NativeList<int> integers, uint index) 
+        {
+            var listData = integers.AsParallelWriter().ListData;
+            if ( index > integers.Length -1 )
+                throw new IndexOutOfRangeException();
+            var idx = Interlocked.Increment( ref *(listData->Ptr + index) );
+            return idx;
         }
     }
 }

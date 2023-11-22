@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 using Unity.Collections.LowLevel.Unsafe;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 using System;
+using System.Threading;
 
 namespace LiquidPlanet
 {
@@ -36,7 +37,7 @@ namespace LiquidPlanet
         public int NumX => (int)round(Resolution * DimX);
 
         // number of triangle pairs in z direction is higher, since its height is smaller than its width
-        public int NumY => (int)round(Resolution * DimZ * 2f / sqrt(3f));
+        public int NumY => (int)round(Resolution * DimZ); //(int)round(Resolution * DimZ * 2f / sqrt(3f));
 
         public SharedTriangleGrid(            
             int resolution,
@@ -55,7 +56,7 @@ namespace LiquidPlanet
 
         
         public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap, NativeArray<int> terrainMap,
-            NativeArray<int> subMeshTriangleIndices)
+            NativeList<int> subMeshTriangleIndices)
         {
 
             float triangleWidth = DimX / NumX;
@@ -63,7 +64,7 @@ namespace LiquidPlanet
 
             int vi = (NumX + 1) * z, ti = 2 * NumX * (z - 1);
 
-            float xOffset = -0.25f * triangleWidth;
+            float xOffset = 0; // -0.25f * triangleWidth;
             float uOffset = 0f;
 
             int iA = -NumX - 2, iB = -NumX - 1, iC = -1, iD = 0;
@@ -72,10 +73,10 @@ namespace LiquidPlanet
 
             if ((z & 1) == 1)
             {
-                xOffset = 0.25f * triangleWidth;
-                uOffset = 0.5f / (NumX + 0.5f);
-                tA = int3(iA, iC, iB);
-                tB = int3(iB, iC, iD);
+                //xOffset = 0.25f * triangleWidth;
+                //uOffset = 0.5f / (NumX + 0.5f);
+                //tA = int3(iA, iC, iB);
+                //tB = int3(iB, iC, iD);
             }
 
             xOffset = xOffset - DimX / 2;
@@ -86,7 +87,7 @@ namespace LiquidPlanet
 
             vertex.position.x = xOffset;
             vertex.position.z = z * triangleHeigth;
-            vertex.position.y = NativeArrayHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
+            vertex.position.y = NativeCollectionHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
 
             vertex.texCoord0.x = uOffset / Tiling;
             vertex.texCoord0.y = (vertex.position.z / Tiling);
@@ -97,18 +98,18 @@ namespace LiquidPlanet
             for (int x = 1; x <= NumX; x++, vi++, ti += 2)
             {
                 vertex.position.x = (float) x * triangleWidth + xOffset;
-                vertex.position.y = Height * NativeArrayHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
+                vertex.position.y = Height * NativeCollectionHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
                 vertex.texCoord0.x = (vertex.position.x / Tiling);
                 stream.SetVertex(vi, vertex);
 
                 if (z > 0)
                 {
-                    int subMeshIndex = NativeArrayHelper.SelectClosest(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, terrainMap);
+                    int subMeshIndex = NativeCollectionHelper.SelectClosest(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, terrainMap);
                     stream.SetTriangle(
-                        subMeshTriangleIndices[subMeshIndex]++, vi + tA 
+                        NativeCollectionHelper.IncrementAt(subMeshTriangleIndices, (uint) subMeshIndex) - 1, vi + tA 
                     );                    
                     stream.SetTriangle(
-                        subMeshTriangleIndices[subMeshIndex]++, vi + tB 
+                        NativeCollectionHelper.IncrementAt(subMeshTriangleIndices, (uint) subMeshIndex) - 1, vi + tB 
                     );
                 }
             }
