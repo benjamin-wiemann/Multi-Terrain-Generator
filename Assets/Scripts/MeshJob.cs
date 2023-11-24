@@ -26,9 +26,9 @@ namespace LiquidPlanet
         NativeArray<int> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeList<int> _subMeshTriangleIndices;
+        NativeList<int> _subMeshIndices;
 
-        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _subMeshTriangleIndices);
+        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _subMeshIndices);
 
         public static JobHandle ScheduleParallel(
             G generator,
@@ -44,12 +44,13 @@ namespace LiquidPlanet
             job._generator = generator;
             job._noiseMap = noiseMap;
             job._terrainMap = terrainMap;
-            job._subMeshTriangleIndices = new( terrainTypes.Length, Allocator.Persistent);
-            job._subMeshTriangleIndices.AddNoResize(0);
+            job._subMeshIndices = new( terrainTypes.Length, Allocator.Persistent);
+            job._subMeshIndices.AddNoResize(0);
             for (int i = 1; i < terrainTypes.Length; i++)
             {
-                job._subMeshTriangleIndices.AddNoResize( terrainTypes[i-1].NumTrianglePairs + job._subMeshTriangleIndices[i-1]);
+                job._subMeshIndices.AddNoResize( terrainTypes[i].NumTrianglePairs + job._subMeshIndices[i-1]);
             }
+            //var submeshIndices
             job._stream.Setup(
                 meshData,
                 mesh.bounds = job._generator.Bounds,

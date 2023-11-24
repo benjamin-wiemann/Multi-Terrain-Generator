@@ -1,15 +1,7 @@
 using UnityEngine;
-using Unity.Mathematics;
 
 using static Unity.Mathematics.math;
-using Unity.VisualScripting;
-using UnityEditor.PackageManager.UI;
 using Unity.Collections;
-using UnityEngine.UIElements;
-using Unity.Collections.LowLevel.Unsafe;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
-using System;
-using System.Threading;
 
 namespace LiquidPlanet
 {
@@ -36,7 +28,7 @@ namespace LiquidPlanet
         // number of triangle pairs in x direction
         public int NumX => (int)round(Resolution * DimX);
 
-        // number of triangle pairs in z direction is higher, since its height is smaller than its width
+        // number of triangle pairs in z direction 
         public int NumY => (int)round(Resolution * DimZ); //(int)round(Resolution * DimZ * 2f / sqrt(3f));
 
         public SharedTriangleGrid(            
@@ -105,11 +97,12 @@ namespace LiquidPlanet
                 if (z > 0)
                 {
                     int subMeshIndex = NativeCollectionHelper.SelectClosest(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, terrainMap);
+                    int trianglePairIndex = NativeCollectionHelper.IncrementAt(subMeshTriangleIndices, (uint)subMeshIndex) - 1;
                     stream.SetTriangle(
-                        NativeCollectionHelper.IncrementAt(subMeshTriangleIndices, (uint) subMeshIndex) - 1, vi + tA 
+                        2 * trianglePairIndex, vi + tA 
                     );                    
                     stream.SetTriangle(
-                        NativeCollectionHelper.IncrementAt(subMeshTriangleIndices, (uint) subMeshIndex) - 1, vi + tB 
+                        2 * trianglePairIndex + 1, vi + tB 
                     );
                 }
             }
