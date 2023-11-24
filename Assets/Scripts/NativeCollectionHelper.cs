@@ -45,12 +45,12 @@ namespace LiquidPlanet
         /// <param name="integers"></param>
         /// <param name="index"></param>
         /// <returns></returns>
-        public static unsafe int IncrementAt(NativeList<int> integers, uint index) 
+        public static unsafe int IncrementAt(NativeArray<int> integers, uint index) 
         {
-            var listData = integers.AsParallelWriter().ListData;
+            int* arrayData = (int*) NativeArrayUnsafeUtility.GetUnsafePtr(integers);
             if ( index > integers.Length -1 )
                 throw new IndexOutOfRangeException();
-            var idx = Interlocked.Increment( ref *(listData->Ptr + index) );
+            var idx = Interlocked.Increment( ref *(arrayData + index) );
             return idx;
         }
     }

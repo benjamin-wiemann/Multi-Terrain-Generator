@@ -48,7 +48,7 @@ namespace LiquidPlanet
 
         
         public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap, NativeArray<int> terrainMap,
-            NativeList<int> subMeshTriangleIndices)
+            NativeArray<int> subMeshTriangleIndices)
         {
 
             float triangleWidth = DimX / NumX;

@@ -25,13 +25,11 @@ namespace LiquidPlanet
 
         float Height { get; set; }
 
-        //public NativeArray<float> NoiseMap { set; }
-
         void Execute<S>( int i,
             VertexStream stream,
             NativeArray<float> noiseMap,
             NativeArray<int> terrainMap,
-            NativeList<int> submeshTriangleIndices );
+            NativeArray<int> submeshTriangleIndices );
     }
 }
 

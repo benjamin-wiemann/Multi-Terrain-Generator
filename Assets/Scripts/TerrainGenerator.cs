@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System;
 using LiquidPlanet.Event;
 using UnityEngine.Events;
+using Unity.Mathematics;
 
 namespace LiquidPlanet
 {
@@ -48,6 +49,8 @@ namespace LiquidPlanet
         NativeArray<float> _heightMap;
 
         NativeArray<int> _terrainMap;
+
+        NativeArray<float3> _points;
 
         NativeArray<float> _maxNoiseValues;
 
@@ -122,6 +125,9 @@ namespace LiquidPlanet
             _terrainMap = new(
                 numVerticesX * numVerticesY,
                 Allocator.Persistent);
+            _points = new(
+                numVerticesX * numVerticesY,
+                Allocator.Persistent);
             NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
             foreach (TerrainType terrainType in _terrainTypes)
             {
@@ -133,6 +139,7 @@ namespace LiquidPlanet
             
             TerrainSegmentator.GetTerrainSegmentation(
                 _terrainMap,
+                _points,
                 numVerticesX,
                 numVerticesY,
                 _terrainSeed,
@@ -160,6 +167,7 @@ namespace LiquidPlanet
             
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
+            _points.Dispose();
             types.Dispose();
         }
 

@@ -26,7 +26,7 @@ namespace LiquidPlanet
         NativeArray<int> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeList<int> _subMeshIndices;
+        NativeArray<int> _subMeshIndices;
 
         public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _subMeshIndices);
 
@@ -45,12 +45,11 @@ namespace LiquidPlanet
             job._noiseMap = noiseMap;
             job._terrainMap = terrainMap;
             job._subMeshIndices = new( terrainTypes.Length, Allocator.Persistent);
-            job._subMeshIndices.AddNoResize(0);
+            job._subMeshIndices[0] = 0;
             for (int i = 1; i < terrainTypes.Length; i++)
             {
-                job._subMeshIndices.AddNoResize( terrainTypes[i].NumTrianglePairs + job._subMeshIndices[i-1]);
+                job._subMeshIndices[i] = terrainTypes[i].NumTrianglePairs + job._subMeshIndices[i-1];
             }
-            //var submeshIndices
             job._stream.Setup(
                 meshData,
                 mesh.bounds = job._generator.Bounds,

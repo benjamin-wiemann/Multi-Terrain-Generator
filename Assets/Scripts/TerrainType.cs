@@ -17,16 +17,11 @@ namespace LiquidPlanet
         int _numTrianglePairs;
         public int NumTrianglePairs { get => _numTrianglePairs; set => _numTrianglePairs = value; }
 
-        int _subMeshTriangleIndex;
-
-        public int GetAndIncrementSubMeshTriangleIndex { get => _subMeshTriangleIndex++; }
-
         TerrainTypeUnmanaged(string name, Color color)
         {
             Name = new FixedString128Bytes(name);
             Color = color;
             _numTrianglePairs = 0;
-            _subMeshTriangleIndex = 0;
         }
 
         public static TerrainTypeUnmanaged Convert(TerrainType type) => new TerrainTypeUnmanaged(type._name, type._color);

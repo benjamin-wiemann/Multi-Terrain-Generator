@@ -1,15 +1,15 @@
-using System.Collections.Generic;
 using UnityEngine;
 using Unity.Burst;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Mathematics;
+using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace LiquidPlanet
 {
 
-    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentationJob : IJobFor
     {
         int _width;
@@ -27,20 +27,24 @@ namespace LiquidPlanet
         [WriteOnly, NativeDisableParallelForRestriction]
         NativeArray<int> _segmentation;
 
+        [WriteOnly, NativeDisableParallelForRestriction]
+        NativeArray<float3> _points;
+
         [NativeDisableParallelForRestriction]
         NativeArray<int> _terrainCounters;
 
         public static JobHandle ScheduleParallel(
-            NativeArray<int> terrainSegmentation,
             NativeArray<float2> seedPoints,
+            NativeArray<TerrainTypeUnmanaged> terrainTypes,
             int width,
             int height,
             float borderGranularity,
-            NativeArray<TerrainTypeUnmanaged> terrainTypes,
-            NativeArray<int> terrainCounters,
             float perlinOffset,
             float perlinScale,
-            JobHandle dependency
+            JobHandle dependency,
+            NativeArray<int> terrainSegmentation,   // out
+            NativeArray<float3> points,             // out
+            NativeArray<int> terrainCounters        // out              
         )
         {
             TerrainSegmentationJob job = new();
@@ -52,21 +56,16 @@ namespace LiquidPlanet
             job._terrainTypes = terrainTypes;
             job._perlinOffset = perlinOffset;
             job._noiseScale = perlinScale;
-
-            // count the occurences of each terrain for each job execution
             job._terrainCounters = terrainCounters;
+            job._points = points;
+
             //return job.ScheduleParallel(height, 1, default);
             job.Run(height);
             return default;
         }
 
         public void Execute( int y)
-        {
-            // Initialize terrain counters for every job
-            for (int i = 0; i < _terrainTypes.Length; i++)
-            {
-                _terrainCounters[y * _terrainTypes.Length + i] = 0;
-            }            
+        {                   
             for (int x = 0; x < _width; x++)
             {
                 
@@ -75,24 +74,25 @@ namespace LiquidPlanet
 
                 for (int i = 0; i < _seedPoints.Length; i++)
                 {
-                    Vector2 seed = _seedPoints[i];
+                    float2 seed = _seedPoints[i];
 
-                    float noiseX = Mathf.PerlinNoise(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity) * _noiseScale - 1; 
-                    float noiseY = Mathf.PerlinNoise(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity + _perlinOffset) * _noiseScale - 1; 
+                    float noiseX = noise.cnoise(new float2(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity)) * _noiseScale - 1; 
+                    float noiseY = noise.cnoise(new float2(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale - 1; 
 
-                    float distance = Vector2.Distance(new Vector2(x + noiseX, y + noiseY), seed);
+                    float dist = distance(new float2(x + noiseX, y + noiseY), seed);
 
-                    if (distance < minDistance)
+                    if (dist < minDistance)
                     {
-                        minDistance = distance;
+                        minDistance = dist;
                         minIndex = i;
                     }
                 }
                 int terrainIndex = minIndex % _terrainTypes.Length;
                 _segmentation[y * _width + x] = terrainIndex;
                 if(x < _width - 1 && y < _height -1)
-                {                                                             
-                    _terrainCounters[y * _terrainTypes.Length + terrainIndex]++;
+                {
+                    // count the occurences of each terrain for each job execution
+                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) terrainIndex);
                 }                
                 
             }
