@@ -48,7 +48,7 @@ namespace LiquidPlanet
 
         
         public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap, NativeArray<int> terrainMap,
-            NativeArray<int> subMeshTriangleIndices)
+            NativeArray<uint> subMeshTriangleIndices)
         {
 
             float triangleWidth = DimX / NumX;
@@ -56,20 +56,12 @@ namespace LiquidPlanet
 
             int vi = (NumX + 1) * z, ti = 2 * NumX * (z - 1);
 
-            float xOffset = 0; // -0.25f * triangleWidth;
+            float xOffset = 0;
             float uOffset = 0f;
 
             int iA = -NumX - 2, iB = -NumX - 1, iC = -1, iD = 0;
             var tA = int3(iA, iC, iD);
             var tB = int3(iA, iD, iB);
-
-            if ((z & 1) == 1)
-            {
-                //xOffset = 0.25f * triangleWidth;
-                //uOffset = 0.5f / (NumX + 0.5f);
-                //tA = int3(iA, iC, iB);
-                //tB = int3(iB, iC, iD);
-            }
 
             xOffset = xOffset - DimX / 2;
 

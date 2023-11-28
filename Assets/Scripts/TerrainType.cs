@@ -14,15 +14,19 @@ namespace LiquidPlanet
         public FixedString128Bytes Name { get; }
         public Color Color { get; }
 
-        int _numTrianglePairs;
-        public int NumTrianglePairs { get => _numTrianglePairs; set => _numTrianglePairs = value; }
+        uint _numTrianglePairs;
+        public uint NumTrianglePairs { get => _numTrianglePairs; }
 
-        TerrainTypeUnmanaged(string name, Color color)
+        public TerrainTypeUnmanaged(FixedString128Bytes name, Color color, uint numTrianglePairs = 0)
         {
             Name = new FixedString128Bytes(name);
             Color = color;
-            _numTrianglePairs = 0;
+            _numTrianglePairs = numTrianglePairs;
         }
+
+        public TerrainTypeUnmanaged(string name, Color color, uint numTrianglePairs) :
+            this(new FixedString128Bytes(name), color, numTrianglePairs) { }
+        
 
         public static TerrainTypeUnmanaged Convert(TerrainType type) => new TerrainTypeUnmanaged(type._name, type._color);
         

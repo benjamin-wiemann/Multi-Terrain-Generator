@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
+using System;
 
 namespace LiquidPlanet
 {
@@ -9,26 +10,26 @@ namespace LiquidPlanet
     public struct TerrainSegmentator
     {
         
-        public static void GetTerrainSegmentation(
-            NativeArray<int> terrainMap,
-            NativeArray<float3> points,
+        public static void GetTerrainSegmentation(                        
             int width,
             int height,
             uint seed,
-            NativeList<TerrainTypeUnmanaged> terrainTypes,
             int numPatches,
             float perlinOffset,
             float perlinScale,
-            float borderGranularity
+            float borderGranularity,
+            NativeList<TerrainTypeUnmanaged> terrainTypes,  // inout
+            NativeArray<int> terrainMap,        // out
+            NativeArray<int2> coordinates     // out
         )
         {
             NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
             GenerateRandomSeedPoints(seedPoints, seed, width, height);
 
-            var terrainOccurenceCounter = new NativeArray<int>(terrainTypes.Length, Allocator.Persistent);            
+            var terrainOccurenceCounters = new NativeArray<uint>(terrainTypes.Length, Allocator.Persistent);            
             for (int i = 0; i < terrainTypes.Length; i++)
             {
-                terrainOccurenceCounter[i] = 0;
+                terrainOccurenceCounters[i] = 0;
             }
             TerrainSegmentationJob.ScheduleParallel(                
                 seedPoints,
@@ -40,24 +41,26 @@ namespace LiquidPlanet
                 perlinScale,
                 default,
                 terrainMap,
-                points,
-                terrainOccurenceCounter).Complete();
-            SaveTerrainCounters(width, terrainTypes, terrainOccurenceCounter);
-            terrainOccurenceCounter.Dispose();
+                terrainOccurenceCounters).Complete();
+            SaveTerrainCounters(width, terrainTypes, terrainOccurenceCounters);
+            terrainOccurenceCounters.Dispose();
+
             seedPoints.Dispose();
         }
 
-        private static void SaveTerrainCounters(int width, NativeList<TerrainTypeUnmanaged> terrainTypes, NativeArray<int> terrainOccurenceCounter)
+        private static void SaveTerrainCounters(int width, NativeList<TerrainTypeUnmanaged> terrainTypes, NativeArray<uint> terrainOccurenceCounter)
         {
             for (int i = 0; i < terrainTypes.Length; i++)
             {
-                TerrainTypeUnmanaged type = terrainTypes[i];                
-                type.NumTrianglePairs = terrainOccurenceCounter[i];                
+                TerrainTypeUnmanaged type = new TerrainTypeUnmanaged( 
+                    terrainTypes[i].Name,
+                    terrainTypes[i].Color,
+                    terrainOccurenceCounter[i]);          
                 terrainTypes[i] = type;
             }
         }
 
-        static void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, uint seed, int width, int height)
+        private static void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, uint seed, int width, int height)
         {
             Unity.Mathematics.Random random = new(seed);
             for (int i = 0; i < seedPoints.Length; i++)

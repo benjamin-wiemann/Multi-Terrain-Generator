@@ -54,10 +54,10 @@ namespace LiquidPlanet
         public void SetSubMeshes( MeshData meshData, NativeArray<TerrainTypeUnmanaged> terrainTypes, Bounds bounds, int vertexCount)
         {
             meshData.subMeshCount = terrainTypes.Length;
-            int startIndex = 0;
+            uint startIndex = 0;
             for (int i = 0; i < terrainTypes.Length; i++)
             {
-                var subMeshDescriptor = new SubMeshDescriptor(startIndex, terrainTypes[i].NumTrianglePairs * 6)
+                var subMeshDescriptor = new SubMeshDescriptor((int) startIndex, (int) terrainTypes[i].NumTrianglePairs * 6)
                 {
                     bounds = bounds,
                     vertexCount = vertexCount

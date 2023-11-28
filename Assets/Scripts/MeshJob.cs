@@ -9,7 +9,7 @@ namespace LiquidPlanet
 {
 
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob<G> : IJobFor
             where G : struct, IMeshGenerator
     {
@@ -26,7 +26,7 @@ namespace LiquidPlanet
         NativeArray<int> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeArray<int> _subMeshIndices;
+        NativeArray<uint> _subMeshIndices;
 
         public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _subMeshIndices);
 
@@ -44,12 +44,7 @@ namespace LiquidPlanet
             job._generator = generator;
             job._noiseMap = noiseMap;
             job._terrainMap = terrainMap;
-            job._subMeshIndices = new( terrainTypes.Length, Allocator.Persistent);
-            job._subMeshIndices[0] = 0;
-            for (int i = 1; i < terrainTypes.Length; i++)
-            {
-                job._subMeshIndices[i] = terrainTypes[i].NumTrianglePairs + job._subMeshIndices[i-1];
-            }
+            
             job._stream.Setup(
                 meshData,
                 mesh.bounds = job._generator.Bounds,

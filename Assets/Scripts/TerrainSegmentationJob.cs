@@ -28,10 +28,10 @@ namespace LiquidPlanet
         NativeArray<int> _segmentation;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        NativeArray<float3> _points;
+        NativeArray<float2> _coordinates;
 
         [NativeDisableParallelForRestriction]
-        NativeArray<int> _terrainCounters;
+        NativeArray<uint> _terrainCounters;
 
         public static JobHandle ScheduleParallel(
             NativeArray<float2> seedPoints,
@@ -43,8 +43,7 @@ namespace LiquidPlanet
             float perlinScale,
             JobHandle dependency,
             NativeArray<int> terrainSegmentation,   // out
-            NativeArray<float3> points,             // out
-            NativeArray<int> terrainCounters        // out              
+            NativeArray<uint> terrainCounters        // out              
         )
         {
             TerrainSegmentationJob job = new();
@@ -57,7 +56,6 @@ namespace LiquidPlanet
             job._perlinOffset = perlinOffset;
             job._noiseScale = perlinScale;
             job._terrainCounters = terrainCounters;
-            job._points = points;
 
             //return job.ScheduleParallel(height, 1, default);
             job.Run(height);
@@ -92,7 +90,7 @@ namespace LiquidPlanet
                 if(x < _width - 1 && y < _height -1)
                 {
                     // count the occurences of each terrain for each job execution
-                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) terrainIndex);
+                    int index = NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) terrainIndex) - 1;                    
                 }                
                 
             }

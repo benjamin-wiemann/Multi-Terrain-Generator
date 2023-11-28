@@ -50,8 +50,6 @@ namespace LiquidPlanet
 
         NativeArray<int> _terrainMap;
 
-        NativeArray<float3> _points;
-
         NativeArray<float> _maxNoiseValues;
 
         NativeArray<float> _minNoiseValues;
@@ -125,7 +123,7 @@ namespace LiquidPlanet
             _terrainMap = new(
                 numVerticesX * numVerticesY,
                 Allocator.Persistent);
-            _points = new(
+            NativeArray<int2> coordinates = new(
                 numVerticesX * numVerticesY,
                 Allocator.Persistent);
             NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
@@ -138,16 +136,16 @@ namespace LiquidPlanet
             }
             
             TerrainSegmentator.GetTerrainSegmentation(
-                _terrainMap,
-                _points,
                 numVerticesX,
                 numVerticesY,
                 _terrainSeed,
-                types,
                 _terrainGranularity,
                 _noiseOffset,
                 _noiseScale,
-                _borderGranularity
+                _borderGranularity,
+                types,
+                _terrainMap,
+                coordinates                
                 );
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
@@ -167,7 +165,7 @@ namespace LiquidPlanet
             
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
-            _points.Dispose();
+            coordinates.Dispose();
             types.Dispose();
         }
 

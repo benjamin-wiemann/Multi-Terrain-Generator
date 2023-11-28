@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using Unity.Collections;
+using Unity.Mathematics;
 using LiquidPlanet;
 using System;
 
@@ -34,31 +35,57 @@ public class TestSuite
     [Test]
     public void IncrementAtChangesCorrectElement()
     {
-        NativeList<int> list = new(4, Allocator.Persistent);
-        list.AddNoResize(1);
-        list.AddNoResize(2);
-        list.AddNoResize(3);
-        list.AddNoResize(4);
-        NativeCollectionHelper.IncrementAt(list, 0);
-        NativeCollectionHelper.IncrementAt(list, 3);
-        Assert.That(list[0], Is.EqualTo(2));
-        Assert.That(list[1], Is.EqualTo(2));
-        Assert.That(list[2], Is.EqualTo(3));
-        Assert.That(list[3], Is.EqualTo(5));
-        list.Dispose();
+        NativeArray<uint> array = new(4, Allocator.Persistent);
+        array[0] = 1;
+        array[1] = 2;
+        array[2] = 3;
+        array[3] = 4;
+        NativeCollectionHelper.IncrementAt(array, 0);
+        NativeCollectionHelper.IncrementAt(array, 3);
+        Assert.That(array[0], Is.EqualTo(2));
+        Assert.That(array[1], Is.EqualTo(2));
+        Assert.That(array[2], Is.EqualTo(3));
+        Assert.That(array[3], Is.EqualTo(5));
+        array.Dispose();
     }
 
     [Test]
     public void IncrementThrowsExceptionAtInvalidIndex()
     {
-        NativeList<int> list = new(4, Allocator.Persistent);
-        list.AddNoResize(1);
-        list.AddNoResize(2);
-        list.AddNoResize(3);
-        list.AddNoResize(4);
-        Assert.That( () => NativeCollectionHelper.IncrementAt(list, 4), 
+        NativeArray<uint> array = new(4, Allocator.Persistent);
+        array[0] = 1;
+        array[1] = 2;
+        array[2] = 3;
+        array[3] = 4;
+        Assert.That(() => NativeCollectionHelper.IncrementAt(array, 4),
             Throws.Exception.TypeOf<IndexOutOfRangeException>());
-        list.Dispose();
+        array.Dispose();
     }
 
+    [Test]
+    public void SortCoordinatesJobSortsCorrectly()
+    {
+        int width = 3;
+        int[] segmentation = new int[] { 0, 1, 2, 2, 1, 2, 0, 1, 2 };
+        NativeArray<int> terrainSegmentation = new(segmentation, Allocator.Persistent);
+        NativeArray<TerrainTypeUnmanaged> terrainTable = new(3, Allocator.Persistent);
+        terrainTable[0] = new TerrainTypeUnmanaged("type 1", default, 2);
+        terrainTable[1] = new TerrainTypeUnmanaged("type 2", default, 3);
+        terrainTable[2] = new TerrainTypeUnmanaged("type 3", default, 4);
+        NativeArray<int2> coordinates = new(segmentation.Length, Allocator.Persistent);
+        SortCoordinatesJob.ScheduleParallel(
+            terrainSegmentation,
+            terrainTable,
+            segmentation.Length / width,
+            coordinates);
+        int2[] coordinatesDesired = new int2[] { 
+            new int2 (0,0), new int2(0, 2),
+            new int2 (1,0), new int2(1, 1), new int2(1, 2),
+            new int2 (2, 0), new int2 (0,1), new int2(2, 1), new int2(2, 2)};
+        //NativeArray<int2> desiredNative = new(coordinatesDesired, Allocator.Persistent);
+        Assert.That(coordinates.ToArray(), Is.EqualTo(coordinatesDesired));
+        terrainSegmentation.Dispose();
+        terrainTable.Dispose();
+        coordinates.Dispose();
+    }
 }
