@@ -43,6 +43,11 @@ namespace LiquidPlanet
                 terrainMap,
                 terrainOccurenceCounters).Complete();
             SaveTerrainCounters(width, terrainTypes, terrainOccurenceCounters);
+            SortCoordinatesJob.ScheduleParallel(
+                terrainMap,
+                terrainTypes,
+                height,
+                coordinates);            
             terrainOccurenceCounters.Dispose();
 
             seedPoints.Dispose();

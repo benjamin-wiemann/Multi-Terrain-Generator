@@ -3,18 +3,19 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
+using LiquidPlanet.Helper;
 
 namespace LiquidPlanet
 {
 
 
-    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
-    public struct MeshJob<G> : IJobFor
-            where G : struct, IMeshGenerator
+    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    public struct MeshJob : IJobFor
     {
 
-        G _generator;
+        SharedTriangleGrid _generator;
 
         [WriteOnly]
         VertexStream _stream;
@@ -28,32 +29,36 @@ namespace LiquidPlanet
         [NativeDisableContainerSafetyRestriction]
         NativeArray<uint> _subMeshIndices;
 
-        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _subMeshIndices);
+        NativeArray<int2> _coordinates;
+
+        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _coordinates);
 
         public static JobHandle ScheduleParallel(
-            G generator,
+            SharedTriangleGrid generator,
             NativeArray<float> noiseMap,
             NativeArray<int> terrainMap,
             NativeList<TerrainTypeUnmanaged> terrainTypes,
+            NativeArray<int2> coordinates,
             Mesh mesh,
             Mesh.MeshData meshData,
             JobHandle dependency
         )
         {
-            var job = new MeshJob<G>();
+            var job = new MeshJob();
             job._generator = generator;
             job._noiseMap = noiseMap;
             job._terrainMap = terrainMap;
+            job._coordinates = coordinates;
             
             job._stream.Setup(
                 meshData,
                 mesh.bounds = job._generator.Bounds,
                 job._generator.VertexCount,
-                job._generator.IndexCount,
-                terrainTypes
+                job._generator.IndexCount
             );
             JobHandle handle;
-            job.Run(job._generator.JobLength);
+            // Use the least common multiple
+            job.Run(MathHelper.Lcm(SystemInfo.processorCount, terrainTypes.Length));
             handle = default;
             //return job.Schedule(job._generator.JobLength, dependency);            
 

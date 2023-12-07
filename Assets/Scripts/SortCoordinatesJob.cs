@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
+using LiquidPlanet.Helper;
 
 namespace LiquidPlanet
 {
@@ -43,12 +44,12 @@ namespace LiquidPlanet
             {
                 job._subMeshIndices[i] = terrainTypes[i-1].NumTrianglePairs + job._subMeshIndices[i - 1];
             }
-            //var handle = job.ScheduleParallel(
-            //    height,
-            //    1,
-            //    default);
-            job.Run(height);
-            JobHandle handle = default;
+            var handle = job.ScheduleParallel(
+                height,
+                1,
+                default);
+            //job.Run(height);
+            //JobHandle handle = default;
             job._subMeshIndices.Dispose();
             return handle;
         }

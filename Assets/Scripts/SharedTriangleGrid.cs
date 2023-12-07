@@ -2,11 +2,13 @@ using UnityEngine;
 
 using static Unity.Mathematics.math;
 using Unity.Collections;
+using Unity.Mathematics;
+using LiquidPlanet.Helper;
 
 namespace LiquidPlanet
 {
 
-    public struct SharedTriangleGrid : IMeshGenerator
+    public struct SharedTriangleGrid
     {
         public int VertexCount => (NumX + 1) * (NumY + 1);
 
@@ -48,7 +50,7 @@ namespace LiquidPlanet
 
         
         public void Execute<S>(int z, VertexStream stream, NativeArray<float> noiseMap, NativeArray<int> terrainMap,
-            NativeArray<uint> subMeshTriangleIndices)
+            NativeArray<int2> coordinates)
         {
 
             float triangleWidth = DimX / NumX;
@@ -89,7 +91,6 @@ namespace LiquidPlanet
                 if (z > 0)
                 {
                     int subMeshIndex = NativeCollectionHelper.SelectClosest(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, terrainMap);
-                    int trianglePairIndex = NativeCollectionHelper.IncrementAt(subMeshTriangleIndices, (uint)subMeshIndex) - 1;
                     stream.SetTriangle(
                         2 * trianglePairIndex, vi + tA 
                     );                    

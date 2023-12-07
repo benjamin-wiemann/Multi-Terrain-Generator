@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
+using LiquidPlanet.Helper;
 
 namespace LiquidPlanet
 {
@@ -26,9 +27,6 @@ namespace LiquidPlanet
 
         [WriteOnly, NativeDisableParallelForRestriction]
         NativeArray<int> _segmentation;
-
-        [WriteOnly, NativeDisableParallelForRestriction]
-        NativeArray<float2> _coordinates;
 
         [NativeDisableParallelForRestriction]
         NativeArray<uint> _terrainCounters;
@@ -57,9 +55,9 @@ namespace LiquidPlanet
             job._noiseScale = perlinScale;
             job._terrainCounters = terrainCounters;
 
-            //return job.ScheduleParallel(height, 1, default);
-            job.Run(height);
-            return default;
+            return job.ScheduleParallel(height, 1, default);
+            //job.Run(height);
+            //return default;
         }
 
         public void Execute( int y)

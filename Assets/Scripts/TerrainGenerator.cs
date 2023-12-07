@@ -5,6 +5,7 @@ using System;
 using LiquidPlanet.Event;
 using UnityEngine.Events;
 using Unity.Mathematics;
+using Unity.Jobs;
 
 namespace LiquidPlanet
 {
@@ -150,13 +151,14 @@ namespace LiquidPlanet
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
-            MeshJob<SharedTriangleGrid>.ScheduleParallel(
+            MeshJob.ScheduleParallel(
                 triangleGrid,
                 _heightMap,
                 _terrainMap,
                 types,
+                coordinates,
                 _mesh,
-                meshData,   
+                meshData,
                 default).Complete();
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
             //_mesh.RecalculateBounds
