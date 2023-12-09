@@ -29,7 +29,7 @@ namespace LiquidPlanet
         NativeArray<int> _segmentation;
 
         [NativeDisableParallelForRestriction]
-        NativeArray<uint> _terrainCounters;
+        NativeArray<int> _terrainCounters;
 
         public static JobHandle ScheduleParallel(
             NativeArray<float2> seedPoints,
@@ -41,7 +41,7 @@ namespace LiquidPlanet
             float perlinScale,
             JobHandle dependency,
             NativeArray<int> terrainSegmentation,   // out
-            NativeArray<uint> terrainCounters        // out              
+            NativeArray<int> terrainCounters        // out              
         )
         {
             TerrainSegmentationJob job = new();

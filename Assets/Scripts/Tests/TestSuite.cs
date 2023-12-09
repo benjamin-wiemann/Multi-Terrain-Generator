@@ -2,6 +2,7 @@ using NUnit.Framework;
 using Unity.Collections;
 using Unity.Mathematics;
 using LiquidPlanet;
+using LiquidPlanet.Helper;
 using System;
 
 public class TestSuite
@@ -35,7 +36,7 @@ public class TestSuite
     [Test]
     public void IncrementAtChangesCorrectElement()
     {
-        NativeArray<uint> array = new(4, Allocator.Persistent);
+        NativeArray<int> array = new(4, Allocator.Persistent);
         array[0] = 1;
         array[1] = 2;
         array[2] = 3;
@@ -52,7 +53,7 @@ public class TestSuite
     [Test]
     public void IncrementThrowsExceptionAtInvalidIndex()
     {
-        NativeArray<uint> array = new(4, Allocator.Persistent);
+        NativeArray<int> array = new(4, Allocator.Persistent);
         array[0] = 1;
         array[1] = 2;
         array[2] = 3;
@@ -78,7 +79,7 @@ public class TestSuite
             terrainTable,
             segmentation.Length / width,
             coordinates);
-        int2[] coordinatesDesired = new int2[] { 
+        int2[] coordinatesDesired = new int2[] {
             new int2 (0,0), new int2(0, 2),
             new int2 (1,0), new int2(1, 1), new int2(1, 2),
             new int2 (2, 0), new int2 (0,1), new int2(2, 1), new int2(2, 2)};
@@ -88,4 +89,6 @@ public class TestSuite
         terrainTable.Dispose();
         coordinates.Dispose();
     }
+
+
 }

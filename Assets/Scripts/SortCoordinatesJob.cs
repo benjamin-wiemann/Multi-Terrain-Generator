@@ -17,7 +17,7 @@ namespace LiquidPlanet
         NativeArray<int> _terrainSegmentation;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeArray<uint> _subMeshIndices;
+        NativeArray<int> _subMeshIndices;
 
         //[NativeDisableContainerSafetyRestriction]
         NativeArray<TerrainTypeUnmanaged> _terrainTypes;
@@ -42,7 +42,7 @@ namespace LiquidPlanet
             job._subMeshIndices[0] = 0;
             for (int i = 1; i < terrainTypes.Length; i++)
             {
-                job._subMeshIndices[i] = terrainTypes[i-1].NumTrianglePairs + job._subMeshIndices[i - 1];
+                job._subMeshIndices[i] = (int) terrainTypes[i-1].NumTrianglePairs + job._subMeshIndices[i - 1];
             }
             var handle = job.ScheduleParallel(
                 height,

@@ -47,7 +47,7 @@ namespace LiquidPlanet
             /// <param name="integers"></param>
             /// <param name="index"></param>
             /// <returns></returns>
-            public static unsafe int IncrementAt(NativeArray<uint> integers, uint index)
+            public static unsafe int IncrementAt(NativeArray<int> integers, uint index)
             {
                 int* arrayData = (int*)NativeArrayUnsafeUtility.GetUnsafePtr(integers);
                 if (index > integers.Length - 1)

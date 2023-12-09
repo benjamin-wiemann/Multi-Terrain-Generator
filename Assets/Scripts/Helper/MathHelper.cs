@@ -5,7 +5,7 @@ namespace LiquidPlanet.Helper
     {
 
         // Greatest common factor
-        static int Gcf(int a, int b)
+        public static int Gcf(int a, int b)
         {
             while (b != 0)
             {

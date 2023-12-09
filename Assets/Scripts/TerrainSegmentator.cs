@@ -26,7 +26,7 @@ namespace LiquidPlanet
             NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
             GenerateRandomSeedPoints(seedPoints, seed, width, height);
 
-            var terrainOccurenceCounters = new NativeArray<uint>(terrainTypes.Length, Allocator.Persistent);            
+            var terrainOccurenceCounters = new NativeArray<int>(terrainTypes.Length, Allocator.Persistent);            
             for (int i = 0; i < terrainTypes.Length; i++)
             {
                 terrainOccurenceCounters[i] = 0;
@@ -47,20 +47,20 @@ namespace LiquidPlanet
                 terrainMap,
                 terrainTypes,
                 height,
-                coordinates);            
+                coordinates).Complete();            
             terrainOccurenceCounters.Dispose();
 
             seedPoints.Dispose();
         }
 
-        private static void SaveTerrainCounters(int width, NativeList<TerrainTypeUnmanaged> terrainTypes, NativeArray<uint> terrainOccurenceCounter)
+        private static void SaveTerrainCounters(int width, NativeList<TerrainTypeUnmanaged> terrainTypes, NativeArray<int> terrainOccurenceCounter)
         {
             for (int i = 0; i < terrainTypes.Length; i++)
             {
                 TerrainTypeUnmanaged type = new TerrainTypeUnmanaged( 
                     terrainTypes[i].Name,
                     terrainTypes[i].Color,
-                    terrainOccurenceCounter[i]);          
+                    (uint) terrainOccurenceCounter[i]);          
                 terrainTypes[i] = type;
             }
         }
