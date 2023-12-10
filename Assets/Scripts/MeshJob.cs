@@ -36,7 +36,11 @@ namespace LiquidPlanet
         [NativeDisableParallelForRestriction]
         NativeArray<int> _threadStartIndices;
 
-        public void Execute(int i) => _generator.Execute<VertexStream>(i, _stream, _noiseMap, _terrainMap, _terrainTypes, _coordinates, _threadStartIndices);
+        [NativeDisableParallelForRestriction]
+        NativeArray<int> _counter;
+
+        public void Execute(int i) => _generator.Execute<VertexStream>(
+            i, _stream, _noiseMap, _terrainMap, _terrainTypes, _coordinates, _threadStartIndices, _counter);
 
         public static JobHandle ScheduleParallel(
             SharedTriangleGrid generator,
@@ -66,14 +70,18 @@ namespace LiquidPlanet
             );
 
             int threadCount = MathHelper.Lcm(SystemInfo.processorCount, terrainTypes.Length);
-            float avgTriangles = (coordinates.Length - job._generator.NumX - job._generator.NumY +1) / threadCount;
             job._threadStartIndices = new(threadCount + 1, Allocator.Persistent);
-            for( int i = 0; i < job._threadStartIndices.Length; i++)
+            int numTrianglePairs = job._generator.NumX - job._generator.NumZ;
+            for ( int i = 0; i < job._threadStartIndices.Length; i++)
             {
-                job._threadStartIndices[i] = (int) math.round( i * avgTriangles);
+                job._threadStartIndices[i] = (int) math.round( i * numTrianglePairs / threadCount);
+                Debug.Log(string.Format("Thread start index for thread: {0} is {1}", i, job._threadStartIndices[i]));
             }
             
 
+            job._counter = new(2, Allocator.Persistent);
+            job._counter[0] = 0;
+            job._counter[1] = 0;
             JobHandle handle;
             // Use the least common multiple
             job.Run(threadCount);
@@ -82,7 +90,7 @@ namespace LiquidPlanet
 
             //handle = job.ScheduleParallel(job._generator.JobLength, 1, dependency);
             job._stream.SetSubMeshes(meshData, terrainTypes, generator.Bounds, job._generator.VertexCount);
-            
+            Debug.Log(string.Format("Number of vertices: {0}, Number of Triangle Pairs: {1}", job._counter[0], job._counter[1]));            
             return handle;
         }
 

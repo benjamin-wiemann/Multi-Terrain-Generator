@@ -97,7 +97,7 @@ namespace LiquidPlanet
                 _height
             );
             int numVerticesX = triangleGrid.NumX + 1;
-            int numVerticesY = triangleGrid.NumY + 1;
+            int numVerticesY = triangleGrid.NumZ + 1;
             _heightMap = new(
                 numVerticesX * numVerticesY,
                 Allocator.Persistent);            
@@ -125,7 +125,7 @@ namespace LiquidPlanet
                 numVerticesX * numVerticesY,
                 Allocator.Persistent);
             NativeArray<int2> coordinates = new(
-                numVerticesX * numVerticesY,
+                (numVerticesX - 1) * (numVerticesY - 1),
                 Allocator.Persistent);
             NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
             foreach (TerrainType terrainType in _terrainTypes)

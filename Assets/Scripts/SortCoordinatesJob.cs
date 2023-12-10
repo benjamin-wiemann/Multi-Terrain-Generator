@@ -45,7 +45,7 @@ namespace LiquidPlanet
                 job._subMeshIndices[i] = (int) terrainTypes[i-1].NumTrianglePairs + job._subMeshIndices[i - 1];
             }
             var handle = job.ScheduleParallel(
-                height,
+                height - 1,
                 1,
                 default);
             //job.Run(height);
@@ -56,11 +56,11 @@ namespace LiquidPlanet
 
         public void Execute(int y)
         {
-            for(int x = 0; x < _width; x++)
+            for(int x = 0; x < _width - 1; x++)
             {
-                int terrainIndex = _terrainSegmentation[y * _width + x];
+                int terrainIndex = _terrainSegmentation[(y + 1) * _width + x + 1];
                 int trianglePairIndex = NativeCollectionHelper.IncrementAt(_subMeshIndices, (uint) terrainIndex) - 1;
-                _coordinates[trianglePairIndex] = new int2(x, y);
+                _coordinates[trianglePairIndex] = new int2(x + 1, y + 1);
             }
         }
     }

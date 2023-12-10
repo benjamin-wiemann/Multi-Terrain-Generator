@@ -5,17 +5,19 @@ using Unity.Collections;
 using Unity.Mathematics;
 using LiquidPlanet.Helper;
 using UnityEngine.UIElements;
+using System;
+using Unity.Jobs;
 
 namespace LiquidPlanet
 {
 
     public struct SharedTriangleGrid
     {
-        public int VertexCount => (NumX + 1) * (NumY + 1);
+        public int VertexCount => (NumX + 1) * (NumZ + 1);
 
-        public int IndexCount => 6 * NumY * NumX;
+        public int IndexCount => 6 * NumZ * NumX;
 
-        public int JobLength => NumY + 1;
+        public int JobLength => NumZ + 1;
 
         public Bounds Bounds => new Bounds(new Vector3(0f, Height, DimZ/2), new Vector3((1f + 0.5f / Resolution) * DimX, Height, DimZ)); 
 
@@ -32,7 +34,7 @@ namespace LiquidPlanet
         public int NumX => (int)round(Resolution * DimX);
 
         // number of triangle pairs in z direction 
-        public int NumY => (int)round(Resolution * DimZ); 
+        public int NumZ => (int)round(Resolution * DimZ); 
 
         public SharedTriangleGrid(            
             int resolution,
@@ -57,14 +59,15 @@ namespace LiquidPlanet
             NativeArray<int> terrainMap,
             NativeList<TerrainTypeUnmanaged> terrainTypes,
             NativeArray<int2> coordinates,
-            NativeArray<int> _trianglePairIndices)
+            NativeArray<int> trianglePairIndices,
+            NativeArray<int> counter)            
         {
             int iA = -NumX - 2, iB = -NumX - 1, iC = -1, iD = 0;
             var tA = int3(iA, iC, iD);
             var tB = int3(iA, iD, iB);
 
             float triangleWidth = DimX / NumX;
-            float triangleHeigth = DimZ / NumY;
+            float triangleHeigth = DimZ / NumZ;
 
             float xOffset = DimX / 2;
 
@@ -72,29 +75,41 @@ namespace LiquidPlanet
             vertex.normal.y = 1f;
             vertex.tangent.xw = float2(1f, -1f);
 
-            for ( int tpi = _trianglePairIndices[threadNumber]; tpi < _trianglePairIndices[threadNumber + 1]; tpi++ )
+            for ( int tpi = trianglePairIndices[threadNumber]; tpi < trianglePairIndices[threadNumber + 1]; tpi++ )
             {
                 int2 coordinate = coordinates[tpi];
                 int x = coordinate.x;
                 int z = coordinate.y;
 
-                int vi = (NumX + 1) * z;
+                int vi = (NumX + 1) * z + x;
                 
                 vertex.position.x = x * triangleWidth + xOffset;
                 vertex.position.z = z * triangleHeigth;
                 vertex.position.y = Height * NativeCollectionHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
-                vertex.texCoord0.x = (vertex.position.x / Tiling);
-                vertex.texCoord0.y = (vertex.position.z / Tiling);
+                vertex.texCoord0.x = vertex.position.x / Tiling;
+                vertex.texCoord0.y = vertex.position.z / Tiling;
                 stream.SetVertex(vi, vertex);
-                if (z > 0 && x > 0)
+                if (z == 1 && x == 1)
+                {
+                    //TODOOOOO
+                }
+                NativeCollectionHelper.IncrementAt(counter, 0);
+                NativeCollectionHelper.IncrementAt(counter, 1);
+                try
                 {
                     stream.SetTriangle(
-                        (int) (tpi / 2), vi + tA
+                        tpi * 2, vi + tA
                     );
                     stream.SetTriangle(
-                        (int) (tpi / 2) + 1, vi + tB
+                        tpi * 2 + 1, vi + tB
                     );
                 }
+                catch ( Exception ex ) 
+                {
+                    Debug.Log(string.Format("Vertex counter: {0} Vertex index: {1}, X: {5}, Z: {6}, Triangle pair counter: {2} Triangle indices {3} and {4}",
+                        counter[0], vi, counter[1], tpi *2, tpi *2 +1, x, z));
+                }
+                
             }
 
         }
