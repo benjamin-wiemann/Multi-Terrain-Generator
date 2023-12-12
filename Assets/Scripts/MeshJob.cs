@@ -71,7 +71,8 @@ namespace LiquidPlanet
 
             int threadCount = MathHelper.Lcm(SystemInfo.processorCount, terrainTypes.Length);
             job._threadStartIndices = new(threadCount + 1, Allocator.Persistent);
-            int numTrianglePairs = job._generator.NumX - job._generator.NumZ;
+            int numTrianglePairs = job._generator.NumX * job._generator.NumZ;
+            Debug.Log(string.Format("Num triangle pairs: {0} ", numTrianglePairs));
             for ( int i = 0; i < job._threadStartIndices.Length; i++)
             {
                 job._threadStartIndices[i] = (int) math.round( i * numTrianglePairs / threadCount);

@@ -122,10 +122,10 @@ namespace LiquidPlanet
                 ).Complete();
 
             _terrainMap = new(
-                numVerticesX * numVerticesY,
+                triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
             NativeArray<int2> coordinates = new(
-                (numVerticesX - 1) * (numVerticesY - 1),
+                triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
             NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
             foreach (TerrainType terrainType in _terrainTypes)
@@ -137,8 +137,8 @@ namespace LiquidPlanet
             }
             
             TerrainSegmentator.GetTerrainSegmentation(
-                numVerticesX,
-                numVerticesY,
+                triangleGrid.NumX,
+                triangleGrid.NumZ,
                 _terrainSeed,
                 _terrainGranularity,
                 _noiseOffset,

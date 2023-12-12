@@ -85,7 +85,7 @@ namespace LiquidPlanet
                 }
                 int terrainIndex = minIndex % _terrainTypes.Length;
                 _segmentation[y * _width + x] = terrainIndex;
-                if(x < _width - 1 && y < _height -1)
+                if(x < _width && y < _height)
                 {
                     // count the occurences of each terrain for each job execution
                     int index = NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) terrainIndex) - 1;                    

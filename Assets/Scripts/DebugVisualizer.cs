@@ -59,7 +59,7 @@ namespace LiquidPlanet
             switch (_dataView)
             {
                 case DataView.TerrainSegmentation:
-                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeSegmentation(_segmentation, _terrainTypes, _width, _height);
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height -1);
                     break;
                 case DataView.HeightMap:
                     GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeHeightMap(_heigthMap, _width, _height);

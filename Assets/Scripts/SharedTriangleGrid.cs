@@ -7,6 +7,7 @@ using LiquidPlanet.Helper;
 using UnityEngine.UIElements;
 using System;
 using Unity.Jobs;
+using System.IO;
 
 namespace LiquidPlanet
 {
@@ -66,33 +67,35 @@ namespace LiquidPlanet
             var tA = int3(iA, iC, iD);
             var tB = int3(iA, iD, iB);
 
-            float triangleWidth = DimX / NumX;
-            float triangleHeigth = DimZ / NumZ;
-
-            float xOffset = DimX / 2;
-
-            var vertex = new Vertex();
-            vertex.normal.y = 1f;
-            vertex.tangent.xw = float2(1f, -1f);
-
-            for ( int tpi = trianglePairIndices[threadNumber]; tpi < trianglePairIndices[threadNumber + 1]; tpi++ )
+            for (int tpi = trianglePairIndices[threadNumber]; tpi < trianglePairIndices[threadNumber + 1]; tpi++)
             {
                 int2 coordinate = coordinates[tpi];
                 int x = coordinate.x;
                 int z = coordinate.y;
-
                 int vi = (NumX + 1) * z + x;
-                
-                vertex.position.x = x * triangleWidth + xOffset;
-                vertex.position.z = z * triangleHeigth;
-                vertex.position.y = Height * NativeCollectionHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
-                vertex.texCoord0.x = vertex.position.x / Tiling;
-                vertex.texCoord0.y = vertex.position.z / Tiling;
-                stream.SetVertex(vi, vertex);
-                if (z == 1 && x == 1)
+
+                ConfigureAndSetVertex(stream, vi, x, z, noiseMap);
+
+                if (z == 1 || x == 1)
                 {
-                    //TODOOOOO
+                    if (z == 1 && x == 1)
+                    {
+                        x = 0;
+                        ConfigureAndSetVertex(stream, vi, x, z, noiseMap);
+                        x = 1;
+                        z = 0;
+                        ConfigureAndSetVertex(stream, vi, x, z, noiseMap);
+                        x = 0;
+                        ConfigureAndSetVertex(stream, vi, x, z, noiseMap);
+                    }
+                    else
+                    {
+                        x = x == 1 ? 0 : x;
+                        z = z == 1 ? 0 : z;
+                        ConfigureAndSetVertex(stream, vi, x, z, noiseMap);
+                    }                    
                 }
+                
                 NativeCollectionHelper.IncrementAt(counter, 0);
                 NativeCollectionHelper.IncrementAt(counter, 1);
                 try
@@ -112,6 +115,25 @@ namespace LiquidPlanet
                 
             }
 
+        }
+
+        private void ConfigureAndSetVertex( VertexStream stream, int vi, int x, int z, NativeArray<float> noiseMap)
+        {
+            var vertex = new Vertex();
+            vertex.normal.y = 1f;
+            vertex.tangent.xw = float2(1f, -1f);
+
+            float triangleWidth = DimX / NumX;
+            float triangleHeigth = DimZ / NumZ;
+
+            float xOffset = DimX / 2;
+
+            vertex.position.x = x * triangleWidth + xOffset;
+            vertex.position.z = z * triangleHeigth;
+            vertex.position.y = Height * NativeCollectionHelper.SampleValueAt(vertex.position.x + DimX / 2, vertex.position.z, Resolution, NumX + 1, noiseMap);
+            vertex.texCoord0.x = vertex.position.x / Tiling;
+            vertex.texCoord0.y = vertex.position.z / Tiling;
+            stream.SetVertex(vi, vertex);
         }
 
  
