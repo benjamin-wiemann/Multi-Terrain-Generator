@@ -27,6 +27,10 @@ namespace LiquidPlanet
         int _width;
 
         int _height;
+
+        Texture2D _segmentationTexture;
+
+        Texture2D _heightTexture;
         
         NativeArray<int> _segmentation;
 
@@ -37,7 +41,7 @@ namespace LiquidPlanet
 
         void OnValidate()
         {
-            if (_segmentation.Length > 0 ) 
+            if (_segmentation.Length > 0 && _heigthMap.Length > 0) 
             {
                 Visualize();
             }
@@ -51,18 +55,20 @@ namespace LiquidPlanet
             _segmentation = args.TerrainSegmentation;
             _terrainTypes = args.TerrainTypes;
             _heigthMap = args.HeightMap;
+            _segmentationTexture = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height - 1);
+            _heightTexture = VisualizeHeightMap(_heigthMap, _width, _height);
             Visualize();
         }
 
         void Visualize()
-        {
+        {            
             switch (_dataView)
             {
                 case DataView.TerrainSegmentation:
-                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height -1);
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = _segmentationTexture;
                     break;
                 case DataView.HeightMap:
-                    GetComponent<Renderer>().sharedMaterial.mainTexture = VisualizeHeightMap(_heigthMap, _width, _height);
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = _heightTexture;
                     break;
             }
         }

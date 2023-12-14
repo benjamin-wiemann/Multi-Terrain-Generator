@@ -10,7 +10,7 @@ using LiquidPlanet.Helper;
 namespace LiquidPlanet
 {
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentationJob : IJobFor
     {
         int _width;

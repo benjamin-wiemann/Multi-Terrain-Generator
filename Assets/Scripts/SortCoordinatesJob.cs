@@ -10,7 +10,7 @@ using LiquidPlanet.Helper;
 namespace LiquidPlanet
 {
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct SortCoordinatesJob : IJobFor
     {
         [ReadOnly]
@@ -42,23 +42,24 @@ namespace LiquidPlanet
             job._subMeshIndices[0] = 0;
             for (int i = 1; i < terrainTypes.Length; i++)
             {
-                job._subMeshIndices[i] = (int) terrainTypes[i-1].NumTrianglePairs + job._subMeshIndices[i - 1];
+                job._subMeshIndices[i] = (int)terrainTypes[i - 1].NumTrianglePairs + job._subMeshIndices[i - 1];
             }
-            var handle = job.ScheduleParallel(
-                height - 1,
-                1,
-                default);
-            //job.Run(height);
-            //JobHandle handle = default;
+            //var handle = job.ScheduleParallel(
+            //    height - 1,
+            //    1,
+            //    default);
+            job.Run(height);
+            JobHandle handle = default;
+            Debug.Log(string.Format("Submesh indices: {0}, {1}, {2}", job._subMeshIndices[0], job._subMeshIndices[1], job._subMeshIndices[2]));
             job._subMeshIndices.Dispose();
             return handle;
         }
 
         public void Execute(int y)
         {
-            for(int x = 0; x < _width - 1; x++)
+            for(int x = 0; x < _width; x++)
             {
-                int terrainIndex = _terrainSegmentation[(y + 1) * _width + x + 1];
+                int terrainIndex = _terrainSegmentation[y * _width + x ];
                 int trianglePairIndex = NativeCollectionHelper.IncrementAt(_subMeshIndices, (uint) terrainIndex) - 1;
                 _coordinates[trianglePairIndex] = new int2(x + 1, y + 1);
             }

@@ -81,14 +81,7 @@ namespace LiquidPlanet
 
         public void GenerateMesh()
         {
-            if (_heightMap.IsCreated)
-            {
-                _heightMap.Dispose();
-            }
-            if (_terrainMap.IsCreated)
-            {
-                _terrainMap.Dispose();
-            }
+           
             SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
                 _meshResolution,
                 _meshX,
@@ -154,12 +147,11 @@ namespace LiquidPlanet
             MeshJob.ScheduleParallel(
                 triangleGrid,
                 _heightMap,
-                _terrainMap,
                 types,
                 coordinates,
                 _mesh,
                 meshData,
-                default).Complete();
+                default);
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
             //_mesh.RecalculateBounds
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
@@ -167,6 +159,8 @@ namespace LiquidPlanet
             
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
+            _heightMap.Dispose();
+            _terrainMap.Dispose();            
             coordinates.Dispose();
             types.Dispose();
         }
