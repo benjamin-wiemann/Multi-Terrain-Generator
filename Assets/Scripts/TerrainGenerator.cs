@@ -123,7 +123,7 @@ namespace LiquidPlanet
             NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
             foreach (TerrainType terrainType in _terrainTypes)
             {
-                if (terrainType.active)
+                if (terrainType._active)
                 {
                     types.Add(TerrainTypeUnmanaged.Convert(terrainType));
                 }                
@@ -194,9 +194,11 @@ namespace LiquidPlanet
                     _name = "Standard Terrain",
                     _color = Color.green });
             }
+            var renderer = GetComponent<MeshRenderer>();
+            List < Material > materials = new ();
             for (int i = 0; i < _terrainTypes.Count; i++) 
             {
-                TerrainType type = _terrainTypes[i];
+                var type = _terrainTypes[i];
                 if (type._name == "" || type._name == null)
                 {
                     type._name = "Terrain_" + i;
@@ -204,13 +206,11 @@ namespace LiquidPlanet
                 {
                     type._name = type._name.Substring(0, 125);
                 }
+                materials.Add(type._material);
             }
+            renderer.SetSharedMaterials(materials);
         }
 
-        void OnApplicationQuit()
-        {
-
-        }
     }
 }
 
