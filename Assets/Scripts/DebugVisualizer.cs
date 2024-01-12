@@ -34,7 +34,7 @@ namespace LiquidPlanet
         
         NativeArray<int> _segmentation;
 
-        TerrainTypeUnmanaged[] _terrainTypes;
+        TerrainTypeStruct[] _terrainTypes;
 
         NativeArray<float> _heigthMap;
 
@@ -91,7 +91,7 @@ namespace LiquidPlanet
             return texture;
         }
 
-        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, TerrainTypeUnmanaged[] terrainTypes, int width, int height )
+        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
         {
             
             Texture2D texture = new Texture2D(width, height);

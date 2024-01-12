@@ -12,7 +12,7 @@ namespace LiquidPlanet
 {
 
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob : IJobFor
     {
 
@@ -37,7 +37,7 @@ namespace LiquidPlanet
         public static void ScheduleParallel(
             SharedTriangleGrid generator,
             NativeArray<float> noiseMap,
-            NativeList<TerrainTypeUnmanaged> terrainTypes,
+            NativeList<int> terrainCounters,
             NativeArray<int2> coordinates,
             Mesh mesh,
             Mesh.MeshData meshData,
@@ -58,26 +58,22 @@ namespace LiquidPlanet
                 job._generator.IndexCount
             );
 
-            int threadCount = MathHelper.Lcm(SystemInfo.processorCount, terrainTypes.Length);
+            int threadCount = MathHelper.Lcm(SystemInfo.processorCount, terrainCounters.Length);
             job._threadStartIndices = new(threadCount + 1, Allocator.Persistent);
             int numTrianglePairs = job._generator.NumX * job._generator.NumZ;
-            Debug.Log(string.Format("Num triangle pairs: {0} ", numTrianglePairs));
             for ( int i = 0; i < job._threadStartIndices.Length; i++)
             {
                 job._threadStartIndices[i] = (int) math.round( i * numTrianglePairs / threadCount);
-                Debug.Log(string.Format("Thread start index for thread: {0} is {1}", i, job._threadStartIndices[i]));
             }
+            //Debug.Log(string.Format("thread start indices: {0}, {1}, {2}, {3}, {4}, {5}", job._threadStartIndices[0], 
+            //    job._threadStartIndices[1], job._threadStartIndices[2], job._threadStartIndices[3], job._threadStartIndices[4], job._threadStartIndices[5]));
             
-            //JobHandle handle;
-            // Use the least common multiple
             job.Run(threadCount);
-            //handle = default;
-            //return job.Schedule(job._generator.JobLength, dependency);            
-
             //job.ScheduleParallel(job._generator.JobLength, 1, dependency).Complete();
-            job._stream.SetSubMeshes(meshData, terrainTypes, generator.Bounds, job._generator.VertexCount);
+            //Debug.Log(string.Format("terrain num triangles: {0}, {1}, {2}", terrainTypes[0].NumTrianglePairs, terrainTypes[1].NumTrianglePairs, terrainTypes[2].NumTrianglePairs));
+
+            job._stream.SetSubMeshes(meshData, terrainCounters, generator.Bounds, job._generator.VertexCount);
             job._threadStartIndices.Dispose();            
-            //Debug.Log(string.Format("Number of vertices: {0}, Number of Triangle Pairs: {1}", job._counter[0], job._counter[1]));
             
         }
 

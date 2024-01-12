@@ -20,7 +20,7 @@ namespace LiquidPlanet
         float _noiseScale;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeArray<TerrainTypeUnmanaged> _terrainTypes;
+        NativeArray<TerrainTypeStruct> _terrainTypes;
 
         [ReadOnly]
         NativeArray<float2> _seedPoints;
@@ -33,7 +33,7 @@ namespace LiquidPlanet
 
         public static JobHandle ScheduleParallel(
             NativeArray<float2> seedPoints,
-            NativeArray<TerrainTypeUnmanaged> terrainTypes,
+            NativeArray<TerrainTypeStruct> terrainTypes,
             int width,
             int height,
             float borderGranularity,

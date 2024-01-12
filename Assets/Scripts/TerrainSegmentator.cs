@@ -18,19 +18,15 @@ namespace LiquidPlanet
             float perlinOffset,
             float perlinScale,
             float borderGranularity,
-            NativeList<TerrainTypeUnmanaged> terrainTypes,  // inout
+            NativeList<TerrainTypeStruct> terrainTypes,  // inout
             NativeArray<int> terrainMap,        // out
-            NativeArray<int2> coordinates     // out
+            NativeArray<int2> coordinates,     // out
+            NativeArray<int> terrainCounters // out
         )
         {
             NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
             GenerateRandomSeedPoints(seedPoints, seed, width, height);
-
-            var terrainOccurenceCounters = new NativeArray<int>(terrainTypes.Length, Allocator.Persistent);            
-            for (int i = 0; i < terrainTypes.Length; i++)
-            {
-                terrainOccurenceCounters[i] = 0;
-            }
+                        
             TerrainSegmentationJob.ScheduleParallel(                
                 seedPoints,
                 terrainTypes,
@@ -41,28 +37,14 @@ namespace LiquidPlanet
                 perlinScale,
                 default,
                 terrainMap,
-                terrainOccurenceCounters).Complete();
-            SaveTerrainCounters(width, terrainTypes, terrainOccurenceCounters);
+                terrainCounters).Complete();
             SortCoordinatesJob.ScheduleParallel(
                 terrainMap,
-                terrainTypes,
+                terrainCounters,
                 height,
-                coordinates).Complete();            
-            terrainOccurenceCounters.Dispose();
+                coordinates).Complete();
 
             seedPoints.Dispose();
-        }
-
-        private static void SaveTerrainCounters(int width, NativeList<TerrainTypeUnmanaged> terrainTypes, NativeArray<int> terrainOccurenceCounter)
-        {
-            for (int i = 0; i < terrainTypes.Length; i++)
-            {
-                TerrainTypeUnmanaged type = new TerrainTypeUnmanaged( 
-                    terrainTypes[i].Name,
-                    terrainTypes[i].Color,
-                    (uint) terrainOccurenceCounter[i]);          
-                terrainTypes[i] = type;
-            }
         }
 
         private static void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, uint seed, int width, int height)

@@ -69,24 +69,23 @@ public class TestSuite
         int width = 3;
         int[] segmentation = new int[] { 0, 1, 2, 2, 1, 2, 0, 1, 2 };
         NativeArray<int> terrainSegmentation = new(segmentation, Allocator.Persistent);
-        NativeArray<TerrainTypeUnmanaged> terrainTable = new(3, Allocator.Persistent);
-        terrainTable[0] = new TerrainTypeUnmanaged("type 1", default, 2);
-        terrainTable[1] = new TerrainTypeUnmanaged("type 2", default, 3);
-        terrainTable[2] = new TerrainTypeUnmanaged("type 3", default, 4);
+        NativeArray<int> terrainCounters = new(3, Allocator.Persistent);
+        terrainCounters[0] = 2;
+        terrainCounters[1] = 3;
+        terrainCounters[2] = 4;
         NativeArray<int2> coordinates = new(segmentation.Length, Allocator.Persistent);
         SortCoordinatesJob.ScheduleParallel(
             terrainSegmentation,
-            terrainTable,
+            terrainCounters,
             segmentation.Length / width,
             coordinates);
         int2[] coordinatesDesired = new int2[] {
-            new int2 (0,0), new int2(0, 2),
-            new int2 (1,0), new int2(1, 1), new int2(1, 2),
-            new int2 (2, 0), new int2 (0,1), new int2(2, 1), new int2(2, 2)};
-        //NativeArray<int2> desiredNative = new(coordinatesDesired, Allocator.Persistent);
+            new int2 (1,1), new int2(1, 3),
+            new int2 (2,1), new int2(2, 2), new int2(2, 3),
+            new int2 (3, 1), new int2 (1,2), new int2(3, 2), new int2(3, 3)};
         Assert.That(coordinates.ToArray(), Is.EqualTo(coordinatesDesired));
         terrainSegmentation.Dispose();
-        terrainTable.Dispose();
+        terrainCounters.Dispose();
         coordinates.Dispose();
     }
 

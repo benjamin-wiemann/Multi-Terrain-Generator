@@ -81,7 +81,6 @@ namespace LiquidPlanet
 
         public void GenerateMesh()
         {
-           
             SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
                 _meshResolution,
                 _meshX,
@@ -89,46 +88,22 @@ namespace LiquidPlanet
                 _tiling,
                 _height
             );
-            int numVerticesX = triangleGrid.NumX + 1;
-            int numVerticesY = triangleGrid.NumZ + 1;
-            _heightMap = new(
-                numVerticesX * numVerticesY,
-                Allocator.Persistent);            
-            _minNoiseValues = new(numVerticesY, Allocator.Persistent);
-            _maxNoiseValues = new(numVerticesY, Allocator.Persistent);            
-            NoiseJob.ScheduleParallel(
-                _heightMap,
-                _maxNoiseValues,
-                _minNoiseValues,
-                numVerticesX,
-                numVerticesY,
-                _heigthSeed,
-                _heightScale,
-                _heightOctaves,
-                _heightPersistance,
-                _heightLacunarity,
-                _heightOffset,
-                default,
-                _debugNoise).Complete();
-            NormalizeNoiseJob.ScheduleParallel(
-                _heightMap, _maxNoiseValues, _minNoiseValues, numVerticesX, numVerticesY, default
-                ).Complete();
-
             _terrainMap = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
             NativeArray<int2> coordinates = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
-            NativeList<TerrainTypeUnmanaged> types = new(_terrainTypes.Count, Allocator.Persistent);            
+            NativeList<int> terrainCounters = new (_terrainTypes.Count, Allocator.Persistent);
+            NativeList<TerrainTypeStruct> types = new(_terrainTypes.Count, Allocator.Persistent);
             foreach (TerrainType terrainType in _terrainTypes)
             {
                 if (terrainType._active)
                 {
-                    types.Add(TerrainTypeUnmanaged.Convert(terrainType));
-                }                
+                    types.Add(TerrainTypeStruct.Convert(terrainType));
+                    terrainCounters.Add(0);
+                }
             }
-            
             TerrainSegmentator.GetTerrainSegmentation(
                 triangleGrid.NumX,
                 triangleGrid.NumZ,
@@ -139,15 +114,43 @@ namespace LiquidPlanet
                 _borderGranularity,
                 types,
                 _terrainMap,
-                coordinates                
+                coordinates,
+                terrainCounters
                 );
-
+                        
+            int numVerticesX = triangleGrid.NumX + 1;
+            int numVerticesY = triangleGrid.NumZ + 1;
+            _heightMap = new(
+                numVerticesX * numVerticesY,
+                Allocator.Persistent);            
+            _minNoiseValues = new(numVerticesY, Allocator.Persistent);
+            _maxNoiseValues = new(numVerticesY, Allocator.Persistent);            
+            NoiseJob.ScheduleParallel(   
+                _terrainMap,
+                types,
+                numVerticesX,
+                numVerticesY,
+                _heigthSeed,
+                _heightScale,
+                _heightOctaves,
+                _heightPersistance,
+                _heightLacunarity,
+                _heightOffset,
+                default,
+                _debugNoise,
+                _heightMap,
+                _maxNoiseValues,
+                _minNoiseValues).Complete();
+            NormalizeNoiseJob.ScheduleParallel(
+                _heightMap, _maxNoiseValues, _minNoiseValues, numVerticesX, numVerticesY, default
+                ).Complete();
+            
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
             MeshJob.ScheduleParallel(
                 triangleGrid,
                 _heightMap,
-                types,
+                terrainCounters,
                 coordinates,
                 _mesh,
                 meshData,
@@ -162,6 +165,7 @@ namespace LiquidPlanet
             _heightMap.Dispose();
             _terrainMap.Dispose();            
             coordinates.Dispose();
+            terrainCounters.Dispose();
             types.Dispose();
         }
 

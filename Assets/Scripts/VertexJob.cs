@@ -28,7 +28,7 @@ namespace LiquidPlanet
         public static JobHandle ScheduleParallel(
             NativeArray<float> noiseMap,
             NativeArray<int> terrainMap,
-            NativeList<TerrainTypeUnmanaged> terrainTypes,            
+            NativeList<TerrainTypeStruct> terrainTypes,            
             JobHandle dependency
         )
         {

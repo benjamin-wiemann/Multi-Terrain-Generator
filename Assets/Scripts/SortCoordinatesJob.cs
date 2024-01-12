@@ -19,9 +19,6 @@ namespace LiquidPlanet
         [NativeDisableContainerSafetyRestriction]
         NativeArray<int> _subMeshIndices;
 
-        //[NativeDisableContainerSafetyRestriction]
-        NativeArray<TerrainTypeUnmanaged> _terrainTypes;
-
         [WriteOnly, NativeDisableContainerSafetyRestriction]
         NativeArray<int2> _coordinates;
 
@@ -29,28 +26,26 @@ namespace LiquidPlanet
 
         public static JobHandle ScheduleParallel(
             NativeArray<int> terrainSegmentation,
-            NativeArray<TerrainTypeUnmanaged> terrainTypes,
+            NativeArray<int> terrainCounters,
             int height,
             NativeArray<int2> coordinates)
         {
             SortCoordinatesJob job = new();
             job._terrainSegmentation = terrainSegmentation;
-            job._terrainTypes = terrainTypes;
             job._coordinates = coordinates;
             job._width = terrainSegmentation.Length / height;
-            job._subMeshIndices = new(terrainTypes.Length, Allocator.Persistent);
+            job._subMeshIndices = new(terrainCounters.Length, Allocator.Persistent);
             job._subMeshIndices[0] = 0;
-            for (int i = 1; i < terrainTypes.Length; i++)
+            for (int i = 1; i < terrainCounters.Length; i++)
             {
-                job._subMeshIndices[i] = (int)terrainTypes[i - 1].NumTrianglePairs + job._subMeshIndices[i - 1];
+                job._subMeshIndices[i] = terrainCounters[i - 1] + job._subMeshIndices[i - 1];
             }
             //var handle = job.ScheduleParallel(
             //    height - 1,
             //    1,
             //    default);
             job.Run(height);
-            JobHandle handle = default;
-            Debug.Log(string.Format("Submesh indices: {0}, {1}, {2}", job._subMeshIndices[0], job._subMeshIndices[1], job._subMeshIndices[2]));
+            JobHandle handle = default;            
             job._subMeshIndices.Dispose();
             return handle;
         }
