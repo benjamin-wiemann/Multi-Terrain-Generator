@@ -1,12 +1,11 @@
 
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using LiquidPlanet.Helper;
-using System.Runtime.ConstrainedExecution;
+using LiquidPlanet.Debug;
 
 namespace LiquidPlanet
 {
@@ -40,8 +39,7 @@ namespace LiquidPlanet
             NativeList<int> terrainCounters,
             NativeArray<int2> coordinates,
             Mesh mesh,
-            Mesh.MeshData meshData,
-            JobHandle dependency
+            Mesh.MeshData meshData
         )
         {
             var job = new MeshJob
@@ -68,16 +66,16 @@ namespace LiquidPlanet
             //Debug.Log(string.Format("thread start indices: {0}, {1}, {2}, {3}, {4}, {5}", job._threadStartIndices[0], 
             //    job._threadStartIndices[1], job._threadStartIndices[2], job._threadStartIndices[3], job._threadStartIndices[4], job._threadStartIndices[5]));
             
-            job.Run(threadCount);
-            //job.ScheduleParallel(job._generator.JobLength, 1, dependency).Complete();
+            if (JobTools.Get()._runParallel)
+                job.ScheduleParallel(threadCount, (int) JobTools.Get()._batchCountInThread, default).Complete();
+            else
+                job.Run(threadCount);
+            
             //Debug.Log(string.Format("terrain num triangles: {0}, {1}, {2}", terrainTypes[0].NumTrianglePairs, terrainTypes[1].NumTrianglePairs, terrainTypes[2].NumTrianglePairs));
 
             job._stream.SetSubMeshes(meshData, terrainCounters, generator.Bounds, job._generator.VertexCount);
-            job._threadStartIndices.Dispose();            
-            
+            job._threadStartIndices.Dispose();
         }
-
-        
     }
 
     public delegate JobHandle MeshJobScheduleDelegate(

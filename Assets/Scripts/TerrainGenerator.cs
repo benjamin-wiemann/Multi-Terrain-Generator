@@ -5,7 +5,7 @@ using System;
 using LiquidPlanet.Event;
 using UnityEngine.Events;
 using Unity.Mathematics;
-using Unity.Jobs;
+using LiquidPlanet.Debug;
 
 namespace LiquidPlanet
 {
@@ -58,13 +58,6 @@ namespace LiquidPlanet
         [System.Serializable]
         public class MeshFinishedEvent : UnityEvent<MeshGenFinishedEventArgs> { }
 
-        //public static event EventHandler<MeshGenFinishedEventArgs> MeshFinishedEvent;
-        
-
-        //private void OnEnable()
-        //{
-        //    TerrainGenerator._onMeshFinished = new();
-        //}
 
         public void Init()
         {
@@ -136,14 +129,16 @@ namespace LiquidPlanet
                 _heightPersistance,
                 _heightLacunarity,
                 _heightOffset,
-                default,
                 _debugNoise,
                 _heightMap,
                 _maxNoiseValues,
-                _minNoiseValues).Complete();
+                _minNoiseValues);
             NormalizeNoiseJob.ScheduleParallel(
-                _heightMap, _maxNoiseValues, _minNoiseValues, numVerticesX, numVerticesY, default
-                ).Complete();
+                _heightMap, 
+                _maxNoiseValues, 
+                _minNoiseValues, 
+                numVerticesX, 
+                numVerticesY);
             
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
@@ -153,8 +148,7 @@ namespace LiquidPlanet
                 terrainCounters,
                 coordinates,
                 _mesh,
-                meshData,
-                default);
+                meshData);
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
             //_mesh.RecalculateBounds
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());

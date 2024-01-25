@@ -98,21 +98,23 @@ namespace LiquidPlanet
     [System.Serializable]
     public class TerrainType
     {
-        [SerializeField]    public bool _active = true;
-        [SerializeField]    public string _name;
-        [SerializeField]    public Color _color;
-        [SerializeField]    public Material _material;
+        public bool _active = true;
+        public string _name;
+        public Color _color;
+        public Material _material;
 
         [Header("Height Map")]
-        [SerializeField,
-            Range(0.1f, 20)]
-                         public float _height = 1;
-        [SerializeField] public float _noiseScale;
-        [SerializeField] public int _numOctaves;
-        [SerializeField,
-            Range(0, 1)] public float _persistance;
-        [SerializeField] public float _lacunarity;
-        [SerializeField] public uint _heigthSeed;
-        [SerializeField] public Vector2 _heightOffset;
+        [Range(0.1f, 20)] 
+        public float _height = 1;
+        public float _noiseScale;
+        public int _numOctaves;
+        [Range(0, 1f)] 
+        public float _persistance;
+        public float _lacunarity;
+        public uint _heigthSeed;
+        public Vector2 _heightOffset;
+        [Range(0, 1f)]
+        public float _borderInterpolationWidth = 0.5f; 
+        
     }
 }

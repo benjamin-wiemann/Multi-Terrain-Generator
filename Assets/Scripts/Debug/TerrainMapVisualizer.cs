@@ -1,16 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 using Unity.Collections;
-using Unity.VisualScripting;
-using System;
 
-namespace LiquidPlanet
+namespace LiquidPlanet.Debug
 {
 
     [ExecuteInEditMode]
-    public class DebugVisualizer : MonoBehaviour
+    public class TerrainMapVisualizer : MonoBehaviour
     {
         enum DataView
         {

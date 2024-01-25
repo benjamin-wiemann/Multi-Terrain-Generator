@@ -35,14 +35,13 @@ namespace LiquidPlanet
                 borderGranularity,                
                 perlinOffset,
                 perlinScale,
-                default,
                 terrainMap,
-                terrainCounters).Complete();
+                terrainCounters);
             SortCoordinatesJob.ScheduleParallel(
                 terrainMap,
                 terrainCounters,
                 height,
-                coordinates).Complete();
+                coordinates);
 
             seedPoints.Dispose();
         }

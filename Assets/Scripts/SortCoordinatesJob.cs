@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 using LiquidPlanet.Helper;
+using LiquidPlanet.Debug;
 
 namespace LiquidPlanet
 {
@@ -24,7 +25,7 @@ namespace LiquidPlanet
 
         int _width;
 
-        public static JobHandle ScheduleParallel(
+        public static void ScheduleParallel(
             NativeArray<int> terrainSegmentation,
             NativeArray<int> terrainCounters,
             int height,
@@ -40,14 +41,13 @@ namespace LiquidPlanet
             {
                 job._subMeshIndices[i] = terrainCounters[i - 1] + job._subMeshIndices[i - 1];
             }
-            //var handle = job.ScheduleParallel(
-            //    height - 1,
-            //    1,
-            //    default);
-            job.Run(height);
-            JobHandle handle = default;            
-            job._subMeshIndices.Dispose();
-            return handle;
+
+            if (JobTools.Get()._runParallel)
+                job.ScheduleParallel(height, (int) JobTools.Get()._batchCountInRow, default).Complete();
+            else
+                job.Run(height);
+            
+            job._subMeshIndices.Dispose();            
         }
 
         public void Execute(int y)

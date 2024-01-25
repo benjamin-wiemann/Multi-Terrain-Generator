@@ -5,11 +5,12 @@ using Unity.Mathematics;
 using Unity.Collections;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
+using LiquidPlanet.Debug;
 
 namespace LiquidPlanet
 {
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct NoiseJob : IJobFor
     {
 
@@ -52,7 +53,7 @@ namespace LiquidPlanet
         [NativeDisableContainerSafetyRestriction]
         NativeArray<TerrainTypeStruct> _terrainTypes;
 
-        public static JobHandle ScheduleParallel( 
+        public static void ScheduleParallel( 
             NativeArray<int> terrainMap,
             NativeArray<TerrainTypeStruct> terrainTypes,
             int mapWidth,
@@ -63,7 +64,6 @@ namespace LiquidPlanet
             float persistance,
             float lacunarity,
             float2 offset,
-            JobHandle dependency,
             bool debug,
             NativeArray<float> noiseMap,      // out
             NativeArray<float> maxNoiseHeights, // out
@@ -108,16 +108,16 @@ namespace LiquidPlanet
                 }
             }
 
-            //JobHandle handle = noiseJob.ScheduleParallel(mapHeight, 1, dependency);
-            noiseJob.Run(mapHeight);
-            JobHandle handle = default;
+            if ( JobTools.Get()._runParallel)
+                noiseJob.ScheduleParallel(mapHeight, (int) JobTools.Get()._batchCountInRow, default).Complete();
+            else
+                noiseJob.Run(mapHeight);            
             noiseJob._octaveOffsets.Dispose();
             for (int i = 0; i < terrainTypes.Length; i++)
             {
                 noiseJob._octaveOffsetsPerTerrain[i].Dispose();
             }
             noiseJob._octaveOffsetsPerTerrain.Dispose();
-            return handle;
         }
 
         public void Execute(int y)
