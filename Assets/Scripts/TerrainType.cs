@@ -24,10 +24,10 @@ namespace LiquidPlanet
         public float Persistance;
         public float   Lacunarity;
         public uint    HeigthSeed;
-        public float2  HeightOffset;
+        public float  HeightOffset;
 
         public TerrainTypeStruct(
-            FixedString128Bytes name, 
+            string name, 
             Color color,
             float height = 1,
             float noiseScale = 1,
@@ -35,7 +35,7 @@ namespace LiquidPlanet
             float persistance = 1,
             float lacunarity = 1,
             uint heigthSeed = 1,
-            float2 heightOffset = default,
+            float heightOffset = 0,
             uint numTrianglePairs = 0
             )
         {
@@ -51,28 +51,28 @@ namespace LiquidPlanet
             HeightOffset = heightOffset;
         }
 
-        public TerrainTypeStruct(
-            string name,
-            Color color,
-            float height,
-            float noiseScale,
-            int numOctaves,
-            float persistance,
-            float lacunarity,
-            uint heigthSeed,
-            float2 heightOffset,
-            uint numTrianglePairs) :
-            this(
-                new FixedString128Bytes(name),
-                color,
-                height,
-                noiseScale,
-                numOctaves,
-                persistance,
-                lacunarity,
-                heigthSeed,
-                heightOffset,
-                numTrianglePairs) { }
+        //public TerrainTypeStruct(
+        //    string name,
+        //    Color color,
+        //    float height,
+        //    float noiseScale,
+        //    int numOctaves,
+        //    float persistance,
+        //    float lacunarity,
+        //    uint heigthSeed,
+        //    float heightOffset,
+        //    uint numTrianglePairs) :
+        //    this(
+        //        new FixedString128Bytes(name),
+        //        color,
+        //        height,
+        //        noiseScale,
+        //        numOctaves,
+        //        persistance,
+        //        lacunarity,
+        //        heigthSeed,
+        //        heightOffset,
+        //        numTrianglePairs) { }
 
 
         public static TerrainTypeStruct Convert(TerrainType type)
@@ -86,7 +86,7 @@ namespace LiquidPlanet
                 type._persistance,
                 type._lacunarity,
                 type._heigthSeed,
-                new float2(type._heightOffset.x, type._heightOffset.y)
+                type._heightOffset
                 );
         }
         
@@ -112,7 +112,7 @@ namespace LiquidPlanet
         public float _persistance;
         public float _lacunarity;
         public uint _heigthSeed;
-        public Vector2 _heightOffset;
+        public float _heightOffset;
         [Range(0, 1f)]
         public float _borderInterpolationWidth = 0.5f; 
         

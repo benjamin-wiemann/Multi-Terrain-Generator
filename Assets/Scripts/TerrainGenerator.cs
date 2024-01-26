@@ -136,12 +136,12 @@ namespace LiquidPlanet
                 _maxNoiseValues,
                 _minNoiseValues);
             NormalizeNoiseJob.ScheduleParallel(
-                _heightMap, 
-                _maxNoiseValues, 
-                _minNoiseValues, 
-                numVerticesX, 
+                _heightMap,
+                _maxNoiseValues,
+                _minNoiseValues,
+                numVerticesX,
                 numVerticesY);
-            
+
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
             MeshJob.ScheduleParallel(

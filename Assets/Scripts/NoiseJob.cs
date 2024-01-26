@@ -174,7 +174,7 @@ namespace LiquidPlanet
                         amplitude *= _terrainTypes[terrainIndex].Persistance;
                         frequency *= _terrainTypes[terrainIndex].Lacunarity;
                     }
-
+                    noiseHeight += _terrainTypes[terrainIndex].HeightOffset;
                     if (noiseHeight > _maxNoiseHeights[y])
                     {
                         _maxNoiseHeights[y] = noiseHeight;
