@@ -19,6 +19,7 @@ namespace LiquidPlanet
         float _borderGranularity;
         float _perlinOffset;
         float _noiseScale;
+        float _resolution;
 
         [NativeDisableContainerSafetyRestriction]
         NativeArray<TerrainTypeStruct> _terrainTypes;
@@ -37,6 +38,7 @@ namespace LiquidPlanet
             NativeArray<TerrainTypeStruct> terrainTypes,
             int width,
             int height,
+            float resolution,
             float borderGranularity,
             float perlinOffset,
             float perlinScale,
@@ -49,6 +51,7 @@ namespace LiquidPlanet
             job._seedPoints = seedPoints;
             job._width = width;
             job._height = height;
+            job._resolution = resolution;
             job._borderGranularity = borderGranularity;
             job._terrainTypes = terrainTypes;
             job._perlinOffset = perlinOffset;
@@ -68,15 +71,17 @@ namespace LiquidPlanet
                 
                 float minDistance = float.MaxValue;
                 int minIndex = -1;
+                float xPos = x / _resolution;
+                float yPos = y / _resolution;
 
                 for (int i = 0; i < _seedPoints.Length; i++)
                 {
                     float2 seed = _seedPoints[i];
 
-                    float noiseX = noise.cnoise(new float2(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity)) * _noiseScale - 1; 
-                    float noiseY = noise.cnoise(new float2(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale - 1; 
+                    float noiseX = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity)) * _noiseScale - 1; 
+                    float noiseY = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale - 1; 
 
-                    float dist = distance(new float2(x + noiseX, y + noiseY), seed);
+                    float dist = distance(new float2(xPos + noiseX, yPos + noiseY), seed);
 
                     if (dist < minDistance)
                     {

@@ -18,8 +18,6 @@ namespace LiquidPlanet
 
         private int _mapHeight;
 
-        private uint _seed;
-
         private float _noiseScale;
 
         private int _numOctaves;
@@ -29,6 +27,8 @@ namespace LiquidPlanet
         private float _lacunarity;
 
         private float2 _offset;
+
+        private float _resolution;
 
         private bool _debug;
 
@@ -64,6 +64,7 @@ namespace LiquidPlanet
             float persistance,
             float lacunarity,
             float2 offset,
+            float resolution,
             bool debug,
             NativeArray<float> noiseMap,      // out
             NativeArray<float> maxNoiseHeights, // out
@@ -74,7 +75,6 @@ namespace LiquidPlanet
 
             noiseJob._terrainMap = terrainMap;
             noiseJob._terrainTypes = terrainTypes;
-            noiseJob._seed = seed;
             noiseJob._noiseScale = scale;
             noiseJob._mapHeight = mapHeight;
             noiseJob._mapWidth = mapWidth;
@@ -85,6 +85,7 @@ namespace LiquidPlanet
             noiseJob._persistance = persistance;
             noiseJob._lacunarity = lacunarity;
             noiseJob._offset = offset;
+            noiseJob._resolution = resolution;
             noiseJob._debug = debug;
 
             noiseJob._octaveOffsets = new(numOctaves, Allocator.Persistent);
@@ -153,8 +154,8 @@ namespace LiquidPlanet
 
                     for (int i = 0; i < _numOctaves; i++)
                     {
-                        float sampleX = (x - halfWidth) / _noiseScale * frequency + _octaveOffsets[i].x;
-                        float sampleY = (y - halfHeight) / _noiseScale * frequency + _octaveOffsets[i].y;
+                        float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * frequency + _octaveOffsets[i].x;
+                        float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * frequency + _octaveOffsets[i].y;
 
                         float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
                         noiseHeight += perlinValue * amplitude;
@@ -164,8 +165,8 @@ namespace LiquidPlanet
                     }
                     for (int i = 0; i < _octaveOffsetsPerTerrain[terrainIndex].Length; i++)
                     {
-                        float sampleX = (x - halfWidth) / _noiseScale * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
-                        float sampleY = (y - halfHeight) / _noiseScale * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].y;
+                        float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
+                        float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].y;
 
                         float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
                         noiseHeight += perlinValue * amplitude;

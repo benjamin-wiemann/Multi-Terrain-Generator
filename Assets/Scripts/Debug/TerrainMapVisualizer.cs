@@ -4,7 +4,7 @@ using Unity.Collections;
 namespace LiquidPlanet.Debug
 {
 
-    [ExecuteInEditMode]
+    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class TerrainMapVisualizer : MonoBehaviour
     {
         enum DataView
@@ -15,9 +15,6 @@ namespace LiquidPlanet.Debug
 
         [SerializeField]
         private DataView _dataView;
-
-        [SerializeField]
-        private TerrainGenerator _generator;
 
         int _width;
 

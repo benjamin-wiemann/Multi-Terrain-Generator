@@ -13,6 +13,7 @@ namespace LiquidPlanet
         public static void GetTerrainSegmentation(                        
             int width,
             int height,
+            float resolution,
             uint seed,
             int numPatches,
             float perlinOffset,
@@ -25,13 +26,14 @@ namespace LiquidPlanet
         )
         {
             NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
-            GenerateRandomSeedPoints(seedPoints, seed, width, height);
+            GenerateRandomSeedPoints(seedPoints, seed, width, height, resolution);
                         
             TerrainSegmentationJob.ScheduleParallel(                
                 seedPoints,
                 terrainTypes,
                 width,
                 height,
+                resolution,
                 borderGranularity,                
                 perlinOffset,
                 perlinScale,
@@ -46,12 +48,17 @@ namespace LiquidPlanet
             seedPoints.Dispose();
         }
 
-        private static void GenerateRandomSeedPoints(NativeArray<float2> seedPoints, uint seed, int width, int height)
+        private static void GenerateRandomSeedPoints(
+            NativeArray<float2> seedPoints, 
+            uint seed, 
+            int width, 
+            int height, 
+            float resolution)
         {
             Unity.Mathematics.Random random = new(seed);
             for (int i = 0; i < seedPoints.Length; i++)
             {
-                float2 seedPoint = random.NextFloat2(new float2(width, height));
+                float2 seedPoint = random.NextFloat2(new float2(width / resolution, height / resolution));
                 seedPoints[i] = seedPoint;
             }
 

@@ -100,6 +100,7 @@ namespace LiquidPlanet
             TerrainSegmentator.GetTerrainSegmentation(
                 triangleGrid.NumX,
                 triangleGrid.NumZ,
+                _meshResolution,
                 _terrainSeed,
                 _terrainGranularity,
                 _noiseOffset,
@@ -129,6 +130,7 @@ namespace LiquidPlanet
                 _heightPersistance,
                 _heightLacunarity,
                 _heightOffset,
+                _meshResolution,
                 _debugNoise,
                 _heightMap,
                 _maxNoiseValues,
