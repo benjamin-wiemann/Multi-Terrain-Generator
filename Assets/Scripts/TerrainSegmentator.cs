@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
 using System;
+using Unity.Jobs;
 
 namespace LiquidPlanet
 {
@@ -15,7 +16,7 @@ namespace LiquidPlanet
             int height,
             float resolution,
             uint seed,
-            int numPatches,
+            uint seedPointResolution,
             float perlinOffset,
             float perlinScale,
             float borderGranularity,
@@ -25,12 +26,15 @@ namespace LiquidPlanet
             NativeArray<int> terrainCounters // out
         )
         {
-            NativeArray<float2> seedPoints = new(numPatches, Allocator.Persistent);
-            GenerateRandomSeedPoints(seedPoints, seed, width, height, resolution);
+            // Creating random terrain indices for the worley seed points. Overlap of 2 is need for each side.
+            NativeArray<int> terrainIndices = new((int) ((seedPointResolution + 4) * (seedPointResolution + 4)), Allocator.Persistent);
+            GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes.Length);
                         
             TerrainSegmentationJob.ScheduleParallel(                
-                seedPoints,
                 terrainTypes,
+                terrainIndices,
+                seed,
+                seedPointResolution,
                 width,
                 height,
                 resolution,
@@ -45,21 +49,18 @@ namespace LiquidPlanet
                 height,
                 coordinates);
 
-            seedPoints.Dispose();
+            //seedPoints.Dispose();
         }
 
-        private static void GenerateRandomSeedPoints(
-            NativeArray<float2> seedPoints, 
+        private static void GenerateSeedTerrainIndices(
+            NativeArray<int> indices, 
             uint seed, 
-            int width, 
-            int height, 
-            float resolution)
+            int numTerrainTypes)
         {
             Unity.Mathematics.Random random = new(seed);
-            for (int i = 0; i < seedPoints.Length; i++)
+            for (int i = 0; i < indices.Length; i++)
             {
-                float2 seedPoint = random.NextFloat2(new float2(width / resolution, height / resolution));
-                seedPoints[i] = seedPoint;
+                indices[i] = random.NextInt(numTerrainTypes);                
             }
 
         }

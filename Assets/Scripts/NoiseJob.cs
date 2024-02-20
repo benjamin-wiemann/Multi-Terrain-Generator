@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
-using LiquidPlanet.Debug;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {
@@ -150,7 +150,6 @@ namespace LiquidPlanet
                     float amplitude = 1;
                     float frequency = 1;
                     float noiseHeight = 0;
-                    //int octaves = _numOctaves + _terrainTypes[terrainIndex].NumOctaves; 
 
                     for (int i = 0; i < _numOctaves; i++)
                     {

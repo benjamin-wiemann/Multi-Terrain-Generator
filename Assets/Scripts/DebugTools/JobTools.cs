@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 
-namespace LiquidPlanet.Debug
+namespace LiquidPlanet.DebugTools
 {
     
     [ExecuteInEditMode]

@@ -5,7 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using LiquidPlanet.Helper;
-using LiquidPlanet.Debug;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {

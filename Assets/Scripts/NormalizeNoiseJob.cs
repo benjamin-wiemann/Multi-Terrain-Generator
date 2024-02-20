@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
-using LiquidPlanet.Debug;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {

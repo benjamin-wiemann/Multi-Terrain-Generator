@@ -5,7 +5,7 @@ using System;
 using LiquidPlanet.Event;
 using UnityEngine.Events;
 using Unity.Mathematics;
-using LiquidPlanet.Debug;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {
@@ -34,8 +34,9 @@ namespace LiquidPlanet
 
         [Header("Terrain Segmentation")]
         [SerializeField] uint _terrainSeed;
-        [SerializeField] int _terrainGranularity = 100;
-        [SerializeField] float _noiseScale = 10f;
+        [SerializeField] uint _seedResolution = 10;
+        [SerializeField,
+            Range(0.1f, 1f)] float _noiseScale = 0.5f;
         [SerializeField] float _noiseOffset = 1f;
         [SerializeField] float _borderGranularity = 1;
         [SerializeField] List<TerrainType> _terrainTypes = new();
@@ -102,7 +103,7 @@ namespace LiquidPlanet
                 triangleGrid.NumZ,
                 _meshResolution,
                 _terrainSeed,
-                _terrainGranularity,
+                _seedResolution,
                 _noiseOffset,
                 _noiseScale,
                 _borderGranularity,

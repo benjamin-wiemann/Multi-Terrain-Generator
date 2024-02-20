@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 using LiquidPlanet.Helper;
-using LiquidPlanet.Debug;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {

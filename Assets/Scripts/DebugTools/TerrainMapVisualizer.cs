@@ -1,7 +1,7 @@
 using UnityEngine;
 using Unity.Collections;
 
-namespace LiquidPlanet.Debug
+namespace LiquidPlanet.DebugTools
 {
 
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
