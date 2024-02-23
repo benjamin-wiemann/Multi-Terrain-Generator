@@ -21,7 +21,7 @@ namespace LiquidPlanet
             float perlinScale,
             float borderGranularity,
             NativeList<TerrainTypeStruct> terrainTypes,  // inout
-            NativeArray<int> terrainMap,        // out
+            NativeArray<TerrainInfo> terrainMap,        // out
             NativeArray<int2> coordinates,     // out
             NativeArray<int> terrainCounters // out
         )
@@ -64,7 +64,35 @@ namespace LiquidPlanet
             }
 
         }
+                
+    }
+    
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    public struct TerrainInfo
+    {
+        public int4 TerrainIndices { get; set; }
+        public float4 Intensity { get; set; }
 
+        public TerrainInfo(int4 indices, float4 intensity)
+        {
+            TerrainIndices = indices;
+            Intensity = intensity;
+        }
+
+        public int GetMaxIndex()
+        {
+            int res = 0;
+            float val = 0f;
+            for(int i = 0; i < 4; i++)
+            {
+                if(Intensity[i] > val )
+                {
+                    val = Intensity[i];
+                    res = i;
+                }
+            }
+            return res;
+        }
     }
 
 }

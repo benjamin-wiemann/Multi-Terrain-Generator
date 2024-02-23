@@ -48,13 +48,13 @@ namespace LiquidPlanet
         private NativeArray<float> _minNoiseHeights;
 
         [ReadOnly, NativeDisableContainerSafetyRestriction]
-        private NativeArray<int> _terrainMap;
+        private NativeArray<TerrainInfo> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
         NativeArray<TerrainTypeStruct> _terrainTypes;
 
         public static void ScheduleParallel( 
-            NativeArray<int> terrainMap,
+            NativeArray<TerrainInfo> terrainMap,
             NativeArray<TerrainTypeStruct> terrainTypes,
             int mapWidth,
             int mapHeight,
@@ -146,7 +146,7 @@ namespace LiquidPlanet
                     // clamp coordinates for terrain map since its dimensions are 1 unit smaller than the dimensions of the height map.
                     int terrainY = clamp(y, 0, _mapHeight - 2);
                     int terrainX = clamp(x, 0, _mapWidth - 2);
-                    int terrainIndex = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
+                    int terrainIndex = _terrainMap[terrainY * (_mapWidth - 1) + terrainX].GetMaxIndex();
                     float amplitude = 1;
                     float frequency = 1;
                     float noiseHeight = 0;
@@ -174,14 +174,9 @@ namespace LiquidPlanet
                         frequency *= _terrainTypes[terrainIndex].Lacunarity;
                     }
                     noiseHeight += _terrainTypes[terrainIndex].HeightOffset;
-                    if (noiseHeight > _maxNoiseHeights[y])
-                    {
-                        _maxNoiseHeights[y] = noiseHeight;
-                    }
-                    else if (noiseHeight < _minNoiseHeights[y])
-                    {
-                        _minNoiseHeights[y] = noiseHeight;
-                    }                
+                    _maxNoiseHeights[y] = max(noiseHeight, _maxNoiseHeights[y]);
+                    _minNoiseHeights[y] = min(noiseHeight, _minNoiseHeights[y]);
+                                    
                     _noiseMap[y * _mapWidth + x] = noiseHeight;
                 }
                 

@@ -24,7 +24,7 @@ namespace LiquidPlanet.DebugTools
 
         Texture2D _heightTexture;
         
-        NativeArray<int> _segmentation;
+        NativeArray<TerrainInfo> _segmentation;
 
         TerrainTypeStruct[] _terrainTypes;
 
@@ -83,7 +83,7 @@ namespace LiquidPlanet.DebugTools
             return texture;
         }
 
-        Texture2D VisualizeSegmentation( NativeArray<int> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
+        Texture2D VisualizeSegmentation( NativeArray<TerrainInfo> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
         {
             
             Texture2D texture = new Texture2D(width, height);
@@ -92,7 +92,7 @@ namespace LiquidPlanet.DebugTools
             {
                 for (int y = 0; y < height; y++)
                 {
-                    int patchIndex = segmentation[y * width + x] % terrainTypes.Length;
+                    int patchIndex = segmentation[y * width + x].GetMaxIndex();
                     Color color = terrainTypes[patchIndex].Color;
                     texture.SetPixel(x, y, color);
                 }

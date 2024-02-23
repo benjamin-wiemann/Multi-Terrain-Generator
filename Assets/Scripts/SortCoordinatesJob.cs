@@ -1,8 +1,6 @@
-﻿using UnityEngine;
-using Unity.Jobs;
+﻿using Unity.Jobs;
 using Unity.Collections;
 using Unity.Mathematics;
-using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
 using LiquidPlanet.Helper;
@@ -15,7 +13,7 @@ namespace LiquidPlanet
     public struct SortCoordinatesJob : IJobFor
     {
         [ReadOnly]
-        NativeArray<int> _terrainSegmentation;
+        NativeArray<TerrainInfo> _terrainSegmentation;
 
         [NativeDisableContainerSafetyRestriction]
         NativeArray<int> _subMeshIndices;
@@ -26,7 +24,7 @@ namespace LiquidPlanet
         int _width;
 
         public static void ScheduleParallel(
-            NativeArray<int> terrainSegmentation,
+            NativeArray<TerrainInfo> terrainSegmentation,
             NativeArray<int> terrainCounters,
             int height,
             NativeArray<int2> coordinates)
@@ -54,7 +52,7 @@ namespace LiquidPlanet
         {
             for(int x = 0; x < _width; x++)
             {
-                int terrainIndex = _terrainSegmentation[y * _width + x ];
+                int terrainIndex = _terrainSegmentation[y * _width + x ].GetMaxIndex();
                 int trianglePairIndex = NativeCollectionHelper.IncrementAt(_subMeshIndices, (uint) terrainIndex) - 1;
                 _coordinates[trianglePairIndex] = new int2(x + 1, y + 1);
             }

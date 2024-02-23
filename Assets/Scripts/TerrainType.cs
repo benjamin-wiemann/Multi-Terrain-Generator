@@ -14,17 +14,14 @@ namespace LiquidPlanet
     {
         public FixedString128Bytes Name { get; }
         public Color Color { get; }
-
-        uint _numTrianglePairs;
-        public uint NumTrianglePairs { get => _numTrianglePairs; }
-
-        public float   Height;
-        public float NoiseScale;
-        public int NumOctaves;
-        public float Persistance;
-        public float   Lacunarity;
-        public uint    HeigthSeed;
-        public float  HeightOffset;
+        public uint NumTrianglePairs { get; }
+        public float Height { get; }
+        public float NoiseScale { get; }
+        public int NumOctaves { get; }
+        public float Persistance { get; }
+        public float Lacunarity { get; }
+        public uint HeigthSeed { get; }
+        public float HeightOffset { get; }
 
         public TerrainTypeStruct(
             string name, 
@@ -41,7 +38,7 @@ namespace LiquidPlanet
         {
             Name = new FixedString128Bytes(name);
             Color = color;
-            _numTrianglePairs = numTrianglePairs;
+            NumTrianglePairs = numTrianglePairs;
             Height      = height;
             NoiseScale = noiseScale;
             NumOctaves = numOctaves; 
@@ -50,30 +47,6 @@ namespace LiquidPlanet
             HeigthSeed = heigthSeed;
             HeightOffset = heightOffset;
         }
-
-        //public TerrainTypeStruct(
-        //    string name,
-        //    Color color,
-        //    float height,
-        //    float noiseScale,
-        //    int numOctaves,
-        //    float persistance,
-        //    float lacunarity,
-        //    uint heigthSeed,
-        //    float heightOffset,
-        //    uint numTrianglePairs) :
-        //    this(
-        //        new FixedString128Bytes(name),
-        //        color,
-        //        height,
-        //        noiseScale,
-        //        numOctaves,
-        //        persistance,
-        //        lacunarity,
-        //        heigthSeed,
-        //        heightOffset,
-        //        numTrianglePairs) { }
-
 
         public static TerrainTypeStruct Convert(TerrainType type)
         {

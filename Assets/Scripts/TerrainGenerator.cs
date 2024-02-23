@@ -50,7 +50,7 @@ namespace LiquidPlanet
 
         NativeArray<float> _heightMap;
 
-        NativeArray<int> _terrainMap;
+        NativeArray<TerrainInfo> _terrainMap;
 
         NativeArray<float> _maxNoiseValues;
 

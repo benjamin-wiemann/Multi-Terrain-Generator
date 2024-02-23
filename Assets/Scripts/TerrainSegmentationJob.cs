@@ -28,15 +28,13 @@ namespace LiquidPlanet
         NativeArray<TerrainTypeStruct> _terrainTypes;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        NativeArray<int> _segmentation;
+        NativeArray<TerrainInfo> _segmentation;
 
         [NativeDisableParallelForRestriction]
         NativeArray<int> _terrainCounters;
 
         [ReadOnly, NativeDisableParallelForRestriction]
         NativeArray<int> _terrainIndices;
-
-        SmallXXHash _smallXXHash;
 
         public static void ScheduleParallel(
             NativeArray<TerrainTypeStruct> terrainTypes,
@@ -49,7 +47,7 @@ namespace LiquidPlanet
             float borderGranularity,
             float perlinOffset,
             float perlinScale,
-            NativeArray<int> terrainSegmentation,   // out
+            NativeArray<TerrainInfo> terrainSegmentation,   // out
             NativeArray<int> terrainCounters        // out              
         )
         {
@@ -91,40 +89,33 @@ namespace LiquidPlanet
                 // Where are we within that cell [0-1)?
                 float2 inCell = frac(pos);
 
-                float minDistance = 2.0f;
-                int minIndex = 0;                
-
-                //float2 noiseAdd = new float2();
-                //noiseAdd.x = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity)) * _noiseScale - 1;
-                //noiseAdd.y = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale - 1;
+                float4 minDistance = 0f;
+                int4 indices = 0;              
 
                 for (int shiftX = -1; shiftX <= 1; shiftX++)
                 {
                     for (int shiftY = -1; shiftY <= 1; shiftY++)
                     {   
                         float2 shift = float2(shiftX, shiftY);
-                        float2 worleySeed = HashHelper.Hash2(cell + shift) + shift;
-                        float2 dist = worleySeed - inCell;// - noiseAdd;
-                        float squaredDistance = dot(dist, dist);
+                        float2 worleySeed = HashHelper.Hash2(cell + shift + _seed) + shift;
+                        float dist = length(worleySeed - inCell);
+                        //float squaredDistance = dot(dist, dist);
 
-                        //minDistance = min(minDistance, squaredDistance);
-
-                        if (squaredDistance < minDistance)
-                        {
-                            minDistance = squaredDistance;
-                            int seedTerrainIndex = (int) (cell.y + shiftY + 2) * (int) _seedResolution + (int) (cell.x + shiftX + 2); 
-                            minIndex = _terrainIndices[seedTerrainIndex];
-                            //Debug.Log("Seed: " + seedTerrainIndex + " -> " + minIndex);
-                        }
+                        int seedTerrainIndex = (int)(cell.y + shiftY + 2) * (int)_seedResolution + (int)(cell.x + shiftX + 2);
+                        minDistance[_terrainIndices[seedTerrainIndex]] += exp2(-32.0f * dist) ;
+                        
+                        //minIndex = _terrainIndices[seedTerrainIndex];                            
+                        
                     }
                 }
-                //int terrainIndex = (int) minIndex % _terrainTypes.Length;
-                minIndex = minIndex % 3;
-                _segmentation[y * _width + x] = minIndex;
+
+                //minIndex = minIndex % 3;
+                TerrainInfo terrainInfo = new (indices, minDistance);
+                _segmentation[y * _width + x] = terrainInfo;
                 if(x < _width && y < _height)
                 {
                     // count the occurences of each terrain for each job execution
-                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) minIndex);                    
+                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) terrainInfo.GetMaxIndex());                    
                 }                
                 
             }
