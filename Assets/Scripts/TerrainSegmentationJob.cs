@@ -7,6 +7,7 @@ using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
 using LiquidPlanet.Helper;
 using LiquidPlanet.DebugTools;
+using System.Security.Cryptography;
 
 namespace LiquidPlanet
 {
@@ -108,7 +109,10 @@ namespace LiquidPlanet
                         
                     }
                 }
-
+                for ( int i = 0; i < 3; i++) 
+                {
+                    minDistance[i] = - (1.0f / 32.0f) * log2(max(minDistance[i], float.MinValue));
+                }
                 //minIndex = minIndex % 3;
                 TerrainInfo terrainInfo = new (indices, minDistance);
                 _segmentation[y * _width + x] = terrainInfo;

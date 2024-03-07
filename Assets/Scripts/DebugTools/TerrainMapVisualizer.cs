@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Collections;
+using Unity.Mathematics;
 
 namespace LiquidPlanet.DebugTools
 {
@@ -92,8 +93,10 @@ namespace LiquidPlanet.DebugTools
             {
                 for (int y = 0; y < height; y++)
                 {
-                    int patchIndex = segmentation[y * width + x].GetMaxIndex();
-                    Color color = terrainTypes[patchIndex].Color;
+                    //int patchIndex = segmentation[y * width + x].GetMaxIndex();
+                    //Color color = terrainTypes[patchIndex].Color;
+                    float4 intensity = segmentation[y * width + x].Intensity;
+                    Color color = new( intensity.w, intensity.x, intensity.y, intensity.z );
                     texture.SetPixel(x, y, color);
                 }
             }
