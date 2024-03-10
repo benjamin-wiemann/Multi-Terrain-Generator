@@ -95,8 +95,8 @@ namespace LiquidPlanet.DebugTools
                 {
                     //int patchIndex = segmentation[y * width + x].GetMaxIndex();
                     //Color color = terrainTypes[patchIndex].Color;
-                    float4 intensity = segmentation[y * width + x].Intensity;
-                    Color color = new( intensity.w, intensity.x, intensity.y, intensity.z );
+                    Float9 intensity = segmentation[y * width + x].Intensities;
+                    Color color = new( intensity.a, intensity.b, intensity.c, intensity.d );
                     texture.SetPixel(x, y, color);
                 }
             }

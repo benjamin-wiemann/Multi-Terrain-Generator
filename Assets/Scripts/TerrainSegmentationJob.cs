@@ -90,8 +90,8 @@ namespace LiquidPlanet
                 // Where are we within that cell [0-1)?
                 float2 inCell = frac(pos);
 
-                float4 minDistance = 0f;
-                int4 indices = 0;              
+                Float9 minDistance = Float9.zero;
+                Int9 indices = Int9.zero;
 
                 for (int shiftX = -1; shiftX <= 1; shiftX++)
                 {
@@ -100,21 +100,17 @@ namespace LiquidPlanet
                         float2 shift = float2(shiftX, shiftY);
                         float2 worleySeed = HashHelper.Hash2(cell + shift + _seed) + shift;
                         float dist = length(worleySeed - inCell);
-                        //float squaredDistance = dot(dist, dist);
-
                         int seedTerrainIndex = (int)(cell.y + shiftY + 2) * (int)_seedResolution + (int)(cell.x + shiftX + 2);
-                        minDistance[_terrainIndices[seedTerrainIndex]] += exp2(-32.0f * dist) ;
-                        
-                        //minIndex = _terrainIndices[seedTerrainIndex];                            
-                        
+                        uint neighborIndex = (uint)((shiftY + 1) * 3 + shiftX + 1);
+                        indices[neighborIndex] = _terrainIndices[seedTerrainIndex];
+                        minDistance[neighborIndex] += exp2(-32.0f * dist);                           
                     }
                 }
-                for ( int i = 0; i < 3; i++) 
+                for ( uint i = 0; i < 9; i++) 
                 {
-                    minDistance[i] = - (1.0f / 32.0f) * log2(max(minDistance[i], float.MinValue));
+                    minDistance[i] = - (1.0f / 32.0f) * log2(max(minDistance[i], 0.00000001f));
                 }
-                //minIndex = minIndex % 3;
-                TerrainInfo terrainInfo = new (indices, minDistance);
+                TerrainInfo terrainInfo = new TerrainInfo(indices, minDistance);
                 _segmentation[y * _width + x] = terrainInfo;
                 if(x < _width && y < _height)
                 {
