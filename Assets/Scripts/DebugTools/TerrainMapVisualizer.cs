@@ -92,11 +92,17 @@ namespace LiquidPlanet.DebugTools
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
-                {
-                    //int patchIndex = segmentation[y * width + x].GetMaxIndex();
+                {                    
                     //Color color = terrainTypes[patchIndex].Color;
-                    Float9 intensity = segmentation[y * width + x].Intensities;
-                    Color color = new( intensity.a, intensity.b, intensity.c, intensity.d );
+                    Float9 intensities = segmentation[y * width + x].Intensities;
+                    Int9 indices = segmentation[y * width + x].Indices;
+                    Color color = Color.black;
+                    for (uint i = 0; i < 9; i++)
+                    {
+                        int terrainIndex = indices[i];
+                        color += terrainTypes[terrainIndex].Color * intensities[i];
+                    }
+                    color = color / 18;
                     texture.SetPixel(x, y, color);
                 }
             }

@@ -108,7 +108,7 @@ namespace LiquidPlanet
                 }
                 for ( uint i = 0; i < 9; i++) 
                 {
-                    minDistance[i] = - (1.0f / 32.0f) * log2(max(minDistance[i], 0.00000001f));
+                    minDistance[i] = - (1.0f / (32.0f * _noiseScale * sqrt(2) )) * log2(minDistance[i]);
                 }
                 TerrainInfo terrainInfo = new TerrainInfo(indices, minDistance);
                 _segmentation[y * _width + x] = terrainInfo;

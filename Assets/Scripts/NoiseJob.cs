@@ -140,7 +140,7 @@ namespace LiquidPlanet
                 // clamp coordinates for terrain map since its dimensions are 1 unit smaller than the dimensions of the height map.
                 int terrainY = clamp(y, 0, _mapHeight - 2);
                 int terrainX = clamp(x, 0, _mapWidth - 2);
-                int terrainIndex = _terrainMap[terrainY * (_mapWidth - 1) + terrainX].GetMaxIndex();
+                //int terrainIndex = _terrainMap[terrainY * (_mapWidth - 1) + terrainX].GetMaxIndex();
                 float amplitude = 1;
                 float frequency = 1;
                 float noiseHeight = 0;
@@ -157,19 +157,24 @@ namespace LiquidPlanet
                     frequency *= _lacunarity;
                 }
                 float terrainSpecificNoiseHeight = 0;
-                for (int i = 0; i < _octaveOffsetsPerTerrain[terrainIndex].Length; i++)
-                {
-                    float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
-                    float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].y;
+                for(uint j = 0; j < 9; j++)
+                { 
+                    int terrainIndex = _terrainMap[terrainY * (_mapWidth - 1) + terrainX].Indices[j];                
+                    for (int i = 0; i < _octaveOffsetsPerTerrain[terrainIndex].Length; i++)
+                    {
+                        float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
+                        float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].y;
 
-                    float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
-                    terrainSpecificNoiseHeight += perlinValue * amplitude;
+                        float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
+                        terrainSpecificNoiseHeight += perlinValue * amplitude;
 
-                    amplitude *= _terrainTypes[terrainIndex].Persistance;
-                    frequency *= _terrainTypes[terrainIndex].Lacunarity;
+                        amplitude *= _terrainTypes[terrainIndex].Persistance;
+                        frequency *= _terrainTypes[terrainIndex].Lacunarity;
+                    }
+                    noiseHeight += terrainSpecificNoiseHeight * _terrainMap[terrainY * (_mapWidth - 1) + terrainX].Intensities[j];
                 }
-                //noiseHeight += terrainSpecificNoiseHeight * _terrainMap[terrainY * (_mapWidth - 1) + terrainX].Intensities;
-                noiseHeight += _terrainTypes[terrainIndex].HeightOffset;
+
+                //noiseHeight += _terrainTypes[terrainIndex].HeightOffset;
                 _maxNoiseHeights[y] = max(noiseHeight, _maxNoiseHeights[y]);
                 _minNoiseHeights[y] = min(noiseHeight, _minNoiseHeights[y]);
                                     

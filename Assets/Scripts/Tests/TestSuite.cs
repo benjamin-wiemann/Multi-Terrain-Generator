@@ -74,8 +74,10 @@ public class TestSuite
         for (int i = 0; i < segmentation.Length; i++)
         {
             Float9 intensities = Float9.zero;
-            intensities[(uint) segmentation[i]] = 1f;
-            TerrainInfo info = new TerrainInfo(Int9.zero, intensities);
+            intensities[0] = 1f;
+            Int9 indices = Int9.zero;
+            indices[0] = segmentation[i];
+            TerrainInfo info = new TerrainInfo(indices, intensities);
             terrainSegmentation[i] = info;
         }        
         NativeArray<int> terrainCounters = new(3, Allocator.Persistent);

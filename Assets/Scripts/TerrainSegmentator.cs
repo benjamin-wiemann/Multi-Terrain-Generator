@@ -197,17 +197,17 @@ namespace LiquidPlanet
 
         public int GetMaxIndex()
         {
-            int res = 0;
+            int index = 0;
             float val = 0f;
             for (uint i = 0; i < 4; i++)
             {
                 if (this.Intensities[i] > val)
                 {
                     val = this.Intensities[i];
-                    res = this.Indices[i];
+                    index = this.Indices[i];
                 }
             }
-            return res;
+            return index;
         }
 
     }
