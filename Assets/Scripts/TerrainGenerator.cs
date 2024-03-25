@@ -30,13 +30,12 @@ namespace LiquidPlanet
         [SerializeField] float _heightLacunarity;
         [SerializeField] uint _heigthSeed;
         [SerializeField] Vector2 _heightOffset;
-        [SerializeField] bool _debugNoise = false;
 
         [Header("Terrain Segmentation")]
         [SerializeField] uint _terrainSeed;
         [SerializeField] uint _seedResolution = 10;
         [SerializeField,
-            Range(0.1f, 1f)] float _noiseScale = 0.5f;
+            Range(0f, 1f)] float _noiseScale = 0.5f;
         [SerializeField] float _noiseOffset = 1f;
         [SerializeField] float _borderGranularity = 1;
         [SerializeField] List<TerrainType> _terrainTypes = new();
@@ -132,7 +131,6 @@ namespace LiquidPlanet
                 _heightLacunarity,
                 _heightOffset,
                 _meshResolution,
-                _debugNoise,
                 _heightMap,
                 _maxNoiseValues,
                 _minNoiseValues);

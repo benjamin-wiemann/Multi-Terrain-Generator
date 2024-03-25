@@ -30,8 +30,6 @@ namespace LiquidPlanet
 
         private float _resolution;
 
-        private bool _debug;
-
         [WriteOnly, NativeDisableContainerSafetyRestriction]
         private NativeArray<float> _noiseMap;
 
@@ -65,7 +63,6 @@ namespace LiquidPlanet
             float lacunarity,
             float2 offset,
             float resolution,
-            bool debug,
             NativeArray<float> noiseMap,      // out
             NativeArray<float> maxNoiseHeights, // out
             NativeArray<float> minNoiseHeights  // out
@@ -86,7 +83,6 @@ namespace LiquidPlanet
             noiseJob._lacunarity = lacunarity;
             noiseJob._offset = offset;
             noiseJob._resolution = resolution;
-            noiseJob._debug = debug;
 
             noiseJob._octaveOffsets = new(numOctaves, Allocator.Persistent);
             noiseJob._octaveOffsetsPerTerrain = new(terrainTypes.Length, Allocator.Persistent);
@@ -157,9 +153,12 @@ namespace LiquidPlanet
                     frequency *= _lacunarity;
                 }
                 float terrainSpecificNoiseHeight = 0;
-                for(uint j = 0; j < 9; j++)
+                TerrainInfo info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
+                for (uint j = 0; j < info.Indices.Length; j++)
                 { 
-                    int terrainIndex = _terrainMap[terrainY * (_mapWidth - 1) + terrainX].Indices[j];                
+                    int terrainIndex = info.Indices[j]; 
+                    //if (terrainIndex < 0) 
+                    //    continue;
                     for (int i = 0; i < _octaveOffsetsPerTerrain[terrainIndex].Length; i++)
                     {
                         float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
@@ -171,7 +170,7 @@ namespace LiquidPlanet
                         amplitude *= _terrainTypes[terrainIndex].Persistance;
                         frequency *= _terrainTypes[terrainIndex].Lacunarity;
                     }
-                    noiseHeight += terrainSpecificNoiseHeight * _terrainMap[terrainY * (_mapWidth - 1) + terrainX].Intensities[j];
+                    noiseHeight += terrainSpecificNoiseHeight * info.Intensities[j];
                 }
 
                 //noiseHeight += _terrainTypes[terrainIndex].HeightOffset;

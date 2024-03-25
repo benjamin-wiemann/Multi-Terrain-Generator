@@ -1,9 +1,8 @@
-
+using UnityEngine;
 using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
-using System.IO;
 
 namespace LiquidPlanet
 {
@@ -26,10 +25,20 @@ namespace LiquidPlanet
             NativeArray<int> terrainCounters // out
         )
         {
-            // Creating random terrain indices for the worley seed points. Overlap of 2 is need for each side.
-            NativeArray<int> terrainIndices = new((int) ((seedPointResolution + 4) * (seedPointResolution + 4)), Allocator.Persistent);
+            // Creating random terrain indices for the worley seed points. Overlap of 6 is need for each side.
+            NativeArray<int> terrainIndices = new((int) ((seedPointResolution + 6) * (seedPointResolution + 6)), Allocator.Persistent);
             GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes.Length);
-                        
+            //string row = "";
+            //for (int i = 0; i < seedPointResolution + 4; i++)
+            //{                
+            //    for (int j = 0; j < seedPointResolution + 4; j++)
+            //    {
+            //        row += terrainIndices[i * ((int) seedPointResolution + 4) + j] + " ";
+            //    }                
+            //    row += "\n";
+            //}
+            //Debug.Log(row);
+
             TerrainSegmentationJob.ScheduleParallel(                
                 terrainTypes,
                 terrainIndices,
@@ -68,20 +77,6 @@ namespace LiquidPlanet
     }
 
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
-    public struct IntFloat
-    {
-        public int x;
-        public float y;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IntFloat(int x, float y)
-        {
-            this.x = x; 
-            this.y = y;
-        }
-    }
-
-    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct Int9
     {
         public int a;
@@ -93,6 +88,10 @@ namespace LiquidPlanet
         public int g;
         public int h;
         public int i;
+
+        private uint _pointer;
+
+        public uint Length {  get { return _pointer; } }
 
         public static readonly Int9 zero;
 
@@ -108,6 +107,7 @@ namespace LiquidPlanet
             this.g = g;
             this.h = h;
             this.i = i;
+            _pointer = 0;
         }
 
         public unsafe int this[uint index]
@@ -115,21 +115,42 @@ namespace LiquidPlanet
             get
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-                if (index > 9)
-                    throw new System.ArgumentException("index must be between[0...8]");
+                if (index > (this.Length - 1))
+                    throw new System.ArgumentException("index must be between[0..." + (this.Length - 1) + "]");
 #endif
                 fixed (int* array = &a) { return ((int*)array)[index]; }
             }
             set
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-                if (index > 9)
-                    throw new System.ArgumentException("index must be between[0...8]");
+                if (index > (this.Length))
+                    throw new System.ArgumentException("index must be between[0..." + (this.Length - 1) + "]");
 #endif
                 fixed (int* array = &a) { array[index] = value; }
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint Add(int v)
+        {
+            for(uint i = 0; i < _pointer; i++)
+            {
+                if (this[i] == v)
+                    return i;
+            }
+            this[_pointer] = v;
+            _pointer++;
+            return _pointer - 1;
+        }
+
+        public static Int9 operator -(Int9 a, int b)
+        {
+            for (uint i = 0; i < 9; i++)
+            {
+                a[i] -= b;
+            }
+            return a;
+        }
     }
 
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
@@ -180,6 +201,7 @@ namespace LiquidPlanet
                 fixed (float* array = &a) { array[index] = value; }
             }
         }
+
     }
 
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
@@ -199,9 +221,9 @@ namespace LiquidPlanet
         {
             int index = 0;
             float val = 0f;
-            for (uint i = 0; i < 4; i++)
+            for (uint i = 0; i < 9; i++)
             {
-                if (this.Intensities[i] > val)
+                if (this.Intensities[i] > val && this.Indices[i] >= 0)
                 {
                     val = this.Intensities[i];
                     index = this.Indices[i];

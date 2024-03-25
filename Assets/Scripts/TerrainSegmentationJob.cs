@@ -74,7 +74,8 @@ namespace LiquidPlanet
         }
 
         public void Execute( int y)
-        {          
+        {
+            //string output = "";
             //float gridStepSize = 1 / _seedDensity;
             for (int x = 0; x < _width; x++)
             {
@@ -91,34 +92,37 @@ namespace LiquidPlanet
                 float2 inCell = frac(pos);
 
                 Float9 minDistance = Float9.zero;
-                Int9 indices = Int9.zero;
+                Int9 indices = Int9.zero - 1;
 
-                for (int shiftX = -1; shiftX <= 1; shiftX++)
+                for (int shiftX = -2; shiftX <= 2; shiftX++)
                 {
-                    for (int shiftY = -1; shiftY <= 1; shiftY++)
+                    for (int shiftY = -2; shiftY <= 2; shiftY++)
                     {   
                         float2 shift = float2(shiftX, shiftY);
                         float2 worleySeed = HashHelper.Hash2(cell + shift + _seed) + shift;
                         float dist = length(worleySeed - inCell);
-                        int seedTerrainIndex = (int)(cell.y + shiftY + 2) * (int)_seedResolution + (int)(cell.x + shiftX + 2);
-                        uint neighborIndex = (uint)((shiftY + 1) * 3 + shiftX + 1);
-                        indices[neighborIndex] = _terrainIndices[seedTerrainIndex];
-                        minDistance[neighborIndex] += exp2(-32.0f * dist);                           
+                        int seedTerrainIndex = (int)(cell.y + shiftY + 3) * (int)_seedResolution + (int)(cell.x + shiftX + 3);
+                        //uint neighborIndex = (uint)((shiftY + 1) * 3 + shiftX + 1);
+                        uint terrainIndexPosition = indices.Add( _terrainIndices[seedTerrainIndex]);
+                        minDistance[terrainIndexPosition] += exp2(-32.0f * dist);                           
                     }
                 }
-                for ( uint i = 0; i < 9; i++) 
+                for ( uint i = 0; i < indices.Length; i++) 
                 {
-                    minDistance[i] = - (1.0f / (32.0f * _noiseScale * sqrt(2) )) * log2(minDistance[i]);
+                    minDistance[i] = - (1.0f / (32.0f)) * log2(minDistance[i]);
                 }
+                //output += string.Format(" {0:0.00}", minDistance[2]);
                 TerrainInfo terrainInfo = new TerrainInfo(indices, minDistance);
                 _segmentation[y * _width + x] = terrainInfo;
                 if(x < _width && y < _height)
                 {
+                    int maxIndex = terrainInfo.GetMaxIndex();
                     // count the occurences of each terrain for each job execution
-                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) terrainInfo.GetMaxIndex());                    
+                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) maxIndex);                    
                 }                
                 
             }
+            //Debug.Log(output);
 
         }
 

@@ -15,13 +15,16 @@ namespace LiquidPlanet.DebugTools
         }
 
         [SerializeField]
-        private DataView _dataView;
+        DataView _dataView;
+
+        [SerializeField]
+        int _terrainFilter;
 
         int _width;
 
         int _height;
 
-        Texture2D _segmentationTexture;
+        Texture2D[] _segmentationTextures;
 
         Texture2D _heightTexture;
         
@@ -36,6 +39,7 @@ namespace LiquidPlanet.DebugTools
         {
             if (_segmentation.Length > 0 && _heigthMap.Length > 0) 
             {
+                _terrainFilter = Mathf.Clamp( _terrainFilter, 0, _terrainTypes.Length );
                 Visualize();
             }
             
@@ -48,7 +52,7 @@ namespace LiquidPlanet.DebugTools
             _segmentation = args.TerrainSegmentation;
             _terrainTypes = args.TerrainTypes;
             _heigthMap = args.HeightMap;
-            _segmentationTexture = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height - 1);
+            _segmentationTextures = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height - 1);
             _heightTexture = VisualizeHeightMap(_heigthMap, _width, _height);
             Visualize();
         }
@@ -58,7 +62,7 @@ namespace LiquidPlanet.DebugTools
             switch (_dataView)
             {
                 case DataView.TerrainSegmentation:
-                    GetComponent<Renderer>().sharedMaterial.mainTexture = _segmentationTexture;
+                    GetComponent<Renderer>().sharedMaterial.mainTexture = _segmentationTextures[_terrainFilter];
                     break;
                 case DataView.HeightMap:
                     GetComponent<Renderer>().sharedMaterial.mainTexture = _heightTexture;
@@ -84,31 +88,57 @@ namespace LiquidPlanet.DebugTools
             return texture;
         }
 
-        Texture2D VisualizeSegmentation( NativeArray<TerrainInfo> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
+        Texture2D[] VisualizeSegmentation( NativeArray<TerrainInfo> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
         {
-            
-            Texture2D texture = new Texture2D(width, height);
 
-            for (int x = 0; x < width; x++)
+            Texture2D[] textures = new Texture2D[terrainTypes.Length + 1];
+            for(int i = 0; i < textures.Length; i++)
             {
-                for (int y = 0; y < height; y++)
-                {                    
-                    //Color color = terrainTypes[patchIndex].Color;
+                textures[i] = new Texture2D(width, height);
+            }
+            //string row = "";
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
                     Float9 intensities = segmentation[y * width + x].Intensities;
                     Int9 indices = segmentation[y * width + x].Indices;
-                    Color color = Color.black;
-                    for (uint i = 0; i < 9; i++)
+                    Color[] colors = new Color[terrainTypes.Length + 1];
+                    for( int i = 0; i < colors.Length; i++ )
                     {
-                        int terrainIndex = indices[i];
-                        color += terrainTypes[terrainIndex].Color * intensities[i];
+                        colors[i] = Color.black; 
                     }
-                    color = color / 18;
-                    texture.SetPixel(x, y, color);
+                    for (uint i = 0; i < indices.Length; i++)
+                    {                        
+                        int terrainIndex = indices[i];
+                        Color intensity = terrainTypes[terrainIndex].Color * intensities[i] * 0.5f;
+                        colors[terrainIndex] += intensity;
+                        colors[colors.Length - 1] += intensity;
+                        textures[terrainIndex].SetPixel(x, y, colors[terrainIndex]);
+                    }
+                    textures[textures.Length - 1].SetPixel(x, y, colors[colors.Length - 1] / (terrainTypes.Length));
+                    //row += string.Format(" {0:0.00}", intensities[2]);
                 }
+                //row += "\n";
             }
+            //Debug.Log(row);
 
-            texture.Apply();
-            return texture;
+            for (int i = 0; i < textures.Length; i++)
+            {
+                textures[i].Apply();
+            }
+            //Color[] tex = textures[0].GetPixels();
+            //string mat = "";
+            //for ( int i = 0; i < width; i++)
+            //{
+            //    for (int j = 0; j < height; j++)
+            //    {
+            //        mat += string.Format(" {0:0.00}", tex[j * width + i].b);
+            //    }
+            //    mat+= "\n";
+            //}
+            //Debug.Log(mat);
+            return textures;
         }
 
     }
