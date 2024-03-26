@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
+using System;
 
 namespace LiquidPlanet
 {
@@ -110,23 +111,39 @@ namespace LiquidPlanet
             _pointer = 0;
         }
 
+        public Int9(int init)
+        {            
+            this.a = init;
+            this.b = init;
+            this.c = init;
+            this.d = init;
+            this.e = init;
+            this.f = init;
+            this.g = init;
+            this.h = init;
+            this.i = init;
+            _pointer = 0;
+        }
+
         public unsafe int this[uint index]
         {
             get
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-                if (index > (this.Length - 1))
-                    throw new System.ArgumentException("index must be between[0..." + (this.Length - 1) + "]");
+                if (index > (((int) this.Length) - 1))
+                    throw new System.ArgumentException("index must be between[0..." + (((int)this.Length) - 1) + "]");
 #endif
                 fixed (int* array = &a) { return ((int*)array)[index]; }
             }
             set
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-                if (index > (this.Length))
-                    throw new System.ArgumentException("index must be between[0..." + (this.Length - 1) + "]");
+                if (index > this.Length )
+                    throw new System.ArgumentException("index must be between[0..." + this.Length + "]");
+                else if (index > 8)
+                    throw new System.ArgumentException("index must be between[0...8]");
 #endif
-                fixed (int* array = &a) { array[index] = value; }
+                fixed (int* array = &a) { array[index] = value; }                
             }
         }
 
@@ -138,8 +155,8 @@ namespace LiquidPlanet
                 if (this[i] == v)
                     return i;
             }
-            this[_pointer] = v;
             _pointer++;
+            this[_pointer - 1] = v;
             return _pointer - 1;
         }
 
@@ -221,7 +238,7 @@ namespace LiquidPlanet
         {
             int index = 0;
             float val = 0f;
-            for (uint i = 0; i < 9; i++)
+            for (uint i = 0; i < Indices.Length; i++)
             {
                 if (this.Intensities[i] > val && this.Indices[i] >= 0)
                 {

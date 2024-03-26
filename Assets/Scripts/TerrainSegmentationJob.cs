@@ -92,7 +92,7 @@ namespace LiquidPlanet
                 float2 inCell = frac(pos);
 
                 Float9 minDistance = Float9.zero;
-                Int9 indices = Int9.zero - 1;
+                Int9 indices = new Int9( - 1);
 
                 for (int shiftX = -2; shiftX <= 2; shiftX++)
                 {
