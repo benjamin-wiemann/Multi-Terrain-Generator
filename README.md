@@ -1,3 +1,5 @@
+[Screenshot](multi_terrain_generator_03.png)
+
 # Multi Terrain Generator
 
 Multi Terrain Generator is a simple procedural terrain generator written in C# for Unity. It features the creation of a mesh, on which different terrain types are randomly distributed. A terrain type is defined by a material and its own surface structure. It's possible to create new terrains, as well as to modify the pattern how they are shaped and distributed on the mesh.
