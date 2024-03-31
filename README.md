@@ -1,4 +1,4 @@
-[Screenshot](multi_terrain_generator_03.png)
+![Screenshot](multi_terrain_generator_03.png)
 
 # Multi Terrain Generator
 
