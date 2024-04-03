@@ -96,7 +96,6 @@ namespace LiquidPlanet.DebugTools
             {
                 textures[i] = new Texture2D(width, height);
             }
-            //string row = "";
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
@@ -116,28 +115,16 @@ namespace LiquidPlanet.DebugTools
                         colors[colors.Length - 1] += intensity;
                         textures[terrainIndex].SetPixel(x, y, colors[terrainIndex]);
                     }
-                    textures[textures.Length - 1].SetPixel(x, y, colors[colors.Length - 1] / (terrainTypes.Length));
-                    //row += string.Format(" {0:0.00}", intensities[2]);
+                    textures[textures.Length - 1].SetPixel(x, y, colors[colors.Length - 1] / (terrainTypes.Length));                    
                 }
-                //row += "\n";
+                
             }
-            //Debug.Log(row);
-
+            
             for (int i = 0; i < textures.Length; i++)
             {
                 textures[i].Apply();
             }
-            //Color[] tex = textures[0].GetPixels();
-            //string mat = "";
-            //for ( int i = 0; i < width; i++)
-            //{
-            //    for (int j = 0; j < height; j++)
-            //    {
-            //        mat += string.Format(" {0:0.00}", tex[j * width + i].b);
-            //    }
-            //    mat+= "\n";
-            //}
-            //Debug.Log(mat);
+            
             return textures;
         }
 

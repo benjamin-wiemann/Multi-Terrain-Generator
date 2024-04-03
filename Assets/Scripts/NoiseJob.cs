@@ -135,8 +135,7 @@ namespace LiquidPlanet
             {
                 // clamp coordinates for terrain map since its dimensions are 1 unit smaller than the dimensions of the height map.
                 int terrainY = clamp(y, 0, _mapHeight - 2);
-                int terrainX = clamp(x, 0, _mapWidth - 2);
-                //int terrainIndex = _terrainMap[terrainY * (_mapWidth - 1) + terrainX].GetMaxIndex();
+                int terrainX = clamp(x, 0, _mapWidth - 2);                
                 float amplitude = 1;
                 float frequency = 1;
                 float noiseHeight = 0;
@@ -152,25 +151,26 @@ namespace LiquidPlanet
                     amplitude *= _persistance;
                     frequency *= _lacunarity;
                 }
-                float terrainSpecificNoiseHeight = 0;
+                
                 TerrainInfo info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
                 for (uint j = 0; j < info.Indices.Length; j++)
                 { 
-                    int terrainIndex = info.Indices[j]; 
-                    //if (terrainIndex < 0) 
-                    //    continue;
+                    int terrainIndex = info.Indices[j];
+                    float terrainAmplitude = amplitude;
+                    float terrainFrequency = frequency;
+                    float terrainNoiseHeight = 0;
                     for (int i = 0; i < _octaveOffsetsPerTerrain[terrainIndex].Length; i++)
                     {
-                        float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
-                        float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * frequency + _octaveOffsetsPerTerrain[terrainIndex][i].y;
+                        float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * terrainFrequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
+                        float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * terrainFrequency + _octaveOffsetsPerTerrain[terrainIndex][i].y;
 
                         float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
-                        terrainSpecificNoiseHeight += perlinValue * amplitude;
+                        terrainNoiseHeight += perlinValue * terrainAmplitude;
 
-                        amplitude *= _terrainTypes[terrainIndex].Persistance;
-                        frequency *= _terrainTypes[terrainIndex].Lacunarity;
+                        terrainAmplitude *= _terrainTypes[terrainIndex].Persistance;
+                        terrainFrequency *= _terrainTypes[terrainIndex].Lacunarity;
                     }
-                    noiseHeight += terrainSpecificNoiseHeight * info.Intensities[j];
+                    noiseHeight += terrainNoiseHeight * info.Intensities[j];
                 }
 
                 //noiseHeight += _terrainTypes[terrainIndex].HeightOffset;

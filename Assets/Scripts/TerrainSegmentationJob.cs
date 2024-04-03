@@ -94,6 +94,8 @@ namespace LiquidPlanet
                 Float9 minDistance = Float9.zero;
                 Int9 indices = new Int9( - 1);
 
+                float falloff = 32f;
+
                 for (int shiftX = -2; shiftX <= 2; shiftX++)
                 {
                     for (int shiftY = -2; shiftY <= 2; shiftY++)
@@ -104,12 +106,12 @@ namespace LiquidPlanet
                         int seedTerrainIndex = (int)(cell.y + shiftY + 3) * (int)_seedResolution + (int)(cell.x + shiftX + 3);
                         //uint neighborIndex = (uint)((shiftY + 1) * 3 + shiftX + 1);
                         uint terrainIndexPosition = indices.Add( _terrainIndices[seedTerrainIndex]);
-                        minDistance[terrainIndexPosition] += exp2(-32.0f * dist);                           
+                        minDistance[terrainIndexPosition] += exp2(-falloff * dist);                           
                     }
                 }
                 for ( uint i = 0; i < indices.Length; i++) 
                 {
-                    minDistance[i] = - (1.0f / (32.0f)) * log2(minDistance[i]);
+                    minDistance[i] = - (1.0f / (falloff)) * log2(minDistance[i]);
                 }
                 //output += string.Format(" {0:0.00}", minDistance[2]);
                 TerrainInfo terrainInfo = new TerrainInfo(indices, minDistance);
