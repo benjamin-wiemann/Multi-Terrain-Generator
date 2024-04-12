@@ -29,17 +29,7 @@ namespace LiquidPlanet
             // Creating random terrain indices for the worley seed points. Overlap of 6 is need for each side.
             NativeArray<int> terrainIndices = new((int) ((seedPointResolution + 6) * (seedPointResolution + 6)), Allocator.Persistent);
             GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes.Length);
-            //string row = "";
-            //for (int i = 0; i < seedPointResolution + 4; i++)
-            //{                
-            //    for (int j = 0; j < seedPointResolution + 4; j++)
-            //    {
-            //        row += terrainIndices[i * ((int) seedPointResolution + 4) + j] + " ";
-            //    }                
-            //    row += "\n";
-            //}
-            //Debug.Log(row);
-
+            
             TerrainSegmentationJob.ScheduleParallel(                
                 terrainTypes,
                 terrainIndices,
@@ -59,7 +49,7 @@ namespace LiquidPlanet
                 height,
                 coordinates);
 
-            //seedPoints.Dispose();
+            terrainIndices.Dispose();
         }
 
         private static void GenerateSeedTerrainIndices(

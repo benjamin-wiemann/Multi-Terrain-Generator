@@ -75,8 +75,6 @@ namespace LiquidPlanet
 
         public void Execute( int y)
         {
-            //string output = "";
-            //float gridStepSize = 1 / _seedDensity;
             for (int x = 0; x < _width; x++)
             {
                 float xPos = (float) x / (float) _width;
@@ -86,34 +84,31 @@ namespace LiquidPlanet
                 noiseAdd.y = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale;
 
                 float2 pos = float2(x * _seedDensity, y * _seedDensity) + noiseAdd;
-                // Which integer grid cell are we in?
-                float2 cell = floor( pos );
-                // Where are we within that cell [0-1)?
-                float2 inCell = frac(pos);
+                
+                float2 cellIndex = floor( pos );                
+                float2 inCellLocation = frac(pos);
 
                 Float9 minDistance = Float9.zero;
                 Int9 indices = new Int9( - 1);
 
                 float falloff = 32f;
-
                 for (int shiftX = -2; shiftX <= 2; shiftX++)
                 {
                     for (int shiftY = -2; shiftY <= 2; shiftY++)
                     {   
                         float2 shift = float2(shiftX, shiftY);
-                        float2 worleySeed = HashHelper.Hash2(cell + shift + _seed) + shift;
-                        float dist = length(worleySeed - inCell);
-                        int seedTerrainIndex = (int)(cell.y + shiftY + 3) * (int)_seedResolution + (int)(cell.x + shiftX + 3);
-                        //uint neighborIndex = (uint)((shiftY + 1) * 3 + shiftX + 1);
+                        float2 worleySeed = HashHelper.Hash2(cellIndex + shift + _seed) + shift;                        
+                        float dist = length(worleySeed - inCellLocation);
+                        int seedTerrainIndex = (int)(cellIndex.y + shiftY + 3) * (int)_seedResolution + (int)(cellIndex.x + shiftX + 3);
                         uint terrainIndexPosition = indices.Add( _terrainIndices[seedTerrainIndex]);
-                        minDistance[terrainIndexPosition] += exp2(-falloff * dist);                           
+                        minDistance[terrainIndexPosition] += exp2(-falloff * dist);
                     }
                 }
                 for ( uint i = 0; i < indices.Length; i++) 
                 {
-                    minDistance[i] = - (1.0f / (falloff)) * log2(minDistance[i]);
+                    minDistance[i] = -(1.0f / (falloff)) * log2(minDistance[i]);
                 }
-                //output += string.Format(" {0:0.00}", minDistance[2]);
+               
                 TerrainInfo terrainInfo = new TerrainInfo(indices, minDistance);
                 _segmentation[y * _width + x] = terrainInfo;
                 if(x < _width && y < _height)
@@ -124,8 +119,6 @@ namespace LiquidPlanet
                 }                
                 
             }
-            //Debug.Log(output);
-
         }
 
 

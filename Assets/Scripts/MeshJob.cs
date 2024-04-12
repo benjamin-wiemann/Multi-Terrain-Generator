@@ -63,16 +63,12 @@ namespace LiquidPlanet
             {
                 job._threadStartIndices[i] = (int) math.round( i * numTrianglePairs / threadCount);
             }
-            //Debug.Log(string.Format("thread start indices: {0}, {1}, {2}, {3}, {4}, {5}", job._threadStartIndices[0], 
-            //    job._threadStartIndices[1], job._threadStartIndices[2], job._threadStartIndices[3], job._threadStartIndices[4], job._threadStartIndices[5]));
-            
+                        
             if (JobTools.Get()._runParallel)
                 job.ScheduleParallel(threadCount, (int) JobTools.Get()._batchCountInThread, default).Complete();
             else
                 job.Run(threadCount);
             
-            //Debug.Log(string.Format("terrain num triangles: {0}, {1}, {2}", terrainTypes[0].NumTrianglePairs, terrainTypes[1].NumTrianglePairs, terrainTypes[2].NumTrianglePairs));
-
             job._stream.SetSubMeshes(meshData, terrainCounters, generator.Bounds, job._generator.VertexCount);
             job._threadStartIndices.Dispose();
         }

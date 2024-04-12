@@ -112,7 +112,7 @@ namespace LiquidPlanet
 
             vertex.position.x = x * triangleWidth + xOffset;
             vertex.position.z = z * triangleHeigth;
-            vertex.position.y = Height * NativeCollectionHelper.SampleValueAt(vertex.position.x - xOffset, vertex.position.z, Resolution, NumX + 1, noiseMap);
+            vertex.position.y = Height * noiseMap[z * (NumX + 1) + x];
             vertex.texCoord0.x = vertex.position.x / Tiling;
             vertex.texCoord0.y = vertex.position.z / Tiling;
             stream.SetVertex(vi, vertex);
