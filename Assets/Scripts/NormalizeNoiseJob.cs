@@ -52,7 +52,7 @@ namespace LiquidPlanet
             normalizeJob._minNoiseHeight = minNoiseValue;
             normalizeJob._mapWidth = mapWidth;
             if ( JobTools.Get()._runParallel )
-                normalizeJob.ScheduleParallel(mapHeight, (int) JobTools.Get()._batchCountInRow, default);
+                normalizeJob.ScheduleParallel(mapHeight, (int) JobTools.Get()._batchCountInRow, default).Complete();
             else
             {
                 normalizeJob.Run(mapHeight);
