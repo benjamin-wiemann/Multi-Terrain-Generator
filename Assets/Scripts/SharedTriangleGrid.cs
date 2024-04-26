@@ -4,10 +4,6 @@ using static Unity.Mathematics.math;
 using Unity.Collections;
 using Unity.Mathematics;
 using LiquidPlanet.Helper;
-using UnityEngine.UIElements;
-using System;
-using Unity.Jobs;
-using System.IO;
 
 namespace LiquidPlanet
 {
@@ -17,8 +13,6 @@ namespace LiquidPlanet
         public int VertexCount => (NumX + 1) * (NumZ + 1);
 
         public int IndexCount => 6 * NumZ * NumX;
-
-        public int JobLength => NumZ + 1;
 
         public Bounds Bounds => new Bounds(new Vector3(0f, Height, DimZ/2), new Vector3((1f + 0.5f / Resolution) * DimX, Height, DimZ)); 
 
@@ -93,23 +87,13 @@ namespace LiquidPlanet
                     }                    
                 }
                 
-                //NativeCollectionHelper.IncrementAt(counter, 0);
-                //NativeCollectionHelper.IncrementAt(counter, 1);
-                //try
-                //{
                 stream.SetTriangle(
                     tpi * 2, vi + tA
                 );
                 stream.SetTriangle(
                     tpi * 2 + 1, vi + tB
                 );
-                //}
-                //catch ( Exception ex ) 
-                //{
-                //    Debug.Log(string.Format("Vertex counter: {0} Vertex index: {1}, X: {5}, Z: {6}, Triangle pair counter: {2} Triangle indices {3} and {4}",
-                //        counter[0], vi, counter[1], tpi *2, tpi *2 +1, x, z));
-                //}
-                
+                                
             }
 
         }
@@ -128,7 +112,7 @@ namespace LiquidPlanet
 
             vertex.position.x = x * triangleWidth + xOffset;
             vertex.position.z = z * triangleHeigth;
-            vertex.position.y = Height * NativeCollectionHelper.SampleValueAt(vertex.position.x - xOffset, vertex.position.z, Resolution, NumX + 1, noiseMap);
+            vertex.position.y = Height * noiseMap[z * (NumX + 1) + x];
             vertex.texCoord0.x = vertex.position.x / Tiling;
             vertex.texCoord0.y = vertex.position.z / Tiling;
             stream.SetVertex(vi, vertex);

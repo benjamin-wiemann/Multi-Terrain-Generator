@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {
@@ -22,13 +23,14 @@ namespace LiquidPlanet
 
         private float _minNoiseHeight;
 
-        public static JobHandle ScheduleParallel(            
-            NativeArray<float> noiseMapIn,
+        bool _runParallel;
+
+        public static void ScheduleParallel(            
+            NativeArray<float> noiseMapIn,      //inout
             NativeArray<float> maxNoiseValues,
             NativeArray<float> minNoiseValues,
             int mapWidth,
-            int mapHeight,
-            JobHandle dependency            
+            int mapHeight          
         )
         {
             NormalizeNoiseJob normalizeJob = new();
@@ -49,7 +51,12 @@ namespace LiquidPlanet
             normalizeJob._maxNoiseHeight = maxNoiseValue;
             normalizeJob._minNoiseHeight = minNoiseValue;
             normalizeJob._mapWidth = mapWidth;
-            return normalizeJob.ScheduleParallel(mapHeight, 1, dependency);
+            if ( JobTools.Get()._runParallel )
+                normalizeJob.ScheduleParallel(mapHeight, (int) JobTools.Get()._batchCountInRow, default).Complete();
+            else
+            {
+                normalizeJob.Run(mapHeight);
+            }
         }
 
         public void Execute(int y)

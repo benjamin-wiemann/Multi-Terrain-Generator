@@ -10,8 +10,8 @@ namespace LiquidPlanet.Event
             int numVerticesX,
             int numVerticesY,
             NativeArray<float> heightMap,
-            NativeArray<int> terrainSegmentation,
-            TerrainTypeUnmanaged[] terrainTypes
+            NativeArray<TerrainInfo> terrainSegmentation,
+            TerrainTypeStruct[] terrainTypes
             )
         {
             NumVerticesX = numVerticesX;
@@ -26,8 +26,8 @@ namespace LiquidPlanet.Event
 
         public NativeArray<float> HeightMap { get; }
 
-        public NativeArray<int> TerrainSegmentation { get; }
-        public TerrainTypeUnmanaged[] TerrainTypes { get; }
+        public NativeArray<TerrainInfo> TerrainSegmentation { get; }
+        public TerrainTypeStruct[] TerrainTypes { get; }
 
     }
 }

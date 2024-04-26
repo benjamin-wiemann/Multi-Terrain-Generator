@@ -1,34 +1,67 @@
 ﻿using Unity.Collections;
 using UnityEngine;
 using System;
+using Unity.Mathematics;
 
 namespace LiquidPlanet
 {
 
     /// <summary>
-    /// Unmanaged terrain type to be used with Burst and Jobs 
+    /// Terrain type struct to be used with Burst and Jobs 
     /// </summary>
     [System.Serializable]
-    public struct TerrainTypeUnmanaged
+    public struct TerrainTypeStruct
     {
         public FixedString128Bytes Name { get; }
-        public Color Color { get; }
+        public float3 Color { get; }
+        public uint NumTrianglePairs { get; }
+        public float Height { get; }
+        public float NoiseScale { get; }
+        public int NumOctaves { get; }
+        public float Persistance { get; }
+        public float Lacunarity { get; }
+        public uint HeigthSeed { get; }
+        public float HeightOffset { get; }
 
-        uint _numTrianglePairs;
-        public uint NumTrianglePairs { get => _numTrianglePairs; }
-
-        public TerrainTypeUnmanaged(FixedString128Bytes name, Color color, uint numTrianglePairs = 0)
+        public TerrainTypeStruct(
+            string name, 
+            float3 color,
+            float height = 1,
+            float noiseScale = 1,
+            int numOctaves = 1,
+            float persistance = 1,
+            float lacunarity = 1,
+            uint heigthSeed = 1,
+            float heightOffset = 0,
+            uint numTrianglePairs = 0
+            )
         {
             Name = new FixedString128Bytes(name);
             Color = color;
-            _numTrianglePairs = numTrianglePairs;
+            NumTrianglePairs = numTrianglePairs;
+            Height      = height;
+            NoiseScale = noiseScale;
+            NumOctaves = numOctaves; 
+            Persistance = persistance;
+            Lacunarity = lacunarity;
+            HeigthSeed = heigthSeed;
+            HeightOffset = heightOffset;
         }
 
-        public TerrainTypeUnmanaged(string name, Color color, uint numTrianglePairs) :
-            this(new FixedString128Bytes(name), color, numTrianglePairs) { }
-        
-
-        public static TerrainTypeUnmanaged Convert(TerrainType type) => new TerrainTypeUnmanaged(type._name, type._color);
+        public static TerrainTypeStruct Convert(TerrainType type)
+        {
+            return new TerrainTypeStruct(
+                type._name, 
+                new float3(type._color.r, type._color.b, type._color.g),
+                type._height,
+                type._noiseScale,
+                type._numOctaves,
+                type._persistance,
+                type._lacunarity,
+                type._heigthSeed,
+                type._heightOffset
+                );
+        }
         
     }
 
@@ -38,13 +71,23 @@ namespace LiquidPlanet
     [System.Serializable]
     public class TerrainType
     {
-        [SerializeField]
         public bool _active = true;
-        [SerializeField]
         public string _name;
-        [SerializeField]
         public Color _color;
-        [SerializeField]
         public Material _material;
+
+        [Header("Height Map")]
+        [Range(0.1f, 20)] 
+        public float _height = 1;
+        public float _noiseScale;
+        public int _numOctaves;
+        [Range(0, 1f)] 
+        public float _persistance;
+        public float _lacunarity;
+        public uint _heigthSeed;
+        public float _heightOffset;
+        [Range(0, 1f)]
+        public float _borderInterpolationWidth = 0.5f; 
+        
     }
 }

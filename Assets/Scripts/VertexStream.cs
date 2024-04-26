@@ -51,13 +51,13 @@ namespace LiquidPlanet
             triangles = meshData.GetIndexData<int>().Reinterpret<int3>(4);
         }
 
-        public void SetSubMeshes( MeshData meshData, NativeArray<TerrainTypeUnmanaged> terrainTypes, Bounds bounds, int vertexCount)
+        public void SetSubMeshes( MeshData meshData, NativeList<int> terrainCounters, Bounds bounds, int vertexCount)
         {
-            meshData.subMeshCount = terrainTypes.Length;
-            uint startIndex = 0;
-            for (int i = 0; i < terrainTypes.Length; i++)
+            meshData.subMeshCount = terrainCounters.Length;
+            int startIndex = 0;
+            for (int i = 0; i < terrainCounters.Length; i++)
             {
-                var subMeshDescriptor = new SubMeshDescriptor((int) startIndex, (int) terrainTypes[i].NumTrianglePairs * 6)
+                var subMeshDescriptor = new SubMeshDescriptor((int) startIndex, (int) terrainCounters[i] * 6)
                 {
                     bounds = bounds,
                     vertexCount = vertexCount
@@ -67,7 +67,7 @@ namespace LiquidPlanet
                     MeshUpdateFlags.DontRecalculateBounds |
                     MeshUpdateFlags.DontValidateIndices
                 );
-                startIndex += terrainTypes[i].NumTrianglePairs * 6;
+                startIndex += terrainCounters[i] * 6;
             }
         }
 

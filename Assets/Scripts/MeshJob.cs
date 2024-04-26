@@ -1,18 +1,17 @@
 
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using LiquidPlanet.Helper;
-using System.Runtime.ConstrainedExecution;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {
 
 
-    //[BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+    [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct MeshJob : IJobFor
     {
 
@@ -37,11 +36,10 @@ namespace LiquidPlanet
         public static void ScheduleParallel(
             SharedTriangleGrid generator,
             NativeArray<float> noiseMap,
-            NativeList<TerrainTypeUnmanaged> terrainTypes,
+            NativeList<int> terrainCounters,
             NativeArray<int2> coordinates,
             Mesh mesh,
-            Mesh.MeshData meshData,
-            JobHandle dependency
+            Mesh.MeshData meshData
         )
         {
             var job = new MeshJob
@@ -58,30 +56,22 @@ namespace LiquidPlanet
                 job._generator.IndexCount
             );
 
-            int threadCount = MathHelper.Lcm(SystemInfo.processorCount, terrainTypes.Length);
+            int threadCount = MathHelper.Lcm(SystemInfo.processorCount, terrainCounters.Length);
             job._threadStartIndices = new(threadCount + 1, Allocator.Persistent);
             int numTrianglePairs = job._generator.NumX * job._generator.NumZ;
-            Debug.Log(string.Format("Num triangle pairs: {0} ", numTrianglePairs));
             for ( int i = 0; i < job._threadStartIndices.Length; i++)
             {
                 job._threadStartIndices[i] = (int) math.round( i * numTrianglePairs / threadCount);
-                Debug.Log(string.Format("Thread start index for thread: {0} is {1}", i, job._threadStartIndices[i]));
             }
+                        
+            if (JobTools.Get()._runParallel)
+                job.ScheduleParallel(threadCount, (int) JobTools.Get()._batchCountInThread, default).Complete();
+            else
+                job.Run(threadCount);
             
-            //JobHandle handle;
-            // Use the least common multiple
-            job.Run(threadCount);
-            //handle = default;
-            //return job.Schedule(job._generator.JobLength, dependency);            
-
-            //job.ScheduleParallel(job._generator.JobLength, 1, dependency).Complete();
-            job._stream.SetSubMeshes(meshData, terrainTypes, generator.Bounds, job._generator.VertexCount);
-            job._threadStartIndices.Dispose();            
-            //Debug.Log(string.Format("Number of vertices: {0}, Number of Triangle Pairs: {1}", job._counter[0], job._counter[1]));
-            
+            job._stream.SetSubMeshes(meshData, terrainCounters, generator.Bounds, job._generator.VertexCount);
+            job._threadStartIndices.Dispose();
         }
-
-        
     }
 
     public delegate JobHandle MeshJobScheduleDelegate(

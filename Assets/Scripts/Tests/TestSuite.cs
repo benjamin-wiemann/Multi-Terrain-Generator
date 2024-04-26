@@ -1,9 +1,11 @@
 using NUnit.Framework;
 using Unity.Collections;
 using Unity.Mathematics;
+using UnityEngine;
 using LiquidPlanet;
 using LiquidPlanet.Helper;
 using System;
+using LiquidPlanet.DebugTools;
 
 public class TestSuite
 {
@@ -68,25 +70,52 @@ public class TestSuite
     {
         int width = 3;
         int[] segmentation = new int[] { 0, 1, 2, 2, 1, 2, 0, 1, 2 };
-        NativeArray<int> terrainSegmentation = new(segmentation, Allocator.Persistent);
-        NativeArray<TerrainTypeUnmanaged> terrainTable = new(3, Allocator.Persistent);
-        terrainTable[0] = new TerrainTypeUnmanaged("type 1", default, 2);
-        terrainTable[1] = new TerrainTypeUnmanaged("type 2", default, 3);
-        terrainTable[2] = new TerrainTypeUnmanaged("type 3", default, 4);
+        NativeArray<TerrainInfo> terrainSegmentation = new(segmentation.Length, Allocator.Persistent);
+        for (int i = 0; i < segmentation.Length; i++)
+        {
+            Float9 intensities = Float9.zero;
+            intensities[0] = 1f;
+            Int9 indices = Int9.zero;
+            indices[0] = segmentation[i];
+            TerrainInfo info = new TerrainInfo(indices, intensities);
+            terrainSegmentation[i] = info;
+        }        
+        NativeArray<int> terrainCounters = new(3, Allocator.Persistent);
+        terrainCounters[0] = 2;
+        terrainCounters[1] = 3;
+        terrainCounters[2] = 4;
         NativeArray<int2> coordinates = new(segmentation.Length, Allocator.Persistent);
+        int2[] coordinatesExpected = new int2[] {
+            new int2 (1,1), new int2(1, 3),
+            new int2 (2,1), new int2(2, 2), new int2(2, 3),
+            new int2 (3, 1), new int2 (1,2), new int2(3, 2), new int2(3, 3)};
+        JobTools.Get()._runParallel = false;
         SortCoordinatesJob.ScheduleParallel(
             terrainSegmentation,
-            terrainTable,
+            terrainCounters,
             segmentation.Length / width,
             coordinates);
-        int2[] coordinatesDesired = new int2[] {
-            new int2 (0,0), new int2(0, 2),
-            new int2 (1,0), new int2(1, 1), new int2(1, 2),
-            new int2 (2, 0), new int2 (0,1), new int2(2, 1), new int2(2, 2)};
-        //NativeArray<int2> desiredNative = new(coordinatesDesired, Allocator.Persistent);
-        Assert.That(coordinates.ToArray(), Is.EqualTo(coordinatesDesired));
+        Assert.That(coordinates.ToArray(), Is.EqualTo(coordinatesExpected));
+        JobTools.Get()._runParallel = true;
+        SortCoordinatesJob.ScheduleParallel(
+            terrainSegmentation,
+            terrainCounters,
+            segmentation.Length / width,
+            coordinates);
+        NativeArray<int2> terrain0 = coordinates.GetSubArray(0, 2);
+        Assert.That(terrain0.ToArray(), Contains.Item(coordinatesExpected[0]));
+        Assert.That(terrain0.ToArray(), Contains.Item(coordinatesExpected[1]));
+        NativeArray<int2> terrain1 = coordinates.GetSubArray(2, 3);
+        Assert.That(terrain1.ToArray(), Contains.Item(coordinatesExpected[2]));
+        Assert.That(terrain1.ToArray(), Contains.Item(coordinatesExpected[3]));
+        Assert.That(terrain1.ToArray(), Contains.Item(coordinatesExpected[4]));
+        NativeArray<int2> terrain2 = coordinates.GetSubArray(5, 4);
+        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[5]));
+        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[6]));
+        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[7]));
+        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[8]));
         terrainSegmentation.Dispose();
-        terrainTable.Dispose();
+        terrainCounters.Dispose();
         coordinates.Dispose();
     }
 

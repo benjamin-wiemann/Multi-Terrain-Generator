@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
 using LiquidPlanet.Helper;
+using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {
@@ -13,86 +14,118 @@ namespace LiquidPlanet
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentationJob : IJobFor
     {
+        float _seedDensity;
+        uint _seedResolution;
         int _width;
         int _height;
         float _borderGranularity;
+        float _borderSmoothing;
         float _perlinOffset;
         float _noiseScale;
+        float _resolution;
+        uint _seed;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeArray<TerrainTypeUnmanaged> _terrainTypes;
-
-        [ReadOnly]
-        NativeArray<float2> _seedPoints;
+        NativeArray<TerrainTypeStruct> _terrainTypes;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        NativeArray<int> _segmentation;
+        NativeArray<TerrainInfo> _segmentation;
 
         [NativeDisableParallelForRestriction]
         NativeArray<int> _terrainCounters;
 
-        public static JobHandle ScheduleParallel(
-            NativeArray<float2> seedPoints,
-            NativeArray<TerrainTypeUnmanaged> terrainTypes,
+        [ReadOnly, NativeDisableParallelForRestriction]
+        NativeArray<int> _terrainIndices;
+
+        public static void ScheduleParallel(
+            NativeArray<TerrainTypeStruct> terrainTypes,
+            NativeArray<int> terrainIndices,
+            uint seed,
+            uint seedPointResolution,
             int width,
             int height,
+            float resolution,
             float borderGranularity,
+            float borderSmoothing,
             float perlinOffset,
             float perlinScale,
-            JobHandle dependency,
-            NativeArray<int> terrainSegmentation,   // out
+            NativeArray<TerrainInfo> terrainSegmentation,   // out
             NativeArray<int> terrainCounters        // out              
         )
         {
             TerrainSegmentationJob job = new();
             job._segmentation = terrainSegmentation;
-            job._seedPoints = seedPoints;
+            job._terrainIndices = terrainIndices;
             job._width = width;
             job._height = height;
+            job._resolution = resolution;
             job._borderGranularity = borderGranularity;
+            job._borderSmoothing = borderSmoothing;
             job._terrainTypes = terrainTypes;
             job._perlinOffset = perlinOffset;
             job._noiseScale = perlinScale;
             job._terrainCounters = terrainCounters;
+            job._seedDensity = (float) seedPointResolution / (float) width;
+            job._seedResolution = seedPointResolution;
+            job._seed = seed;
 
-            return job.ScheduleParallel(height, 1, default);
-            //job.Run(height);
-            //return default;
+            if (JobTools.Get()._runParallel)
+                job.ScheduleParallel(height, (int) JobTools.Get()._batchCountInRow, default).Complete();
+            else
+                job.Run(height);
         }
 
         public void Execute( int y)
-        {                   
+        {
             for (int x = 0; x < _width; x++)
             {
+                float xPos = (float) x / (float) _width;
+                float yPos = (float) y / (float) _height;
+                float2 noiseAdd = new float2();
+                noiseAdd.x = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity)) * _noiseScale;
+                noiseAdd.y = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale;
+
+                float2 pos = float2(x * _seedDensity, y * _seedDensity) + noiseAdd;
                 
-                float minDistance = float.MaxValue;
-                int minIndex = -1;
+                float2 cellIndex = floor( pos );                
+                float2 inCellLocation = frac(pos);
 
-                for (int i = 0; i < _seedPoints.Length; i++)
+                Float9 terrainShares = Float9.zero;
+                //for (uint i = 0; i < 9; i++)
+                //    terrainShares[i] = 8;
+                Int9 indices = new Int9( - 1);
+
+                float minDistance = 8f;
+                int shiftSize = 1;
+                for (int shiftX = -shiftSize; shiftX <= shiftSize; shiftX++)
                 {
-                    float2 seed = _seedPoints[i];
-
-                    float noiseX = noise.cnoise(new float2(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity)) * _noiseScale - 1; 
-                    float noiseY = noise.cnoise(new float2(x * 0.1f * _borderGranularity, y * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale - 1; 
-
-                    float dist = distance(new float2(x + noiseX, y + noiseY), seed);
-
-                    if (dist < minDistance)
-                    {
-                        minDistance = dist;
-                        minIndex = i;
+                    for (int shiftY = -shiftSize; shiftY <= shiftSize; shiftY++)
+                    {   
+                        float2 shift = float2(shiftX, shiftY);
+                        float2 worleySeed = HashHelper.Hash2(cellIndex + shift + _seed) + shift;                        
+                        float dist = length(worleySeed - inCellLocation);
+                        int seedTerrainIndex = (int)(cellIndex.y + shiftY + 3) * (int)_seedResolution + (int)(cellIndex.x + shiftX + 3);
+                        int terrainIndex = _terrainIndices[seedTerrainIndex];
+                        uint terrainIndexPosition = indices.Add( terrainIndex );
+                        float h = smoothstep(-1.0f, 1.0f, (minDistance - dist) / _borderSmoothing);
+                        minDistance = lerp(minDistance, dist, h);                        
+                        Float9 dist9 = Float9.zero;
+                        dist9[terrainIndexPosition] = 1;
+                        terrainShares = Float9.lerp(terrainShares, dist9, h, indices.Length);
                     }
                 }
-                int terrainIndex = minIndex % _terrainTypes.Length;
-                _segmentation[y * _width + x] = terrainIndex;
+                
+               
+                TerrainInfo terrainInfo = new TerrainInfo(indices, terrainShares);
+                _segmentation[y * _width + x] = terrainInfo;
                 if(x < _width && y < _height)
                 {
+                    int maxIndex = terrainInfo.GetMaxIndex();
                     // count the occurences of each terrain for each job execution
-                    int index = NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) terrainIndex) - 1;                    
+                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) maxIndex);                    
                 }                
                 
             }
-
         }
 
 
