@@ -13,7 +13,7 @@ namespace LiquidPlanet
     public struct TerrainTypeStruct
     {
         public FixedString128Bytes Name { get; }
-        public Color Color { get; }
+        public float3 Color { get; }
         public uint NumTrianglePairs { get; }
         public float Height { get; }
         public float NoiseScale { get; }
@@ -25,7 +25,7 @@ namespace LiquidPlanet
 
         public TerrainTypeStruct(
             string name, 
-            Color color,
+            float3 color,
             float height = 1,
             float noiseScale = 1,
             int numOctaves = 1,
@@ -52,7 +52,7 @@ namespace LiquidPlanet
         {
             return new TerrainTypeStruct(
                 type._name, 
-                type._color,
+                new float3(type._color.r, type._color.b, type._color.g),
                 type._height,
                 type._noiseScale,
                 type._numOctaves,

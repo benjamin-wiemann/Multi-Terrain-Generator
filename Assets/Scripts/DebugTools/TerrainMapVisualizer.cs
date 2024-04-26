@@ -100,8 +100,9 @@ namespace LiquidPlanet.DebugTools
             {
                 for (int x = 0; x < width; x++)
                 {
-                    Float9 intensities = segmentation[y * width + x].Intensities;
-                    Int9 indices = segmentation[y * width + x].Indices;
+                    TerrainInfo info = segmentation[y * width + x];
+                    Float9 intensities = info.Intensities;
+                    Int9 indices = info.Indices;
                     Color[] colors = new Color[terrainTypes.Length + 1];
                     for( int i = 0; i < colors.Length; i++ )
                     {
@@ -110,12 +111,14 @@ namespace LiquidPlanet.DebugTools
                     for (uint i = 0; i < indices.Length; i++)
                     {                        
                         int terrainIndex = indices[i];
-                        Color intensity = terrainTypes[terrainIndex].Color * intensities[i] * 0.5f;
-                        colors[terrainIndex] += intensity;
-                        colors[colors.Length - 1] += intensity;
+                        float3 col = terrainTypes[terrainIndex].Color;
+                        Color terrainColor = new Color(col.x, col.y, col.z) * intensities[i];
+                        colors[terrainIndex] = terrainColor;                        
+                        colors[colors.Length - 1] += terrainColor;
                         textures[terrainIndex].SetPixel(x, y, colors[terrainIndex]);
                     }
-                    textures[textures.Length - 1].SetPixel(x, y, colors[colors.Length - 1] / (terrainTypes.Length));                    
+                    //colors[colors.Length - 1] = new Color(info.Color.x, info.Color.y, info.Color.z) ;
+                    textures[textures.Length - 1].SetPixel(x, y, colors[colors.Length - 1]);                    
                 }
                 
             }

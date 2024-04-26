@@ -38,6 +38,7 @@ namespace LiquidPlanet
             Range(0f, 1f)] float _noiseScale = 0.5f;
         [SerializeField] float _noiseOffset = 1f;
         [SerializeField] float _borderGranularity = 1;
+        [SerializeField] float _borderSmoothing = 1f;
         [SerializeField] List<TerrainType> _terrainTypes = new();
 
         [SerializeField]
@@ -106,6 +107,7 @@ namespace LiquidPlanet
                 _noiseOffset,
                 _noiseScale,
                 _borderGranularity,
+                _borderSmoothing,
                 types,
                 _terrainMap,
                 coordinates,

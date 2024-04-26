@@ -170,7 +170,7 @@ namespace LiquidPlanet
                         terrainAmplitude *= _terrainTypes[terrainIndex].Persistance;
                         terrainFrequency *= _terrainTypes[terrainIndex].Lacunarity;
                     }
-                    noiseHeight += terrainNoiseHeight * info.Intensities[j];
+                    noiseHeight += (terrainNoiseHeight * _terrainTypes[terrainIndex].Height + _terrainTypes[terrainIndex].HeightOffset) * info.Intensities[j];
                 }
 
                 //noiseHeight += _terrainTypes[terrainIndex].HeightOffset;

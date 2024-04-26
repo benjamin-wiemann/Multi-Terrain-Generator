@@ -7,7 +7,6 @@ using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
 using LiquidPlanet.Helper;
 using LiquidPlanet.DebugTools;
-using System.Security.Cryptography;
 
 namespace LiquidPlanet
 {
@@ -20,6 +19,7 @@ namespace LiquidPlanet
         int _width;
         int _height;
         float _borderGranularity;
+        float _borderSmoothing;
         float _perlinOffset;
         float _noiseScale;
         float _resolution;
@@ -46,6 +46,7 @@ namespace LiquidPlanet
             int height,
             float resolution,
             float borderGranularity,
+            float borderSmoothing,
             float perlinOffset,
             float perlinScale,
             NativeArray<TerrainInfo> terrainSegmentation,   // out
@@ -59,6 +60,7 @@ namespace LiquidPlanet
             job._height = height;
             job._resolution = resolution;
             job._borderGranularity = borderGranularity;
+            job._borderSmoothing = borderSmoothing;
             job._terrainTypes = terrainTypes;
             job._perlinOffset = perlinOffset;
             job._noiseScale = perlinScale;
@@ -88,28 +90,33 @@ namespace LiquidPlanet
                 float2 cellIndex = floor( pos );                
                 float2 inCellLocation = frac(pos);
 
-                Float9 minDistance = Float9.zero;
+                Float9 terrainShares = Float9.zero;
+                //for (uint i = 0; i < 9; i++)
+                //    terrainShares[i] = 8;
                 Int9 indices = new Int9( - 1);
 
-                float falloff = 32f;
-                for (int shiftX = -2; shiftX <= 2; shiftX++)
+                float minDistance = 8f;
+                int shiftSize = 1;
+                for (int shiftX = -shiftSize; shiftX <= shiftSize; shiftX++)
                 {
-                    for (int shiftY = -2; shiftY <= 2; shiftY++)
+                    for (int shiftY = -shiftSize; shiftY <= shiftSize; shiftY++)
                     {   
                         float2 shift = float2(shiftX, shiftY);
                         float2 worleySeed = HashHelper.Hash2(cellIndex + shift + _seed) + shift;                        
                         float dist = length(worleySeed - inCellLocation);
                         int seedTerrainIndex = (int)(cellIndex.y + shiftY + 3) * (int)_seedResolution + (int)(cellIndex.x + shiftX + 3);
-                        uint terrainIndexPosition = indices.Add( _terrainIndices[seedTerrainIndex]);
-                        minDistance[terrainIndexPosition] += exp2(-falloff * dist);
+                        int terrainIndex = _terrainIndices[seedTerrainIndex];
+                        uint terrainIndexPosition = indices.Add( terrainIndex );
+                        float h = smoothstep(-1.0f, 1.0f, (minDistance - dist) / _borderSmoothing);
+                        minDistance = lerp(minDistance, dist, h);                        
+                        Float9 dist9 = Float9.zero;
+                        dist9[terrainIndexPosition] = 1;
+                        terrainShares = Float9.lerp(terrainShares, dist9, h, indices.Length);
                     }
                 }
-                for ( uint i = 0; i < indices.Length; i++) 
-                {
-                    minDistance[i] = -(1.0f / (falloff)) * log2(minDistance[i]);
-                }
+                
                
-                TerrainInfo terrainInfo = new TerrainInfo(indices, minDistance);
+                TerrainInfo terrainInfo = new TerrainInfo(indices, terrainShares);
                 _segmentation[y * _width + x] = terrainInfo;
                 if(x < _width && y < _height)
                 {

@@ -20,6 +20,7 @@ namespace LiquidPlanet
             float perlinOffset,
             float perlinScale,
             float borderGranularity,
+            float borderSmoothing,
             NativeList<TerrainTypeStruct> terrainTypes,  // inout
             NativeArray<TerrainInfo> terrainMap,        // out
             NativeArray<int2> coordinates,     // out
@@ -38,7 +39,8 @@ namespace LiquidPlanet
                 width,
                 height,
                 resolution,
-                borderGranularity,                
+                borderGranularity,
+                borderSmoothing,
                 perlinOffset,
                 perlinScale,
                 terrainMap,
@@ -209,6 +211,15 @@ namespace LiquidPlanet
             }
         }
 
+        public static Float9 lerp(Float9 left, Float9 right, float delta, uint count = 9)
+        {            
+            Float9 result = Float9.zero;
+            for (uint i = 0; i < count; i++)
+                result[i] = (1 - delta) * left[i] + delta * right[i];
+
+            return result;
+        }
+
     }
 
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
@@ -222,6 +233,7 @@ namespace LiquidPlanet
         {
             this.Indices = indices;
             this.Intensities = intensities;
+            
         }
 
         public int GetMaxIndex()
