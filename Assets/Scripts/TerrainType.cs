@@ -52,7 +52,7 @@ namespace LiquidPlanet
         {
             return new TerrainTypeStruct(
                 type._name, 
-                new float3(type._color.r, type._color.b, type._color.g),
+                new float3(type._color.r, type._color.g, type._color.b),
                 type._height,
                 type._noiseScale,
                 type._numOctaves,

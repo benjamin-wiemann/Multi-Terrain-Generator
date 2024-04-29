@@ -10,6 +10,9 @@ using LiquidPlanet.DebugTools;
 namespace LiquidPlanet
 {
 
+    /// <summary>
+    /// Normalizes the height map 
+    /// </summary>
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct NormalizeNoiseJob : IJobFor
     {
@@ -22,8 +25,6 @@ namespace LiquidPlanet
         private float _maxNoiseHeight;
 
         private float _minNoiseHeight;
-
-        bool _runParallel;
 
         public static void ScheduleParallel(            
             NativeArray<float> noiseMapIn,      //inout
@@ -64,7 +65,7 @@ namespace LiquidPlanet
             for (int x = 0; x < _mapWidth; x++)
             {
                 _noiseMap[y * _mapWidth + x] = unlerp(_minNoiseHeight, _maxNoiseHeight, _noiseMap[y * _mapWidth + x]);
-            }
+            }   
         }
 
     }
