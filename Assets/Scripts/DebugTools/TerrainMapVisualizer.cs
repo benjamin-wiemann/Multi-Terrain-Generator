@@ -1,6 +1,8 @@
 using UnityEngine;
 using Unity.Collections;
 using Unity.Mathematics;
+using System.IO;
+using System;
 
 namespace LiquidPlanet.DebugTools
 {
@@ -19,6 +21,12 @@ namespace LiquidPlanet.DebugTools
 
         [SerializeField]
         int _terrainFilter;
+
+        [SerializeField]
+        bool _writeToDisk = false;
+
+        [SerializeField]
+        string _filePath = "./GeneratedTextures/";
 
         int _width;
 
@@ -47,7 +55,7 @@ namespace LiquidPlanet.DebugTools
 
         public void OnMeshGenerationFinished(Event.MeshGenFinishedEventArgs args)
         {
-            _width = args.NumVerticesX; 
+            _width = args.NumVerticesX;
             _height = args.NumVerticesY;
             _segmentation = args.TerrainSegmentation;
             _terrainTypes = args.TerrainTypes;
@@ -55,6 +63,12 @@ namespace LiquidPlanet.DebugTools
             _segmentationTextures = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height - 1);
             _heightTexture = VisualizeHeightMap(_heigthMap, _width, _height);
             Visualize();
+            if (_writeToDisk && Directory.Exists(_filePath))
+            {
+                DateTime dt = DateTime.Now;                
+                File.WriteAllBytes(_filePath + "/" + dt.ToString("yyyy-mm-dd_HH-mm-ss") + "_Segmentation.png", _segmentationTextures[_segmentationTextures.Length - 1].EncodeToPNG());
+                File.WriteAllBytes(_filePath + "/" + dt.ToString("yyyy-mm-dd_HH-mm-ss") + "_Height.png", _heightTexture.EncodeToPNG());
+            }
         }
 
         void Visualize()
