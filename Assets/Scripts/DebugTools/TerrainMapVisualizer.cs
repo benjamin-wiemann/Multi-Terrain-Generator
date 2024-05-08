@@ -66,8 +66,8 @@ namespace LiquidPlanet.DebugTools
             if (_writeToDisk && Directory.Exists(_filePath))
             {
                 DateTime dt = DateTime.Now;                
-                File.WriteAllBytes(_filePath + "/" + dt.ToString("yyyy-mm-dd_HH-mm-ss") + "_Segmentation.png", _segmentationTextures[_segmentationTextures.Length - 1].EncodeToPNG());
-                File.WriteAllBytes(_filePath + "/" + dt.ToString("yyyy-mm-dd_HH-mm-ss") + "_Height.png", _heightTexture.EncodeToPNG());
+                File.WriteAllBytes(_filePath + "/" + dt.ToString("yyyy-MM-dd_HH-mm-ss") + "_Segmentation.png", _segmentationTextures[_segmentationTextures.Length - 1].EncodeToPNG());
+                File.WriteAllBytes(_filePath + "/" + dt.ToString("yyyy-MM-dd_HH-mm-ss") + "_Height.png", _heightTexture.EncodeToPNG());
             }
         }
 
