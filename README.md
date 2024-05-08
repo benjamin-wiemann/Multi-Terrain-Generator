@@ -1,4 +1,4 @@
-![Screenshot](multi_terrain_generator_03.png)
+![Screenshot](./Doc/Start_screenshot.png)
 
 # Multi Terrain Generator
 
@@ -29,5 +29,5 @@ Low border noise             |  High border noise			| Smoothed borders
 
 ## What's next?
 
-This is still work in progress, so some features still don't work as they are supposed to. Currently, the generation is started by a button in the Unity inspector. In its current state, the application will generate the mesh only during one frame, so when a mesh with a very high triangle count is generated, it blocks the Unity UI. 
+This is still work in progress, so some features still don't work as they are supposed to. Currently, the generation is started by a button in the Unity inspector. The application will generate the mesh only during one frame, so when a mesh with a very high triangle count is generated, it blocks the Unity UI while the generation goes on. 
 Also, to be able to assign a material to a terrain type, the application uses submeshes. The downside to this is that there is no smooth transition from one material to the other. To solve this, one of my future tasks for this tool is to write a custom shader.
