@@ -153,7 +153,6 @@ namespace LiquidPlanet
                 _mesh,
                 meshData);
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
-            //_mesh.RecalculateBounds
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             _onMeshFinished?.Invoke(args);
             
