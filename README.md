@@ -27,7 +27,3 @@ Low border noise             |  High border noise			| Smoothed borders
 ![Mesh low border noise](./Doc/Mesh_low_border_noise.png  "Mesh low border noise") |![Mesh high border noise](./Doc/Mesh_high_border_noise.png "Mesh high border noise") |![Mesh smooth transition](./Doc/Mesh_smooth_transition.png "Mesh smooth transition")
 ![Closeup](./Doc/Closeup_low_border_noise.png  "Closeup") |![Closeup](./Doc/Closeup_high_border_noise.png "Closeup") |![Closeup](./Doc/Closeup_smooth_transition.png "Closeup")
 
-## What's next?
-
-This is still work in progress, so some features still don't work as they are supposed to. Currently, the generation is started by a button in the Unity inspector. The application will generate the mesh only during one frame, so when a mesh with a very high triangle count is generated, it blocks the Unity UI while the generation goes on. 
-Also, to be able to assign a material to a terrain type, the application uses submeshes. The downside to this is that there is no smooth transition from one material to the other. To solve this, one of my future tasks for this tool is to write a custom shader.
