@@ -117,28 +117,38 @@ namespace LiquidPlanet
             float xLow, xHigh;
             if (x == NumX)
             {
-                xLow = Height * noiseMap[z * (NumX + 1) + x - 1];
-                xHigh = vertex.position.y;
+                xLow = noiseMap[z * (NumX + 1) + x - 1];
+                xHigh = noiseMap[z * (NumX + 1) + x ];
+            }
+            else if (x == 0)
+            {
+                xLow = noiseMap[z * (NumX + 1) + x ];
+                xHigh = noiseMap[z * (NumX + 1) + x + 1];
             }
             else
             {
-                xLow = vertex.position.y;
-                xHigh = Height * noiseMap[z * (NumX + 1) + x + 1];
+                xLow = noiseMap[z * (NumX + 1) + x - 1];
+                xHigh = noiseMap[z * (NumX + 1) + x + 1];
             }
             float zLow, zHigh;
             if( z == NumZ ) 
             {
-                zLow = Height * noiseMap[(z - 1) * (NumX + 1) + x];
-                zHigh = vertex.position.y;
+                zLow = noiseMap[(z - 1) * (NumX + 1) + x];
+                zHigh = noiseMap[z * (NumX + 1) + x];
+            }
+            else if( z == 0 )
+            {
+                zLow = noiseMap[z * (NumX + 1) + x];
+                zHigh = noiseMap[(z + 1) * (NumX + 1) + x];
             }
             else
-            {
-                zLow = vertex.position.y;
-                zHigh = Height * noiseMap[(z + 1) * (NumX + 1) + x];
+            {                
+                zLow = noiseMap[(z - 1) * (NumX + 1) + x];
+                zHigh = noiseMap[(z + 1) * (NumX + 1) + x];
             }
 
-            float3 xtangent = normalize(float3(triangleWidth, xHigh - xLow, 0));
-            float3 ztangent = normalize(float3(0, zHigh - zLow, triangleHeigth));
+            float3 xtangent = normalize(float3(triangleWidth, Height * (xHigh - xLow), 0));
+            float3 ztangent = normalize(float3(0, Height * (zHigh - zLow), triangleHeigth));
             vertex.tangent.xyw = float3(xtangent.x, xtangent.y, -1f);
             vertex.normal = cross(ztangent, xtangent);            
 
