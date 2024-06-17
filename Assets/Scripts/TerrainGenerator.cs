@@ -5,7 +5,6 @@ using System;
 using LiquidPlanet.Event;
 using UnityEngine.Events;
 using Unity.Mathematics;
-using LiquidPlanet.DebugTools;
 
 namespace LiquidPlanet
 {
@@ -16,7 +15,7 @@ namespace LiquidPlanet
         [SerializeField,
             Range(1, 100)] float _meshX = 10;
         [SerializeField,
-            Range(1, 100)] float _meshY = 10;
+            Range(1, 100)] float _meshZ = 10;
         [SerializeField] float _tiling = 1;
         [SerializeField] int _meshResolution = 10;
 
@@ -30,10 +29,11 @@ namespace LiquidPlanet
         [SerializeField] float _heightLacunarity;
         [SerializeField] uint _heigthSeed;
         [SerializeField] Vector2 _heightOffset;
+        [SerializeField] bool _normalize = false;
 
         [Header("Terrain Segmentation")]
         [SerializeField] uint _terrainSeed;
-        [SerializeField] uint _seedResolution = 10;
+        [SerializeField] float _seedPointDensity = 0.1f;
         [SerializeField,
             Range(0f, 1f)] float _noiseScale = 0.5f;
         [SerializeField] float _noiseOffset = 1f;
@@ -78,7 +78,7 @@ namespace LiquidPlanet
             SharedTriangleGrid triangleGrid = new SharedTriangleGrid(
                 _meshResolution,
                 _meshX,
-                _meshY,
+                _meshZ,
                 _tiling,
                 _height
             );
@@ -101,9 +101,11 @@ namespace LiquidPlanet
             TerrainSegmentator.GetTerrainSegmentation(
                 triangleGrid.NumX,
                 triangleGrid.NumZ,
+                _meshX,
+                _meshZ,
                 _meshResolution,
                 _terrainSeed,
-                _seedResolution,
+                _seedPointDensity,
                 _noiseOffset,
                 _noiseScale,
                 _borderGranularity,
@@ -136,12 +138,15 @@ namespace LiquidPlanet
                 _heightMap,
                 _maxNoiseValues,
                 _minNoiseValues);
-            NormalizeNoiseJob.ScheduleParallel(
-                _heightMap,
-                _maxNoiseValues,
-                _minNoiseValues,
-                numVerticesX,
-                numVerticesY);
+            if (_normalize)
+            {
+                NormalizeNoiseJob.ScheduleParallel(
+                    _heightMap,
+                    _maxNoiseValues,
+                    _minNoiseValues,
+                    numVerticesX,
+                    numVerticesY);
+            }
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
@@ -172,9 +177,9 @@ namespace LiquidPlanet
             {
                 _meshX = 1;
             }
-            if (_meshY < 1)
+            if (_meshZ < 1)
             {
-                _meshY = 1;
+                _meshZ = 1;
             }
             if (_heightLacunarity < 1)
             {

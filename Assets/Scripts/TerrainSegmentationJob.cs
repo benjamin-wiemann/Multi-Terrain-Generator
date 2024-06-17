@@ -14,15 +14,16 @@ namespace LiquidPlanet
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentationJob : IJobFor
     {
-        float _seedDensity;
-        uint _seedResolution;
-        int _width;
-        int _height;
+        uint _seedPointsX;
+        uint _seedPointsY;
+        int _trianglePairsX;
+        int _trianglePairsY;
+        float _width;
+        float _height;
         float _borderGranularity;
         float _borderSmoothing;
         float _perlinOffset;
         float _noiseScale;
-        float _resolution;
         uint _seed;
 
         [NativeDisableContainerSafetyRestriction]
@@ -41,10 +42,11 @@ namespace LiquidPlanet
             NativeArray<TerrainTypeStruct> terrainTypes,
             NativeArray<int> terrainIndices,
             uint seed,
-            uint seedPointResolution,
-            int width,
-            int height,
-            float resolution,
+            uint seedPointsX,
+            uint seedPointsY,
+            int trianglePairsX,
+            int trianglePairsY,
+            int triangleResolution,
             float borderGranularity,
             float borderSmoothing,
             float perlinOffset,
@@ -56,36 +58,37 @@ namespace LiquidPlanet
             TerrainSegmentationJob job = new();
             job._segmentation = terrainSegmentation;
             job._terrainIndices = terrainIndices;
-            job._width = width;
-            job._height = height;
-            job._resolution = resolution;
+            job._seedPointsX = seedPointsX;
+            job._seedPointsY = seedPointsY;
+            job._trianglePairsX = trianglePairsX;
+            job._trianglePairsY = trianglePairsY;
+            job._width = trianglePairsX / triangleResolution;
+            job._height = trianglePairsY / triangleResolution;
             job._borderGranularity = borderGranularity;
             job._borderSmoothing = borderSmoothing;
             job._terrainTypes = terrainTypes;
             job._perlinOffset = perlinOffset;
             job._noiseScale = perlinScale;
             job._terrainCounters = terrainCounters;
-            job._seedDensity = (float) seedPointResolution / (float) width;
-            job._seedResolution = seedPointResolution;
             job._seed = seed;
 
             if (JobTools.Get()._runParallel)
-                job.ScheduleParallel(height, (int) JobTools.Get()._batchCountInRow, default).Complete();
+                job.ScheduleParallel(trianglePairsY, (int) JobTools.Get()._batchCountInRow, default).Complete();
             else
-                job.Run(height);
+                job.Run(trianglePairsY);
         }
 
         public void Execute( int y)
         {
-            for (int x = 0; x < _width; x++)
+            for (int x = 0; x < _trianglePairsX; x++)
             {
-                float xPos = (float) x / (float) _width;
-                float yPos = (float) y / (float) _height;
+                float triangleX = (float) x / (float) _trianglePairsX;
+                float triangleY = (float) y / (float) _trianglePairsY;
                 float2 noiseAdd = new float2();
-                noiseAdd.x = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity)) * _noiseScale;
-                noiseAdd.y = noise.cnoise(new float2(xPos * 0.1f * _borderGranularity, yPos * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale;
+                noiseAdd.x = noise.cnoise(new float2(triangleX * _width * 0.1f * _borderGranularity, triangleY * _height * 0.1f * _borderGranularity)) * _noiseScale;
+                noiseAdd.y = noise.cnoise(new float2(triangleX * _width * 0.1f * _borderGranularity, triangleY * _height * 0.1f * _borderGranularity + _perlinOffset)) * _noiseScale;
 
-                float2 pos = float2(x * _seedDensity, y * _seedDensity) + noiseAdd;
+                float2 pos = float2(triangleX * _seedPointsX, triangleY * _seedPointsY) + noiseAdd;
                 
                 float2 cellIndex = floor( pos );                
                 float2 inCellLocation = frac(pos);
@@ -104,7 +107,7 @@ namespace LiquidPlanet
                         float2 shift = float2(shiftX, shiftY);
                         float2 worleySeed = HashHelper.Hash2(cellIndex + shift + _seed) + shift;                        
                         float dist = length(worleySeed - inCellLocation);
-                        int seedTerrainIndex = (int)(cellIndex.y + shiftY + 3) * (int)_seedResolution + (int)(cellIndex.x + shiftX + 3);
+                        int seedTerrainIndex = (int)(cellIndex.y + shiftY + 3) * (int)_seedPointsX + (int)(cellIndex.x + shiftX + 3);
                         int terrainIndex = _terrainIndices[seedTerrainIndex];
                         uint terrainIndexPosition = indices.Add( terrainIndex );
                         float h = smoothstep(-1.0f, 1.0f, (minDistance - dist) / _borderSmoothing);
@@ -117,8 +120,8 @@ namespace LiquidPlanet
                 
                
                 TerrainInfo terrainInfo = new TerrainInfo(indices, terrainShares);
-                _segmentation[y * _width + x] = terrainInfo;
-                if(x < _width && y < _height)
+                _segmentation[y * _trianglePairsX + x] = terrainInfo;
+                if(x < _trianglePairsX && y < _trianglePairsY)
                 {
                     int maxIndex = terrainInfo.GetMaxIndex();
                     // count the occurences of each terrain for each job execution
