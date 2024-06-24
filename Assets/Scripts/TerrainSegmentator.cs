@@ -3,20 +3,24 @@ using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
-using System;
+using static Unity.Mathematics.math;
 
 namespace LiquidPlanet
 {
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentator
     {
+
+        private const uint worleyBorderPadding = 3;
         
         public static void GetTerrainSegmentation(                        
-            int width,
-            int height,
-            float resolution,
+            int trianglePairsX,
+            int trianglePairsY,
+            float width,
+            float height,
+            int resolution,
             uint seed,
-            uint seedPointResolution,
+            float seedPointDensity,
             float perlinOffset,
             float perlinScale,
             float borderGranularity,
@@ -27,17 +31,20 @@ namespace LiquidPlanet
             NativeArray<int> terrainCounters // out
         )
         {
-            // Creating random terrain indices for the worley seed points. Overlap of 6 is need for each side.
-            NativeArray<int> terrainIndices = new((int) ((seedPointResolution + 6) * (seedPointResolution + 6)), Allocator.Persistent);
+            // Creating random terrain indices for the worley seed points. Overlap of 3 is need for each side.
+            uint seedPointsX = (uint)round(width * seedPointDensity);
+            uint seedPointsY = (uint)round(height * seedPointDensity);
+            NativeArray<int> terrainIndices = new((int) ((seedPointsX + 6) * (seedPointsY + 6)), Allocator.Persistent);
             GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes.Length);
             
             TerrainSegmentationJob.ScheduleParallel(                
                 terrainTypes,
                 terrainIndices,
                 seed,
-                seedPointResolution,
-                width,
-                height,
+                seedPointsX,
+                seedPointsY,
+                trianglePairsX,
+                trianglePairsY,
                 resolution,
                 borderGranularity,
                 borderSmoothing,
@@ -48,7 +55,7 @@ namespace LiquidPlanet
             SortCoordinatesJob.ScheduleParallel(
                 terrainMap,
                 terrainCounters,
-                height,
+                trianglePairsY,
                 coordinates);
 
             terrainIndices.Dispose();

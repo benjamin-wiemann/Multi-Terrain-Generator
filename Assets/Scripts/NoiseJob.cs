@@ -26,8 +26,6 @@ namespace LiquidPlanet
 
         private float _lacunarity;
 
-        private float2 _offset;
-
         private float _resolution;
 
         [WriteOnly, NativeDisableContainerSafetyRestriction]
@@ -61,7 +59,6 @@ namespace LiquidPlanet
             int numOctaves,
             float persistance,
             float lacunarity,
-            float2 offset,
             float resolution,
             NativeArray<float> noiseMap,      // out
             NativeArray<float> maxNoiseHeights, // out
@@ -81,40 +78,13 @@ namespace LiquidPlanet
             noiseJob._minNoiseHeights = minNoiseHeights;            
             noiseJob._persistance = persistance;
             noiseJob._lacunarity = lacunarity;
-            noiseJob._offset = offset;
             noiseJob._resolution = resolution;
-
-            noiseJob._octaveOffsets = new(numOctaves, Allocator.Persistent);
-            noiseJob._octaveOffsetsPerTerrain = new(terrainTypes.Length, Allocator.Persistent);
-            Unity.Mathematics.Random prng = new(seed);
-            for (int i = 0; i < numOctaves; i++)
-            {
-                float offsetX = prng.NextFloat(-100000, 100000) + offset.x;
-                float offsetY = prng.NextFloat(-100000, 100000) + offset.y;
-                noiseJob._octaveOffsets[i] = new float2(offsetX, offsetY);
-            }
-            for (int i = 0; i < terrainTypes.Length; i++)
-            {
-                noiseJob._octaveOffsetsPerTerrain[i] = new(terrainTypes[i].NumOctaves, Allocator.Persistent);
-                for(int j = 0; j < terrainTypes[i].NumOctaves; j++ )
-                {
-                    float offsetX = prng.NextFloat(-100000, 100000) + offset.x;
-                    float offsetY = prng.NextFloat(-100000, 100000) + offset.y;
-                    var terrainOctaveOffsets = noiseJob._octaveOffsetsPerTerrain[i];
-                    terrainOctaveOffsets[j] = new float2(offsetX, offsetY);
-                }
-            }
 
             if ( JobTools.Get()._runParallel)
                 noiseJob.ScheduleParallel(mapHeight, (int) JobTools.Get()._batchCountInRow, default).Complete();
             else
                 noiseJob.Run(mapHeight);            
-            noiseJob._octaveOffsets.Dispose();
-            for (int i = 0; i < terrainTypes.Length; i++)
-            {
-                noiseJob._octaveOffsetsPerTerrain[i].Dispose();
-            }
-            noiseJob._octaveOffsetsPerTerrain.Dispose();
+            
         }
 
         public void Execute(int y)
@@ -140,40 +110,39 @@ namespace LiquidPlanet
                 float frequency = 1;
                 float noiseHeight = 0;
 
+                float2 coordinate = 0;
                 for (int i = 0; i < _numOctaves; i++)
                 {
-                    float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * frequency + _octaveOffsets[i].x;
-                    float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * frequency + _octaveOffsets[i].y;
-
-                    float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
-                    noiseHeight += perlinValue * amplitude;
-
                     amplitude *= _persistance;
                     frequency *= _lacunarity;
+                    coordinate.x = (x - halfWidth) / (_resolution * _noiseScale) * frequency;
+                    coordinate.y = (y - halfHeight) / (_resolution * _noiseScale) * frequency;
+
+                    float perlinValue = noise.cnoise(coordinate) * 2 - 1;
+                    noiseHeight += perlinValue * amplitude;
+                                        
                 }
-                
+
                 TerrainInfo info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
                 for (uint j = 0; j < info.Indices.Length; j++)
-                { 
+                {
                     int terrainIndex = info.Indices[j];
                     float terrainAmplitude = amplitude;
                     float terrainFrequency = frequency;
                     float terrainNoiseHeight = 0;
-                    for (int i = 0; i < _octaveOffsetsPerTerrain[terrainIndex].Length; i++)
+                    for (int i = 0; i < _terrainTypes[terrainIndex].NumOctaves; i++)
                     {
-                        float sampleX = (x - halfWidth) / (_resolution * _noiseScale) * terrainFrequency + _octaveOffsetsPerTerrain[terrainIndex][i].x;
-                        float sampleY = (y - halfHeight) / (_resolution * _noiseScale) * terrainFrequency + _octaveOffsetsPerTerrain[terrainIndex][i].y;
-
-                        float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
-                        terrainNoiseHeight += perlinValue * terrainAmplitude;
-
                         terrainAmplitude *= _terrainTypes[terrainIndex].Persistance;
                         terrainFrequency *= _terrainTypes[terrainIndex].Lacunarity;
+                        float sampleX = (x - halfWidth) / (_resolution * _terrainTypes[terrainIndex].NoiseScale) * terrainFrequency;
+                        float sampleY = (y - halfHeight) / (_resolution * _terrainTypes[terrainIndex].NoiseScale) * terrainFrequency;
+                        float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
+                        terrainNoiseHeight += perlinValue * terrainAmplitude;
                     }
                     noiseHeight += (terrainNoiseHeight * _terrainTypes[terrainIndex].Height + _terrainTypes[terrainIndex].HeightOffset) * info.Intensities[j];
                 }
 
-                //noiseHeight += _terrainTypes[terrainIndex].HeightOffset;
+                //noiseHeight += ;
                 _maxNoiseHeights[y] = max(noiseHeight, _maxNoiseHeights[y]);
                 _minNoiseHeights[y] = min(noiseHeight, _minNoiseHeights[y]);
                                     

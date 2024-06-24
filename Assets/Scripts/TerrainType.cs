@@ -86,8 +86,6 @@ namespace LiquidPlanet
         public float _lacunarity;
         public uint _heigthSeed;
         public float _heightOffset;
-        [Range(0, 1f)]
-        public float _borderInterpolationWidth = 0.5f; 
         
     }
 }
