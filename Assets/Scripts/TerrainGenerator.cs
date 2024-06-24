@@ -28,12 +28,12 @@ namespace LiquidPlanet
             Range(0, 1)] float _heightPersistance;
         [SerializeField] float _heightLacunarity;
         [SerializeField] uint _heigthSeed;
-        [SerializeField] Vector2 _heightOffset;
         [SerializeField] bool _normalize = false;
 
         [Header("Terrain Segmentation")]
         [SerializeField] uint _terrainSeed;
-        [SerializeField] float _seedPointDensity = 0.1f;
+        [SerializeField,
+            Range(0.05f, 0.2f)] float _seedPointDensity = 0.1f;
         [SerializeField,
             Range(0f, 1f)] float _noiseScale = 0.5f;
         [SerializeField] float _noiseOffset = 1f;
@@ -133,7 +133,6 @@ namespace LiquidPlanet
                 _heightOctaves,
                 _heightPersistance,
                 _heightLacunarity,
-                _heightOffset,
                 _meshResolution,
                 _heightMap,
                 _maxNoiseValues,

@@ -62,6 +62,7 @@ namespace LiquidPlanet.DebugTools
             _heigthMap = args.HeightMap;
             _segmentationTextures = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height - 1);
             _heightTexture = VisualizeHeightMap(_heigthMap, _width, _height);
+            OnValidate();
             Visualize();
             if (_writeToDisk && Directory.Exists(_filePath))
             {

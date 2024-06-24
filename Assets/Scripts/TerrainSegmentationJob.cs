@@ -99,7 +99,7 @@ namespace LiquidPlanet
                 Int9 indices = new Int9( - 1);
 
                 float minDistance = 8f;
-                int shiftSize = 1;
+                int shiftSize = 2;
                 for (int shiftX = -shiftSize; shiftX <= shiftSize; shiftX++)
                 {
                     for (int shiftY = -shiftSize; shiftY <= shiftSize; shiftY++)
