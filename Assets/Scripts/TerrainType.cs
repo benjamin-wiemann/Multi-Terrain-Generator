@@ -20,7 +20,6 @@ namespace LiquidPlanet
         public int NumOctaves { get; }
         public float Persistance { get; }
         public float Lacunarity { get; }
-        public uint HeigthSeed { get; }
         public float HeightOffset { get; }
 
         public TerrainTypeStruct(
@@ -31,7 +30,6 @@ namespace LiquidPlanet
             int numOctaves = 1,
             float persistance = 1,
             float lacunarity = 1,
-            uint heigthSeed = 1,
             float heightOffset = 0,
             uint numTrianglePairs = 0
             )
@@ -44,7 +42,6 @@ namespace LiquidPlanet
             NumOctaves = numOctaves; 
             Persistance = persistance;
             Lacunarity = lacunarity;
-            HeigthSeed = heigthSeed;
             HeightOffset = heightOffset;
         }
 
@@ -58,7 +55,6 @@ namespace LiquidPlanet
                 type._numOctaves,
                 type._persistance,
                 type._lacunarity,
-                type._heigthSeed,
                 type._heightOffset
                 );
         }
@@ -84,7 +80,6 @@ namespace LiquidPlanet
         [Range(0, 1f)] 
         public float _persistance;
         public float _lacunarity;
-        public uint _heigthSeed;
         public float _heightOffset;
         
     }

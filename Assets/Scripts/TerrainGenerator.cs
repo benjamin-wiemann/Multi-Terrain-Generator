@@ -27,7 +27,6 @@ namespace LiquidPlanet
         [SerializeField,
             Range(0, 1)] float _heightPersistance;
         [SerializeField] float _heightLacunarity;
-        [SerializeField] uint _heigthSeed;
         [SerializeField] bool _normalize = false;
 
         [Header("Terrain Segmentation")]
@@ -38,7 +37,7 @@ namespace LiquidPlanet
             Range(0f, 1f)] float _noiseScale = 0.5f;
         [SerializeField] float _noiseOffset = 1f;
         [SerializeField] float _borderGranularity = 1;
-        [SerializeField] float _borderSmoothing = 1f;
+        [SerializeField] float _borderSmoothness = 1f;
         [SerializeField] List<TerrainType> _terrainTypes = new();
 
         [SerializeField]
@@ -82,6 +81,16 @@ namespace LiquidPlanet
                 _tiling,
                 _height
             );
+            List<Material> materials = new();
+            for (int i = 0; i < _terrainTypes.Count; i++)
+            {
+                var type = _terrainTypes[i];
+                if (type._active)
+                {
+                    materials.Add(type._material);
+                }
+            }
+            GetComponent<Renderer>().SetSharedMaterials(materials);
             _terrainMap = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
@@ -109,7 +118,7 @@ namespace LiquidPlanet
                 _noiseOffset,
                 _noiseScale,
                 _borderGranularity,
-                _borderSmoothing,
+                _borderSmoothness,
                 types,
                 _terrainMap,
                 coordinates,
@@ -128,7 +137,6 @@ namespace LiquidPlanet
                 types,
                 numVerticesX,
                 numVerticesY,
-                _heigthSeed,
                 _heightScale,
                 _heightOctaves,
                 _heightPersistance,
@@ -187,32 +195,25 @@ namespace LiquidPlanet
             if (_heightOctaves < 0)
             {
                 _heightOctaves = 0;
-            }
-            if (_heigthSeed == 0)
-            {
-                _heigthSeed = 1;
-            }
+            }            
             if ( _terrainTypes.Count == 0 )
             {
                 _terrainTypes.Add(new TerrainType() {
                     _name = "Standard Terrain",
                     _color = Color.green });
             }
-            var renderer = GetComponent<MeshRenderer>();
-            List < Material > materials = new ();
-            for (int i = 0; i < _terrainTypes.Count; i++) 
+            for (int i = 0; i < _terrainTypes.Count; i++)
             {
                 var type = _terrainTypes[i];
                 if (type._name == "" || type._name == null)
                 {
                     type._name = "Terrain_" + i;
-                }else if (type._name.Length >= 125)
+                }
+                else if (type._name.Length >= 125)
                 {
                     type._name = type._name.Substring(0, 125);
                 }
-                materials.Add(type._material);
             }
-            renderer.SetSharedMaterials(materials);
         }
 
     }
