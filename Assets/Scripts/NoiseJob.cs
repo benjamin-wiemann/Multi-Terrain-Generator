@@ -54,7 +54,6 @@ namespace LiquidPlanet
             NativeArray<TerrainTypeStruct> terrainTypes,
             int mapWidth,
             int mapHeight,
-            uint seed,
             float scale,
             int numOctaves,
             float persistance,

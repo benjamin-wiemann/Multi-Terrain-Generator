@@ -14,7 +14,7 @@ namespace LiquidPlanet
 
         public int IndexCount => 6 * NumZ * NumX;
 
-        public Bounds Bounds => new Bounds(new Vector3(0f, Height/2, DimZ/2), new Vector3( DimX, Height, DimZ)); 
+        public Bounds Bounds => new Bounds(new Vector3(0f, Height/2, 0), new Vector3( DimX, Height, DimZ)); 
 
         public int Resolution { get; set; }
 
@@ -109,7 +109,7 @@ namespace LiquidPlanet
             float xOffset = - DimX / 2;
 
             vertex.position.x = x * triangleWidth + xOffset;
-            vertex.position.z = z * triangleHeigth;
+            vertex.position.z = z * triangleHeigth - DimZ / 2;
             vertex.position.y = Height * noiseMap[z * (NumX + 1) + x];
             vertex.texCoord0.x = vertex.position.x / Tiling;
             vertex.texCoord0.y = vertex.position.z / Tiling;
