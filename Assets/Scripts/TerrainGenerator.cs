@@ -62,13 +62,17 @@ namespace LiquidPlanet
         public void Init()
         {
             if(_mesh == null)
-            {
+            {                
                 _mesh = new Mesh
                 {
                     name = "Procedural Mesh"
                 };
                 GetComponent<MeshFilter>().mesh = _mesh;
-            }            
+            }
+            else
+            {
+                _mesh.Clear();
+            }
         }
 
 
@@ -199,7 +203,7 @@ namespace LiquidPlanet
             if ( _terrainTypes.Count == 0 )
             {
                 _terrainTypes.Add(new TerrainType() {
-                    _name = "Standard Terrain",
+                    _name = "Default Terrain",
                     _color = Color.green });
             }
             for (int i = 0; i < _terrainTypes.Count; i++)
