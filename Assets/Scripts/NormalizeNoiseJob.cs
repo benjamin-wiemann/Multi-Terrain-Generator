@@ -28,27 +28,15 @@ namespace LiquidPlanet
 
         public static void ScheduleParallel(            
             NativeArray<float> noiseMapIn,      //inout
-            NativeArray<float> maxNoiseValues,
-            NativeArray<float> minNoiseValues,
+            float maxNoiseValue,
+            float minNoiseValue,
             int mapWidth,
             int mapHeight          
         )
         {
             NormalizeNoiseJob normalizeJob = new();
             normalizeJob._noiseMap = noiseMapIn;
-            float maxNoiseValue = float.MinValue;
-            float minNoiseValue = float.MaxValue;
-            for (int i = 0; i < maxNoiseValues.Length; i++)
-            {
-                if (maxNoiseValue < maxNoiseValues[i])
-                {
-                    maxNoiseValue = maxNoiseValues[i];
-                }
-                if (minNoiseValue > minNoiseValues[i])
-                {
-                    minNoiseValue = minNoiseValues[i];
-                }
-            }
+            
             normalizeJob._maxNoiseHeight = maxNoiseValue;
             normalizeJob._minNoiseHeight = minNoiseValue;
             normalizeJob._mapWidth = mapWidth;
