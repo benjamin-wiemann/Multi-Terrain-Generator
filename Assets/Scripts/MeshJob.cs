@@ -38,6 +38,7 @@ namespace LiquidPlanet
             NativeArray<float> noiseMap,
             NativeList<int> terrainCounters,
             NativeArray<int2> coordinates,
+            Bounds bounds,
             Mesh mesh,
             Mesh.MeshData meshData
         )
@@ -51,7 +52,7 @@ namespace LiquidPlanet
 
             job._stream.Setup(
                 meshData,
-                mesh.bounds = job._generator.Bounds,
+                mesh.bounds = bounds,
                 job._generator.VertexCount,
                 job._generator.IndexCount
             );
@@ -69,7 +70,7 @@ namespace LiquidPlanet
             else
                 job.Run(threadCount);
             
-            job._stream.SetSubMeshes(meshData, terrainCounters, generator.Bounds, job._generator.VertexCount);
+            job._stream.SetSubMeshes(meshData, terrainCounters, bounds, job._generator.VertexCount);
             job._threadStartIndices.Dispose();
         }
     }

@@ -14,8 +14,6 @@ namespace LiquidPlanet
 
         public int IndexCount => 6 * NumZ * NumX;
 
-        public Bounds Bounds => new Bounds(new Vector3(0f, Height/2, 0), new Vector3( DimX, Height, DimZ)); 
-
         public int Resolution { get; set; }
 
         public float DimZ { get; set; }

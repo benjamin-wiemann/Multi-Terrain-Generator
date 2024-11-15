@@ -5,6 +5,7 @@ using System;
 using LiquidPlanet.Event;
 using UnityEngine.Events;
 using Unity.Mathematics;
+using LiquidPlanet.Helper;
 
 namespace LiquidPlanet
 {
@@ -149,16 +150,24 @@ namespace LiquidPlanet
                 _heightMap,
                 _maxNoiseValues,
                 _minNoiseValues);
+            Bounds bounds;
+            float yMax = NativeCollectionHelper.Max(_maxNoiseValues);
+            float yMin = NativeCollectionHelper.Min(_minNoiseValues);
             if (_normalize)
-            {
+            {                
                 NormalizeNoiseJob.ScheduleParallel(
                     _heightMap,
-                    _maxNoiseValues,
-                    _minNoiseValues,
+                    yMax,
+                    yMin,
                     numVerticesX,
                     numVerticesY);
+                bounds = new Bounds(new Vector3(0f, _height / 2, 0f), new Vector3(_meshX, _height, _meshZ));
             }
-
+            else
+            {
+                bounds = new Bounds(new Vector3(0f, _height * (yMax + yMin) / 2, 0f), new Vector3(_meshX, _height * Mathf.Abs(yMax - yMin), _meshZ));
+            }
+            Debug.Log(bounds);
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
             MeshJob.ScheduleParallel(
@@ -166,6 +175,7 @@ namespace LiquidPlanet
                 _heightMap,
                 terrainCounters,
                 coordinates,
+                bounds,
                 _mesh,
                 meshData);
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
