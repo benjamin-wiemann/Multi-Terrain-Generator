@@ -147,7 +147,7 @@ namespace LiquidPlanet
 
             float3 xtangent = normalize(float3(triangleWidth, Height * (xHigh - xLow), 0));
             float3 ztangent = normalize(float3(0, Height * (zHigh - zLow), triangleHeigth));
-            vertex.tangent.xyw = float3(xtangent.x, xtangent.y, -1f);
+            vertex.tangent.xyw = half3( (half) xtangent.x, (half) xtangent.y, (half) (-1f));
             vertex.normal = cross(ztangent, xtangent);            
 
             stream.SetVertex(vi, vertex);
