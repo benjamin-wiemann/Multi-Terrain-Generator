@@ -109,8 +109,8 @@ namespace LiquidPlanet
             vertex.position.x = x * triangleWidth + xOffset;
             vertex.position.z = z * triangleHeigth - DimZ / 2;
             vertex.position.y = Height * noiseMap[z * (NumX + 1) + x];
-            vertex.texCoord0.x = vertex.position.x / Tiling;
-            vertex.texCoord0.y = vertex.position.z / Tiling;
+            // vertex.texCoord0.x = vertex.position.x / Tiling;
+            // vertex.texCoord0.y = vertex.position.z / Tiling;
 
             float xLow, xHigh;
             if (x == NumX)
@@ -144,11 +144,9 @@ namespace LiquidPlanet
                 zLow = noiseMap[(z - 1) * (NumX + 1) + x];
                 zHigh = noiseMap[(z + 1) * (NumX + 1) + x];
             }
-
-            float3 xtangent = normalize(float3(triangleWidth, Height * (xHigh - xLow), 0));
-            float3 ztangent = normalize(float3(0, Height * (zHigh - zLow), triangleHeigth));
-            vertex.tangent.xyw = half3( (half) xtangent.x, (half) xtangent.y, (half) (-1f));
-            vertex.normal = cross(ztangent, xtangent);            
+                      
+            vertex.tangent.xyzw = half4( (half3) normalize(float3( triangleWidth, Height * (xHigh - xLow), 0f)), (half) (-1f));
+            vertex.bitangent = half3( normalize(float3(0, Height * (zHigh - zLow), triangleHeigth)));
 
             stream.SetVertex(vi, vertex);
             return vi;
