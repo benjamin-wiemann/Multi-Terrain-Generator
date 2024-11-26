@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using static UnityEngine.Mesh;
+using static Unity.Mathematics.math;
 
 namespace LiquidPlanet
 {
@@ -15,9 +16,9 @@ namespace LiquidPlanet
         [StructLayout(LayoutKind.Sequential)]
         struct Stream0
         {
-            public float3 position, normal;
-            public float4 tangent;
-            public float2 texCoord0;
+            public float3 position;
+            public half4 bitangent;
+            public half4 tangent;
         }
 
         [NativeDisableContainerSafetyRestriction]
@@ -29,18 +30,18 @@ namespace LiquidPlanet
         public void Setup(Mesh.MeshData meshData, Bounds bounds, int vertexCount, int indexCount)
         {            
             var descriptor = new NativeArray<VertexAttributeDescriptor>(
-                4, Allocator.Temp, NativeArrayOptions.UninitializedMemory
+                3, Allocator.Temp, NativeArrayOptions.UninitializedMemory
             );
             descriptor[0] = new VertexAttributeDescriptor(dimension: 3);
             descriptor[1] = new VertexAttributeDescriptor(
-                VertexAttribute.Normal, dimension: 3
+                VertexAttribute.Normal, VertexAttributeFormat.Float16, dimension: 4
             );
             descriptor[2] = new VertexAttributeDescriptor(
-                VertexAttribute.Tangent, dimension: 4
+                VertexAttribute.Tangent, VertexAttributeFormat.Float16, dimension: 4
             );
-            descriptor[3] = new VertexAttributeDescriptor(
-                VertexAttribute.TexCoord0, dimension: 2
-            );
+            // descriptor[3] = new VertexAttributeDescriptor(
+            //     VertexAttribute.TexCoord0, dimension: 2
+            // );
             meshData.SetVertexBufferParams(vertexCount, descriptor);
             descriptor.Dispose();
 
@@ -75,9 +76,9 @@ namespace LiquidPlanet
         public void SetVertex(int index, Vertex vertex) => stream0[index] = new Stream0
         {
             position = vertex.position,
-            normal = vertex.normal,
-            tangent = vertex.tangent,
-            texCoord0 = vertex.texCoord0
+            bitangent = half4(vertex.bitangent.x, vertex.bitangent.y, vertex.bitangent.z, (half) 0f),
+            tangent = vertex.tangent
+            // texCoord0 = vertex.texCoord0
         };
 
         public void SetTriangle(int index, int3 triangle)

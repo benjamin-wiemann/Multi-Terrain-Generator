@@ -166,8 +166,7 @@ namespace LiquidPlanet
             else
             {
                 bounds = new Bounds(new Vector3(0f, _height * (yMax + yMin) / 2, 0f), new Vector3(_meshX, _height * Mathf.Abs(yMax - yMin), _meshZ));
-            }
-            Debug.Log(bounds);
+            }            
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
             MeshJob.ScheduleParallel(

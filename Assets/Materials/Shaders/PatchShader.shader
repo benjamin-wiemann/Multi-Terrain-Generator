@@ -64,7 +64,9 @@ Shader "Terrain/PatchShader"
             struct VertexInput
             {
                 float4 positionOS   : POSITION;
-                half3 normalOS      : NORMAL;
+                //
+                half3 bitangentOS      : NORMAL;
+                half4 tangentOS     : TANGENT;
                 float2 lightmapUV	: TEXCOORD1;
             };
 
@@ -75,11 +77,11 @@ Shader "Terrain/PatchShader"
                 half3 normalWS		: TEXCOORD1;    
 				half3 tangentWS		: TEXCOORD2;    
 				half3 bitangentWS	: TEXCOORD3;
-                half3 viewDir       : TEXCOORD4;
+                half3 viewDirWS       : TEXCOORD4;
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
 					float4 shadowCoord 				: TEXCOORD5;
 				#endif
-                DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 5);
+                DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 6);
             };
 
             // used to pass triplanar uv coordinates ( two coordinates for each axis )
@@ -96,7 +98,10 @@ Shader "Terrain/PatchShader"
                 FragmentInput fragIn;
                 fragIn.posCS = TransformObjectToHClip(vertIn.positionOS.xyz);
                 fragIn.posWS = TransformObjectToWorld(vertIn.positionOS.xyz);
-                fragIn.normalWS = TransformObjectToWorldNormal(vertIn.normalOS);
+                fragIn.tangentWS = TransformObjectToWorldDir(vertIn.tangentOS);
+                fragIn.bitangentWS = TransformObjectToWorldDir(vertIn.bitangentOS);
+                fragIn.normalWS = TransformObjectToWorldNormal(cross( vertIn.tangentOS.xyz, vertIn.bitangentOS ));
+                // fragIn.viewDirWS = GetWorldSpaceViewDir(positionInputs.positionWS);
 
                 OUTPUT_LIGHTMAP_UV(vertIn.lightmapUV, unity_LightmapST, fragIn.lightmapUV);
 				OUTPUT_SH(fragIn.normalWS, fragIn.vertexSH);
@@ -106,7 +111,7 @@ Shader "Terrain/PatchShader"
 
             // Reoriented Normal Mapping
             // http://blog.selfshadow.com/publications/blending-in-detail/
-            // Altered to take normals (-1 to 1 ranges) rather than unsigned normalOS maps (0 to 1 ranges)
+            // Altered to take normals (-1 to 1 ranges) rather than unsigned bitangentOS maps (0 to 1 ranges)
             half3 blend_rnm(half3 n1, half3 n2)
             {
                 n1.z += 1;
@@ -222,13 +227,13 @@ Shader "Terrain/PatchShader"
                 // currently not supporting alpha values
                 surfaceData.alpha = 1;
 
-                // tangent space normalOS maps
+                // tangent space normal maps
                 half3 normalTSX = SampleNormal(triUV.x, TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap));
                 half3 normalTSY = SampleNormal(triUV.y, TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap));
                 half3 normalTSZ = SampleNormal(triUV.z, TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap));
                 half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
 
-                // flip normalOS maps' x axis to account for flipped UVs
+                // flip normal maps' x axis to account for flipped UVs
             #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
                 normalTSX.x *= axisSign.x;
                 normalTSY.x *= axisSign.y;
@@ -237,7 +242,7 @@ Shader "Terrain/PatchShader"
 
                 half3 absVertNormal = abs(fragIn.normalWS);
 
-                // swizzle world normals to match tangent space and apply reoriented normalOS mapping blend
+                // swizzle world normals to match tangent space and apply reoriented normal mapping blend
                 normalTSX = blend_rnm(half3(fragIn.normalWS.zy, absVertNormal.x), normalTSX);
                 normalTSY = blend_rnm(half3(fragIn.normalWS.xz, absVertNormal.y), normalTSY);
                 normalTSZ = blend_rnm(half3(fragIn.normalWS.xy, absVertNormal.z), normalTSZ);
@@ -292,7 +297,7 @@ Shader "Terrain/PatchShader"
 				// Fog
 				color.rgb = MixFog(color.rgb, inputData.fogCoord);
 				//color.a = OutputAlpha(color.a, _Surface);
-				return color; //inputData.normalWS;
+				return half4(inputData.normalWS.xyz, 0);
 
             }
             ENDHLSL
