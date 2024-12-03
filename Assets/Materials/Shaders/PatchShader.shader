@@ -16,7 +16,11 @@ Shader "Terrain/PatchShader"
     // The SubShader block containing the Shader code.
     SubShader
     {
-        Tags {"RenderType"="Opaque" "RenderPipeline" = "UniversalPipeline" }
+        Tags {
+			"RenderPipeline"="UniversalPipeline"
+			"RenderType"="Opaque"
+			"Queue"="Geometry"
+		}
         
         HLSLINCLUDE
 		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -30,10 +34,12 @@ Shader "Terrain/PatchShader"
 		CBUFFER_END
 		ENDHLSL
 
-        LOD 100
+        // LOD 100
 
         Pass
         {
+            Name "ForwardLit"
+			Tags { "LightMode"="UniversalForward" }
             
             HLSLPROGRAM
             
@@ -53,7 +59,7 @@ Shader "Terrain/PatchShader"
             #pragma multi_compile _ _SHADOWS_SOFT
 
             // flip UVs horizontally to correct for back side projection
-            #define TRIPLANAR_CORRECT_PROJECTED_U
+            // #define TRIPLANAR_CORRECT_PROJECTED_U
 
             // offset UVs to prevent obvious mirroring
             // #define TRIPLANAR_UV_OFFSET
@@ -77,7 +83,7 @@ Shader "Terrain/PatchShader"
                 half3 normalWS		: TEXCOORD1;    
 				half3 tangentWS		: TEXCOORD2;    
 				half3 bitangentWS	: TEXCOORD3;
-                half3 viewDirWS       : TEXCOORD4;
+                // half3 viewDirWS       : TEXCOORD4;
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
 					float4 shadowCoord 				: TEXCOORD5;
 				#endif
@@ -98,10 +104,15 @@ Shader "Terrain/PatchShader"
                 FragmentInput fragIn;
                 fragIn.posCS = TransformObjectToHClip(vertIn.positionOS.xyz);
                 fragIn.posWS = TransformObjectToWorld(vertIn.positionOS.xyz);
-                fragIn.tangentWS = TransformObjectToWorldDir(vertIn.tangentOS);
+                fragIn.tangentWS = TransformObjectToWorldDir(vertIn.tangentOS.xyz);
                 fragIn.bitangentWS = TransformObjectToWorldDir(vertIn.bitangentOS);
-                fragIn.normalWS = TransformObjectToWorldNormal(cross( vertIn.tangentOS.xyz, vertIn.bitangentOS ));
+                fragIn.normalWS = TransformObjectToWorldNormal(cross( vertIn.tangentOS.xyz, vertIn.bitangentOS ) );
                 // fragIn.viewDirWS = GetWorldSpaceViewDir(positionInputs.positionWS);
+
+                
+				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                    fragIn.shadowCoord = TransformWorldToShadowCoord(fragIn.posWS);
+                #endif
 
                 OUTPUT_LIGHTMAP_UV(vertIn.lightmapUV, unity_LightmapST, fragIn.lightmapUV);
 				OUTPUT_SH(fragIn.normalWS, fragIn.vertexSH);
@@ -151,15 +162,12 @@ Shader "Terrain/PatchShader"
 
             
 
-            void InitializeInputData(FragmentInput fragIn, inout InputData inputData) {
+            void InitializeInputData(FragmentInput fragIn, half3 normalWS, out InputData inputData) {
 	            inputData = (InputData) 0; 
 
 	            inputData.positionWS = fragIn.posWS;	
 
-                // preview world normals
-                // return half4(worldNormal * 0.5 + 0.5, 1);
-
-	            inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
+	            inputData.normalWS = NormalizeNormalPerPixel(normalWS);
 	            inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(inputData.positionWS);
 
 	        #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
@@ -186,28 +194,28 @@ Shader "Terrain/PatchShader"
 
             half4 SampleSpecGloss(float2 uv) {
                 half4 specGloss = 0;
-                #ifdef _SPECGLOSSMAP
-                    specGloss = SAMPLE_TEXTURE2D(_SpecGlossMap, sampler_MetallicSpecGlossMap, uv)
+                // #ifdef _SPECGLOSSMAP
+                    specGloss = SAMPLE_TEXTURE2D(_SpecGlossMap, sampler_SpecGlossMap, uv);
                     specGloss.a *= _Smoothness;                    
-                #endif
+                // #endif
                 return specGloss;
             }
 
             half SampleOcclusion(float2 uv) {
-                #ifdef _OCCLUSIONMAP
+                // #ifdef _OCCLUSIONMAP
                     #if defined(SHADER_API_GLES)
                         return SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;
                     #else
                         half occ = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;
                         return LerpWhiteTo(occ, _OcclusionStrength);
                     #endif
-                #else
-                    return 1.0;
-                #endif
+                // #else
+                //     return 1.0;
+                // #endif
             }
 
 
-            void InitializeSurfaceData(FragmentInput fragIn, out SurfaceData surfaceData, out float3 normalWS){
+            void InitializeSurfaceData(FragmentInput fragIn, out SurfaceData surfaceData, out half3 normalWS){
                 surfaceData = (SurfaceData)0; // avoids "not completely initalized" errors
 
                 // calculate triplanar blend
@@ -259,7 +267,7 @@ Shader "Terrain/PatchShader"
                     normalTSZ.xyz * triblend.z
                     );
                                     
-                float3x3 worldToTangent = float3x3(fragIn.tangentWS, fragIn.bitangentWS, fragIn.normalWS);
+                half3x3 worldToTangent = float3x3(fragIn.tangentWS, fragIn.bitangentWS, fragIn.normalWS);
                 surfaceData.normalTS = TransformWorldToTangent(normalWS, worldToTangent);
 
                 half occlusionX = SampleOcclusion(triUV.x);
@@ -285,21 +293,58 @@ Shader "Terrain/PatchShader"
 	            
 				SurfaceData surfaceData;
                 InputData inputData;
-
+                half3 normalWS;
                 // Setup SurfaceData
-				InitializeSurfaceData(fragIn, surfaceData, inputData.normalWS);
+				InitializeSurfaceData(fragIn, surfaceData, normalWS);
 				// Setup InputData				
-				InitializeInputData(fragIn, inputData);
+				InitializeInputData(fragIn, normalWS, inputData);
 
-				// Simple Lighting (Lambert & BlinnPhong)
 				half4 color = UniversalFragmentPBR(inputData, surfaceData);
+                // half4 color = UniversalFragmentBlinnPhong(inputData, surfaceData);
 
 				// Fog
 				color.rgb = MixFog(color.rgb, inputData.fogCoord);
-				//color.a = OutputAlpha(color.a, _Surface);
-				return half4(inputData.normalWS.xyz, 0);
+				
+				// return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
+                // return half4(surfaceData.albedo, 0);
+                // return half4(surfaceData.occlusion, 0,0, 0);
+                // return half4(surfaceData.specular, 0);
+                return half4(surfaceData.normalTS *0.5 + 0.5, 0);
+                // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
+                // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
+                // half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
+                // return color;
 
             }
+            ENDHLSL
+        }
+
+        Pass {
+			Name "ShadowCaster"
+			Tags { "LightMode"="ShadowCaster" }
+
+			ZWrite On
+			ZTest LEqual
+
+			HLSLPROGRAM
+			#pragma vertex ShadowPassVertex
+			#pragma fragment ShadowPassFragment
+
+			// Material Keywords
+			#pragma shader_feature_local_fragment _ALPHATEST_ON
+			#pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+
+			// GPU Instancing
+			#pragma multi_compile_instancing
+			//#pragma multi_compile _ DOTS_INSTANCING_ON
+
+			// Universal Pipeline Keywords
+			// (v11+) This is used during shadow map generation to differentiate between directional and punctual (point/spot) light shadows, as they use different formulas to apply Normal Bias
+			#pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+
+			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
             ENDHLSL
         }
     }
