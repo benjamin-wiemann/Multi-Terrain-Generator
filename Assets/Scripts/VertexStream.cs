@@ -16,8 +16,7 @@ namespace LiquidPlanet
         [StructLayout(LayoutKind.Sequential)]
         struct Stream0
         {
-            public float3 position;
-            public half4 bitangent;
+            public float3 position, normal; // normal uses length-4-vector because a length-3-vector with halfs is not supported by mesh API
             public half4 tangent;
         }
 
@@ -34,7 +33,7 @@ namespace LiquidPlanet
             );
             descriptor[0] = new VertexAttributeDescriptor(dimension: 3);
             descriptor[1] = new VertexAttributeDescriptor(
-                VertexAttribute.Normal, VertexAttributeFormat.Float16, dimension: 4
+                VertexAttribute.Normal, VertexAttributeFormat.Float32, dimension: 3
             );
             descriptor[2] = new VertexAttributeDescriptor(
                 VertexAttribute.Tangent, VertexAttributeFormat.Float16, dimension: 4
@@ -76,7 +75,7 @@ namespace LiquidPlanet
         public void SetVertex(int index, Vertex vertex) => stream0[index] = new Stream0
         {
             position = vertex.position,
-            bitangent = half4(vertex.bitangent.x, vertex.bitangent.y, vertex.bitangent.z, (half) 0f),
+            normal = vertex.normal,
             tangent = vertex.tangent
             // texCoord0 = vertex.texCoord0
         };

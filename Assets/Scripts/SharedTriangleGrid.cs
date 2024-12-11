@@ -145,8 +145,13 @@ namespace LiquidPlanet
                 zHigh = noiseMap[(z + 1) * (NumX + 1) + x];
             }
                       
-            vertex.tangent.xyzw = half4( (half3) normalize(float3( triangleWidth, Height * (xHigh - xLow), 0f)), (half) (-1f));
-            vertex.bitangent = half3( normalize(float3(0, Height * (zHigh - zLow), triangleHeigth)));
+            // vertex.tangent.xyzw = half4( (half3) normalize(float3( triangleWidth, Height * (xHigh - xLow), 0f)), (half) (-1f));
+            // vertex.bitangent = half3( normalize(float3(0, Height * (zHigh - zLow), triangleHeigth)));
+
+            float3 xtangent = normalize(float3(triangleWidth, Height * (xHigh - xLow), 0));
+            float3 ztangent = normalize(float3(0, Height * (zHigh - zLow), triangleHeigth));
+            vertex.tangent.xyw = half3( (half) xtangent.x, (half) xtangent.y, (half) (-1f));
+            vertex.normal = half3(cross(ztangent, xtangent));
 
             stream.SetVertex(vi, vertex);
             return vi;

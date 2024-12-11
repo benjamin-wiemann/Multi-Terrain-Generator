@@ -1,16 +1,23 @@
-// This shader fills the mesh shape with a color predefined in the code.
+// This shader is responsible for the texture sampling and PBR in general. 
 Shader "Terrain/PatchShader"
 {
     Properties
     {
         [MainTexture] _BaseMap ("Texture", 2D) = "white" {}
+        [Toggle(_NORMALMAP)] _NormalMapToggle ("Use Normal Map", Float) = 0
         [NoScaleOffset] _BumpMap ("Normal Map", 2D) = "bump" {}
         _BumpScale("Bump Scale", Float) = 1
+
         [NoScaleOffset] _SpecGlossMap ("Specular Map", 2D) = "specular" {}
         _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.3
         _SpecColor("Specular Color", Color) = (0.5, 0.5, 0.5, 0.5)
-        [NoScaleOffset] _OcclusionMap("Occlusion Map", 2D) = "bump" {}
+        [NoScaleOffset] _OcclusionMap("Occlusion Map", 2D) = "occlusion" {}
 		_OcclusionStrength("Occlusion Strength", Range(0.0, 1.0)) = 0.5
+
+        [Toggle(_HEIGHTMAP)] _HeightMapToggle ("Use Height Map", Float) = 0
+        [NoScaleOffset] _HeightMap ("Height Map", 2D) = "height" {}
+        _HeightScale("HeightScale", Float) = 0
+        
     }
 
     // The SubShader block containing the Shader code.
@@ -31,6 +38,7 @@ Shader "Terrain/PatchShader"
 		float _Smoothness;
 		float _OcclusionStrength;
 		float _BumpScale;
+        float _HeightScale;
 		CBUFFER_END
 		ENDHLSL
 
@@ -49,29 +57,44 @@ Shader "Terrain/PatchShader"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ParallaxMapping.hlsl"
+            // #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/PerPixelDisplacement.hlsl"
 
             // Shadows
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-            // Note, v11 changes this to :
-            // #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma shader_feature_local _NORMALMAP
+            #pragma shader_feature_local _HEIGHTMAP
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile _ _SHADOWS_SOFT
+
+            // Baked Lightmap
+            #pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile _ DIRLIGHTMAP_COMBINED
+            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
+            #pragma multi_compile _ SHADOWS_SHADOWMASK
+
+            // Other
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+            #pragma multi_compile _ _SCREEN_SPACE_OCCLUSION
 
             // flip UVs horizontally to correct for back side projection
             // #define TRIPLANAR_CORRECT_PROJECTED_U
 
             // offset UVs to prevent obvious mirroring
-            // #define TRIPLANAR_UV_OFFSET
+            #define TRIPLANAR_UV_OFFSET
 
             TEXTURE2D(_SpecGlossMap); 	SAMPLER(sampler_SpecGlossMap);
             TEXTURE2D(_OcclusionMap); 	SAMPLER(sampler_OcclusionMap);
+            TEXTURE2D(_HeightMap);      SAMPLER(sampler_HeightMap);
 
             struct VertexInput
             {
                 float4 positionOS   : POSITION;
                 //
-                half3 bitangentOS      : NORMAL;
+                float3 normalOS      : NORMAL;
                 half4 tangentOS     : TANGENT;
                 float2 lightmapUV	: TEXCOORD1;
             };
@@ -104,11 +127,10 @@ Shader "Terrain/PatchShader"
                 FragmentInput fragIn;
                 fragIn.posCS = TransformObjectToHClip(vertIn.positionOS.xyz);
                 fragIn.posWS = TransformObjectToWorld(vertIn.positionOS.xyz);
-                fragIn.tangentWS = TransformObjectToWorldDir(vertIn.tangentOS.xyz);
-                fragIn.bitangentWS = TransformObjectToWorldDir(vertIn.bitangentOS);
-                fragIn.normalWS = TransformObjectToWorldNormal(cross( vertIn.tangentOS.xyz, vertIn.bitangentOS ) );
+                fragIn.tangentWS = TransformObjectToWorldDir(vertIn.tangentOS.xyz);                
+                fragIn.normalWS = TransformObjectToWorldNormal(vertIn.normalOS);
+                fragIn.bitangentWS = TransformObjectToWorldDir(cross( vertIn.tangentOS.xyz * vertIn.tangentOS.w, vertIn.normalOS.xyz )  );
                 // fragIn.viewDirWS = GetWorldSpaceViewDir(positionInputs.positionWS);
-
                 
 				#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                     fragIn.shadowCoord = TransformWorldToShadowCoord(fragIn.posWS);
@@ -131,7 +153,7 @@ Shader "Terrain/PatchShader"
                 return n1 * dot(n1, n2) / n1.z - n2;
             }
 
-            TriplanarUV GenerateTriplanarUV(FragmentInput fragIn, half3 triblend )
+            TriplanarUV GenerateTriplanarUV(FragmentInput fragIn, half3 triblend, half3x3 worldToTangent )
             {               
 
                 // calculate triplanar uvs
@@ -140,6 +162,10 @@ Shader "Terrain/PatchShader"
                 triUV.x = fragIn.posWS.zy * _BaseMap_ST.xy + _BaseMap_ST.zw;
                 triUV.y = fragIn.posWS.xz * _BaseMap_ST.xy + _BaseMap_ST.zw;
                 triUV.z = fragIn.posWS.xy * _BaseMap_ST.xy + _BaseMap_ST.zw;
+
+                // half viewDirXTS = fragIN.posWS
+                // triUV.x = triUV.x + ParallaxMapping(_Heightmap, sampler_Heightmap, IN.TangentSpaceViewDirection, _HeightScale * 0.01, triUV.x);
+
 
                 // offset UVs to prevent obvious mirroring
             #if defined(TRIPLANAR_UV_OFFSET)
@@ -222,10 +248,9 @@ Shader "Terrain/PatchShader"
                 half3 triblend = saturate(pow(fragIn.normalWS, 4));
                 triblend /= max(dot(triblend, half3(1,1,1)), 0.0001);
 
-                // preview blend
-                // return half4(triblend.xyz, 1);
+                half3x3 worldToTangent = transpose(float3x3(fragIn.tangentWS, fragIn.bitangentWS, fragIn.normalWS));
 
-                TriplanarUV triUV = GenerateTriplanarUV( fragIn, triblend );           
+                TriplanarUV triUV = GenerateTriplanarUV( fragIn, triblend, worldToTangent );           
 
                 // albedo textures
                 half4 colX = SampleAlbedoAlpha(triUV.x, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap));
@@ -242,11 +267,11 @@ Shader "Terrain/PatchShader"
                 half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
 
                 // flip normal maps' x axis to account for flipped UVs
-            #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
-                normalTSX.x *= axisSign.x;
-                normalTSY.x *= axisSign.y;
-                normalTSZ.x *= -axisSign.z;
-            #endif
+                #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
+                    normalTSX.x *= axisSign.x;
+                    normalTSY.x *= axisSign.y;
+                    normalTSZ.x *= -axisSign.z;
+                #endif
 
                 half3 absVertNormal = abs(fragIn.normalWS);
 
@@ -260,14 +285,13 @@ Shader "Terrain/PatchShader"
                 normalTSY.z *= axisSign.y;
                 normalTSZ.z *= axisSign.z;
 
-                // sizzle tangent normals to match world normal and blend together
+                // // sizzle tangent normals to match world normal and blend together
                 normalWS = normalize(
                     normalTSX.zyx * triblend.x +
                     normalTSY.xzy * triblend.y +
                     normalTSZ.xyz * triblend.z
                     );
-                                    
-                half3x3 worldToTangent = float3x3(fragIn.tangentWS, fragIn.bitangentWS, fragIn.normalWS);
+        
                 surfaceData.normalTS = TransformWorldToTangent(normalWS, worldToTangent);
 
                 half occlusionX = SampleOcclusion(triUV.x);
@@ -283,7 +307,7 @@ Shader "Terrain/PatchShader"
                 surfaceData.smoothness = specGloss.a;
 
                 surfaceData.emission = 0; 
-                surfaceData.metallic = 1.0h;                            
+                surfaceData.metallic = 0.0h;                            
                 
             }
 
@@ -306,14 +330,15 @@ Shader "Terrain/PatchShader"
 				color.rgb = MixFog(color.rgb, inputData.fogCoord);
 				
 				// return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
+                // return half4(normalWS.xyz * 0.5 + 0.5, 0);
+                // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
                 // return half4(surfaceData.albedo, 0);
                 // return half4(surfaceData.occlusion, 0,0, 0);
                 // return half4(surfaceData.specular, 0);
-                return half4(surfaceData.normalTS *0.5 + 0.5, 0);
-                // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
+                // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
                 // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
                 // half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
-                // return color;
+                return color;
 
             }
             ENDHLSL
