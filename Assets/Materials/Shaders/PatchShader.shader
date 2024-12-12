@@ -17,6 +17,9 @@ Shader "Terrain/PatchShader"
         [Toggle(_HEIGHTMAP)] _HeightMapToggle ("Use Height Map", Float) = 0
         [NoScaleOffset] _HeightMap ("Height Map", 2D) = "height" {}
         _HeightScale("HeightScale", Float) = 0
+
+        [Toggle(_HEIGHTBASEDTRIBLEND)] _HeightTriblendToggle ("Use height based triblend", Float) = 1
+        _HeightmapBlending("Height map blending scale", Range(0.01,1.0)) = 0.3
         
     }
 
@@ -39,6 +42,7 @@ Shader "Terrain/PatchShader"
 		float _OcclusionStrength;
 		float _BumpScale;
         float _HeightScale;
+        float _HeightmapBlending;
 		CBUFFER_END
 		ENDHLSL
 
@@ -54,7 +58,6 @@ Shader "Terrain/PatchShader"
             #pragma vertex vert
             #pragma fragment frag
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ParallaxMapping.hlsl"
@@ -63,6 +66,7 @@ Shader "Terrain/PatchShader"
             // Shadows
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local _HEIGHTMAP
+            #pragma shader_feature_local _HEIGHTBASEDTRIBLEND
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
@@ -142,10 +146,29 @@ Shader "Terrain/PatchShader"
                 return fragIn;
             }
 
+            // Simple triblend generation
+            void GenerateTriblend(half3 normalWS, out half3 triblend)
+            {                
+                triblend = saturate(pow(normalWS, 4));
+                triblend /= max(dot(triblend, half3(1,1,1)), 0.0001);
+            }
+
+            // Triblend based on height information from height maps
+            // https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#ce80
+            void GenerateHeightTriblend(half3 normalWS, float3 heights, out half3 triblend)
+            {                
+                triblend = abs(normalWS.xyz);
+                triblend /= dot(triblend, float3(1,1,1));                
+                heights += (triblend * 3.0);
+                float heightStart = max(max(heights.x, heights.y), heights.z) - _HeightmapBlending;
+                float3 h = max(heights - heightStart.xxx, float3(0,0,0));
+                triblend = h / dot(h, float3(1,1,1));
+            }
+
             // Reoriented Normal Mapping
             // http://blog.selfshadow.com/publications/blending-in-detail/
             // Altered to take normals (-1 to 1 ranges) rather than unsigned bitangentOS maps (0 to 1 ranges)
-            half3 blend_rnm(half3 n1, half3 n2)
+            half3 blendRNM(half3 n1, half3 n2)
             {
                 n1.z += 1;
                 n2.xy = -n2.xy;
@@ -153,7 +176,8 @@ Shader "Terrain/PatchShader"
                 return n1 * dot(n1, n2) / n1.z - n2;
             }
 
-            TriplanarUV GenerateTriplanarUV(FragmentInput fragIn, half3 triblend, half3x3 worldToTangent )
+
+            TriplanarUV GenerateTriplanarUV(FragmentInput fragIn)
             {               
 
                 // calculate triplanar uvs
@@ -165,7 +189,6 @@ Shader "Terrain/PatchShader"
 
                 // half viewDirXTS = fragIN.posWS
                 // triUV.x = triUV.x + ParallaxMapping(_Heightmap, sampler_Heightmap, IN.TangentSpaceViewDirection, _HeightScale * 0.01, triUV.x);
-
 
                 // offset UVs to prevent obvious mirroring
             #if defined(TRIPLANAR_UV_OFFSET)
@@ -241,16 +264,37 @@ Shader "Terrain/PatchShader"
             }
 
 
-            void InitializeSurfaceData(FragmentInput fragIn, out SurfaceData surfaceData, out half3 normalWS){
+            void InitializeSurfaceData(FragmentInput fragIn, out SurfaceData surfaceData, out half3 normalWS, out half3 triblend, out half3 viewDirTS){
                 surfaceData = (SurfaceData)0; // avoids "not completely initalized" errors
 
-                // calculate triplanar blend
-                half3 triblend = saturate(pow(fragIn.normalWS, 4));
-                triblend /= max(dot(triblend, half3(1,1,1)), 0.0001);
-
                 half3x3 worldToTangent = transpose(float3x3(fragIn.tangentWS, fragIn.bitangentWS, fragIn.normalWS));
-
-                TriplanarUV triUV = GenerateTriplanarUV( fragIn, triblend, worldToTangent );           
+                
+                TriplanarUV triUV = GenerateTriplanarUV( fragIn);
+                
+                #ifdef _HEIGHTMAP
+                    half3 heights = half3(
+                        SAMPLE_TEXTURE2D(_HeightMap, sampler_HeightMap, triUV.x).r,
+                        SAMPLE_TEXTURE2D(_HeightMap, sampler_HeightMap, triUV.y).r,
+                        SAMPLE_TEXTURE2D(_HeightMap, sampler_HeightMap, triUV.z).r);
+                    #ifdef _HEIGHTBASEDTRIBLEND
+                        GenerateHeightTriblend( fragIn.normalWS, heights, triblend);
+                    #else
+                        GenerateTriblend(fragIn.normalWS, triblend);
+                    #endif
+                    viewDirTS = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangent);                   
+                    // half height = heights.x * triblend.x + heights.y * triblend.y + heights.z * triblend.z;  
+                    // half2 uvOffset = ParallaxOffset1Step( height, _HeightScale, viewDirTS);
+                    // triUV.x += uvOffset;
+                    // triUV.y += uvOffset;
+                    // triUV.z += uvOffset;
+                    // triUV.x += ParallaxOffset1Step( heights.x, _HeightScale, viewDirTS);
+                    // triUV.y += ParallaxOffset1Step( heights.y, _HeightScale, viewDirTS);
+                    // triUV.z += ParallaxOffset1Step( heights.z, _HeightScale, viewDirTS);  
+                #else 
+                    GenerateTriblend(fragIn.normalWS, triblend);
+                    viewDirTS = 0;
+                #endif
+                        
 
                 // albedo textures
                 half4 colX = SampleAlbedoAlpha(triUV.x, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap));
@@ -276,9 +320,9 @@ Shader "Terrain/PatchShader"
                 half3 absVertNormal = abs(fragIn.normalWS);
 
                 // swizzle world normals to match tangent space and apply reoriented normal mapping blend
-                normalTSX = blend_rnm(half3(fragIn.normalWS.zy, absVertNormal.x), normalTSX);
-                normalTSY = blend_rnm(half3(fragIn.normalWS.xz, absVertNormal.y), normalTSY);
-                normalTSZ = blend_rnm(half3(fragIn.normalWS.xy, absVertNormal.z), normalTSZ);
+                normalTSX = blendRNM(half3(fragIn.normalWS.zy, absVertNormal.x), normalTSX);
+                normalTSY = blendRNM(half3(fragIn.normalWS.xz, absVertNormal.y), normalTSY);
+                normalTSZ = blendRNM(half3(fragIn.normalWS.xy, absVertNormal.z), normalTSZ);
 
                 // apply world space sign to tangent space Z
                 normalTSX.z *= axisSign.x;
@@ -306,6 +350,8 @@ Shader "Terrain/PatchShader"
                 surfaceData.specular = specGloss.rgb;               
                 surfaceData.smoothness = specGloss.a;
 
+
+
                 surfaceData.emission = 0; 
                 surfaceData.metallic = 0.0h;                            
                 
@@ -318,8 +364,10 @@ Shader "Terrain/PatchShader"
 				SurfaceData surfaceData;
                 InputData inputData;
                 half3 normalWS;
+                half3 triblend;
+                half3 viewDirTS;
                 // Setup SurfaceData
-				InitializeSurfaceData(fragIn, surfaceData, normalWS);
+				InitializeSurfaceData(fragIn, surfaceData, normalWS, triblend, viewDirTS);
 				// Setup InputData				
 				InitializeInputData(fragIn, normalWS, inputData);
 
@@ -329,6 +377,7 @@ Shader "Terrain/PatchShader"
 				// Fog
 				color.rgb = MixFog(color.rgb, inputData.fogCoord);
 				
+                // return half4(triblend, 0);
 				// return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
                 // return half4(normalWS.xyz * 0.5 + 0.5, 0);
                 // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
@@ -337,7 +386,7 @@ Shader "Terrain/PatchShader"
                 // return half4(surfaceData.specular, 0);
                 // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
                 // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
-                // half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
+                // return half4(viewDirTS * 0.5 + 0.5, 0);
                 return color;
 
             }
