@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 using static Unity.Mathematics.math;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
     namespace Helper
     {

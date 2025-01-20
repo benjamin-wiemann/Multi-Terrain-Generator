@@ -4,7 +4,7 @@ using Unity.Mathematics;
 using System.IO;
 using System;
 
-namespace LiquidPlanet.DebugTools
+namespace MultiTerrain.DebugTools
 {
 
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]

@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using MultiTerrain.Segmentation;
 
-namespace LiquidPlanet.Event
+namespace MultiTerrain.Event
 {
     public class MeshGenFinishedEventArgs : EventArgs
     {

@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 using static UnityEngine.Mesh;
 using static Unity.Mathematics.math;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
 
     public struct VertexStream

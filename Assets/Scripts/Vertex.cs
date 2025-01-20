@@ -1,6 +1,6 @@
 using Unity.Mathematics;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
 
     public struct Vertex

@@ -1,7 +1,7 @@
 using Unity.Collections;
 using UnityEngine;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
 
     public interface IMeshGenerator

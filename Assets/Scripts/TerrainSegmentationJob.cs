@@ -5,10 +5,11 @@ using Unity.Collections;
 using Unity.Mathematics;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
-using LiquidPlanet.Helper;
-using LiquidPlanet.DebugTools;
+using MultiTerrain.Helper;
+using MultiTerrain.DebugTools;
+using MultiTerrain.Segmentation;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
 
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
@@ -33,7 +34,7 @@ namespace LiquidPlanet
         NativeArray<TerrainInfo> _segmentation;
 
         [NativeDisableParallelForRestriction]
-        NativeArray<int> _terrainCounters;
+        NativeArray<int> _submeshCounters;
 
         [ReadOnly, NativeDisableParallelForRestriction]
         NativeArray<int> _terrainIndices;
@@ -52,7 +53,7 @@ namespace LiquidPlanet
             float perlinOffset,
             float perlinScale,
             NativeArray<TerrainInfo> terrainSegmentation,   // out
-            NativeArray<int> terrainCounters        // out              
+            NativeArray<int> submeshCounters        // out              
         )
         {
             TerrainSegmentationJob job = new();
@@ -69,7 +70,7 @@ namespace LiquidPlanet
             job._terrainTypes = terrainTypes;
             job._perlinOffset = perlinOffset;
             job._noiseScale = perlinScale;
-            job._terrainCounters = terrainCounters;
+            job._submeshCounters = submeshCounters;
             job._seed = seed;
 
             if (JobTools.Get()._runParallel)
@@ -94,9 +95,7 @@ namespace LiquidPlanet
                 float2 inCellLocation = frac(pos);
 
                 Float9 terrainShares = Float9.zero;
-                //for (uint i = 0; i < 9; i++)
-                //    terrainShares[i] = 8;
-                Int9 indices = new Int9( - 1);
+                Int9 indices = new Int9();
 
                 float minDistance = 8f;
                 int shiftSize = 2;
@@ -118,14 +117,13 @@ namespace LiquidPlanet
                     }
                 }
                 
-               
                 TerrainInfo terrainInfo = new TerrainInfo(indices, terrainShares);
                 _segmentation[y * _trianglePairsX + x] = terrainInfo;
                 if(x < _trianglePairsX && y < _trianglePairsY)
                 {
                     int maxIndex = terrainInfo.GetMaxIndex();
                     // count the occurences of each terrain for each job execution
-                    NativeCollectionHelper.IncrementAt(_terrainCounters, (uint) maxIndex);                    
+                    NativeCollectionHelper.IncrementAt(_submeshCounters, (uint) maxIndex);                    
                 }                
                 
             }

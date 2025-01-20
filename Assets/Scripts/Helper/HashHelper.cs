@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using static Unity.Mathematics.math;
 
-namespace LiquidPlanet.Helper
+namespace MultiTerrain.Helper
 {
     public readonly struct SmallXXHash
     {

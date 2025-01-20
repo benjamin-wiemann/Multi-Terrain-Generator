@@ -3,10 +3,11 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
-using LiquidPlanet.Helper;
-using LiquidPlanet.DebugTools;
+using MultiTerrain.Helper;
+using MultiTerrain.DebugTools;
+using MultiTerrain.Segmentation;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
 
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]

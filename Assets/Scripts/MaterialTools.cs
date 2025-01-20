@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
     public class MaterialTools
     {

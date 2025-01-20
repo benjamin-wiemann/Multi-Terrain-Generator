@@ -3,8 +3,9 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
 using System.Threading;
+using MultiTerrain.Segmentation;
 
-namespace LiquidPlanet.Helper
+namespace MultiTerrain.Helper
 {
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TopKSorter 

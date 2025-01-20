@@ -5,9 +5,9 @@ using Unity.Mathematics;
 using Unity.Collections;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
-using LiquidPlanet.DebugTools;
+using MultiTerrain.DebugTools;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
 
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
