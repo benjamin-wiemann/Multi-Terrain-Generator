@@ -6,6 +6,7 @@ using Unity.Collections;
 using static Unity.Mathematics.math;
 using Unity.Collections.LowLevel.Unsafe;
 using MultiTerrain.DebugTools;
+using MultiTerrain.Segmentation;
 
 namespace MultiTerrain
 {
