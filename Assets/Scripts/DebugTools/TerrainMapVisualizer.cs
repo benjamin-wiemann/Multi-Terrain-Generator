@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using System.IO;
 using System;
+using MultiTerrain.Segmentation;
 
 namespace MultiTerrain.DebugTools
 {

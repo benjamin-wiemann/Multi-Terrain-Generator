@@ -6,6 +6,7 @@ using MultiTerrain.Event;
 using UnityEngine.Events;
 using Unity.Mathematics;
 using MultiTerrain.Helper;
+using MultiTerrain.Segmentation;
 
 namespace MultiTerrain
 {
