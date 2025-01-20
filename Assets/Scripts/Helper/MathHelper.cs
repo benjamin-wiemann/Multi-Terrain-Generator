@@ -1,5 +1,5 @@
 ﻿
-namespace LiquidPlanet.Helper
+namespace MultiTerrain.Helper
 {
     public class MathHelper
     {

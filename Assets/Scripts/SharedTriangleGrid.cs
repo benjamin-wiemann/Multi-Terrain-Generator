@@ -3,9 +3,9 @@ using UnityEngine;
 using static Unity.Mathematics.math;
 using Unity.Collections;
 using Unity.Mathematics;
-using LiquidPlanet.Helper;
+using MultiTerrain.Helper;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
 
     public struct SharedTriangleGrid

@@ -3,7 +3,7 @@ using UnityEditor;
 
 
 
-namespace LiquidPlanet.EditorUI
+namespace MultiTerrain.EditorUI
 {
 
 

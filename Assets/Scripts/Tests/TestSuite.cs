@@ -2,10 +2,11 @@ using NUnit.Framework;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
-using LiquidPlanet;
-using LiquidPlanet.Helper;
+using MultiTerrain;
+using MultiTerrain.Helper;
 using System;
-using LiquidPlanet.DebugTools;
+using MultiTerrain.DebugTools;
+using MultiTerrain.Segmentation;
 
 public class TestSuite
 {
@@ -75,7 +76,7 @@ public class TestSuite
         {
             Float9 intensities = Float9.zero;
             intensities[0] = 1f;
-            Int9 indices = Int9.zero;
+            Int9 indices = new Int9();
             indices[0] = segmentation[i];
             TerrainInfo info = new TerrainInfo(indices, intensities);
             terrainSegmentation[i] = info;
@@ -117,6 +118,51 @@ public class TestSuite
         terrainSegmentation.Dispose();
         terrainCounters.Dispose();
         coordinates.Dispose();
+    }
+
+    [Test]
+    public void Int9AddingElementsIncreasesLength()
+    {
+        Int9 test = new Int9();
+        Assert.That(test.Length == 0);        
+        test.Add(2);
+        Assert.That(test.Length == 1);
+        test[1] = 5;
+        Assert.That(test.Length == 2);
+    }
+
+    [Test]
+    public void Int9AddingAtTooHighIndexRaisesException()
+    {
+        Int9 test = new Int9();
+        Assert.Throws<ArgumentException>(() => test[2] = 2);
+        test.Add(0);
+        test.Add(1);
+        test.Add(2);
+        test.Add(3);
+        test.Add(4);
+        test.Add(5);
+        test.Add(6);
+        test.Add(7);
+        test.Add(8);
+        Assert.Throws<ArgumentException>(() => test[9] = 9);
+        Assert.Throws<ArgumentException>(() => test.Add(10));
+    }
+
+    [Test]
+    public void TopKSorterGetsCorrectTopFour()
+    {
+        Int9 ids = new Int9(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        Float9 values = new Float9( 0.4f, 0.3f, 0.1f, 0.8f, 0.9f, 0.2f, 0.7f, 0f, 0.5f);
+        TopKSorter sorter = new(ids, values);
+        int4 topIds;
+        float4 topValues;
+        sorter.GetTopFour(out topIds, out topValues);
+        Assert.That(topValues[0], Is.EqualTo(0.9f));
+        Assert.That(topValues[1], Is.EqualTo(0.8f));
+        Assert.That(topValues[2], Is.EqualTo(0.7f));
+        Assert.That(topValues[3], Is.EqualTo(0.5f));
+
     }
 
 

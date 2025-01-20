@@ -2,12 +2,12 @@ using Unity.Collections;
 using UnityEngine;
 using System.Collections.Generic;
 using System;
-using LiquidPlanet.Event;
+using MultiTerrain.Event;
 using UnityEngine.Events;
 using Unity.Mathematics;
-using LiquidPlanet.Helper;
+using MultiTerrain.Helper;
 
-namespace LiquidPlanet
+namespace MultiTerrain
 {
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class TerrainGenerator : MonoBehaviour
@@ -40,11 +40,12 @@ namespace LiquidPlanet
         [SerializeField] float _borderGranularity = 1;
         [SerializeField] float _borderSmoothness = 1f;
         [SerializeField] List<TerrainType> _terrainTypes = new();
+        [SerializeField] public bool autoUpdate;
+        [SerializeField] MeshFinishedEvent _onMeshFinished;
+        [SerializeField] Shader _terrainShader;
+        [SerializeField, Range(1, 4)] int _submeshSplitLevel = 1;
 
-        [SerializeField]
-        public bool autoUpdate;
-        [SerializeField]
-        MeshFinishedEvent _onMeshFinished;
+
 
         Mesh _mesh;
 
@@ -55,6 +56,9 @@ namespace LiquidPlanet
         NativeArray<float> _maxNoiseValues;
 
         NativeArray<float> _minNoiseValues;
+
+        ComputeBuffer _terrainBuffer;
+        
 
         [System.Serializable]
         public class MeshFinishedEvent : UnityEvent<MeshGenFinishedEventArgs> { }
@@ -87,14 +91,9 @@ namespace LiquidPlanet
                 _height
             );
             List<Material> materials = new();
-            for (int i = 0; i < _terrainTypes.Count; i++)
-            {
-                var type = _terrainTypes[i];
-                if (type._active)
-                {
-                    materials.Add(type._material);
-                }
-            }
+            Material multiTerrainMaterial = new(_terrainShader);
+            MaterialTools.SetProperties(_terrainTypes, _meshResolution, _meshX, _meshZ, ref multiTerrainMaterial);
+            materials.Add(multiTerrainMaterial);
             GetComponent<Renderer>().SetSharedMaterials(materials);
             _terrainMap = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
@@ -102,14 +101,14 @@ namespace LiquidPlanet
             NativeArray<int2> coordinates = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
-            NativeList<int> terrainCounters = new (_terrainTypes.Count, Allocator.Persistent);
+            NativeList<int> submeshCounters = new (Mathf.RoundToInt(Mathf.Pow(_terrainTypes.Count, _submeshSplitLevel)), Allocator.Persistent);
             NativeList<TerrainTypeStruct> types = new(_terrainTypes.Count, Allocator.Persistent);
             foreach (TerrainType terrainType in _terrainTypes)
             {
                 if (terrainType._active)
                 {
                     types.Add(TerrainTypeStruct.Convert(terrainType));
-                    terrainCounters.Add(0);
+                    submeshCounters.Add(0);
                 }
             }
             TerrainSegmentator.GetTerrainSegmentation(
@@ -127,7 +126,7 @@ namespace LiquidPlanet
                 types,
                 _terrainMap,
                 coordinates,
-                terrainCounters
+                submeshCounters
                 );
                         
             int numVerticesX = triangleGrid.NumX + 1;
@@ -172,12 +171,15 @@ namespace LiquidPlanet
             MeshJob.ScheduleParallel(
                 triangleGrid,
                 _heightMap,
-                terrainCounters,
+                submeshCounters,
                 coordinates,
                 bounds,
                 _mesh,
                 meshData);
-            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);
+            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);                       
+            _terrainBuffer = new(_terrainMap.Length, TerrainInfo.SizeInBytes );
+            _terrainBuffer.SetData(_terrainMap); 
+            multiTerrainMaterial.SetBuffer("_TerrainMap", _terrainBuffer);
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             _onMeshFinished?.Invoke(args);
             
@@ -186,7 +188,7 @@ namespace LiquidPlanet
             _heightMap.Dispose();
             _terrainMap.Dispose();            
             coordinates.Dispose();
-            terrainCounters.Dispose();
+            submeshCounters.Dispose();
             types.Dispose();
         }
 
@@ -227,6 +229,11 @@ namespace LiquidPlanet
                     type._name = type._name.Substring(0, 125);
                 }
             }
+        }
+
+        void OnDestroy()
+        {
+            _terrainBuffer.Release();
         }
 
     }
