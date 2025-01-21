@@ -22,9 +22,6 @@ namespace MultiTerrain.Segmentation
 
         public static int SizeInBytes { get=> sizeof(int) * 9 + sizeof(uint); }
 
-        private static readonly Int9 zero;
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Int9(int a, int b, int c, int d, int e, int f, int g, int h, int i)
         {

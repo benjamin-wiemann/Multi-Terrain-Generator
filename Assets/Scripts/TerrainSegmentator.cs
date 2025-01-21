@@ -11,8 +11,6 @@ namespace MultiTerrain
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentator
     {
-
-        private const uint worleyBorderPadding = 3;
         
         public static void GetTerrainSegmentation(                        
             int trianglePairsX,
@@ -26,15 +24,16 @@ namespace MultiTerrain
             float perlinScale,
             float borderGranularity,
             float borderSmoothing,
+            int submeshSplitLevel,
             NativeList<TerrainTypeStruct> terrainTypes,  // inout
-            NativeArray<TerrainInfo> terrainMap,        // out
+            NativeArray<TerrainWeighting> terrainMap,        // out
             NativeArray<int2> coordinates,     // out
-            NativeArray<int> terrainCounters // out
+            NativeArray<int> submeshCounters // out
         )
         {
             // Creating random terrain indices for the worley seed points. Overlap of 3 is need for each side.
-            uint seedPointsX = (uint)round(width * seedPointDensity);
-            uint seedPointsY = (uint)round(height * seedPointDensity);
+            uint seedPointsX = (uint) round(width * seedPointDensity);
+            uint seedPointsY = (uint) round(height * seedPointDensity);
             NativeArray<int> terrainIndices = new((int) ((seedPointsX + 6) * (seedPointsY + 6)), Allocator.Persistent);
             GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes.Length);
             
@@ -51,11 +50,12 @@ namespace MultiTerrain
                 borderSmoothing,
                 perlinOffset,
                 perlinScale,
+                submeshSplitLevel,
                 terrainMap,
-                terrainCounters);
+                submeshCounters);
             SortCoordinatesJob.ScheduleParallel(
                 terrainMap,
-                terrainCounters,
+                submeshCounters,
                 trianglePairsY,
                 coordinates);
 

@@ -26,12 +26,13 @@ namespace MultiTerrain
         float _perlinOffset;
         float _noiseScale;
         uint _seed;
+        int _submeshSplitLevel;
 
         [NativeDisableContainerSafetyRestriction]
         NativeArray<TerrainTypeStruct> _terrainTypes;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        NativeArray<TerrainInfo> _segmentation;
+        NativeArray<TerrainWeighting> _segmentation;
 
         [NativeDisableParallelForRestriction]
         NativeArray<int> _submeshCounters;
@@ -52,7 +53,8 @@ namespace MultiTerrain
             float borderSmoothing,
             float perlinOffset,
             float perlinScale,
-            NativeArray<TerrainInfo> terrainSegmentation,   // out
+            int submeshSplitLevel,
+            NativeArray<TerrainWeighting> terrainSegmentation,   // out
             NativeArray<int> submeshCounters        // out              
         )
         {
@@ -72,6 +74,7 @@ namespace MultiTerrain
             job._noiseScale = perlinScale;
             job._submeshCounters = submeshCounters;
             job._seed = seed;
+            job._submeshSplitLevel = submeshSplitLevel;
 
             if (JobTools.Get()._runParallel)
                 job.ScheduleParallel(trianglePairsY, (int) JobTools.Get()._batchCountInRow, default).Complete();
@@ -94,7 +97,7 @@ namespace MultiTerrain
                 float2 cellIndex = floor( pos );                
                 float2 inCellLocation = frac(pos);
 
-                Float9 terrainShares = Float9.zero;
+                Float9 terrainShares = new Float9();
                 Int9 indices = new Int9();
 
                 float minDistance = 8f;
@@ -111,19 +114,21 @@ namespace MultiTerrain
                         uint terrainIndexPosition = indices.Add( terrainIndex );
                         float h = smoothstep(-1.0f, 1.0f, (minDistance - dist) / _borderSmoothing);
                         minDistance = lerp(minDistance, dist, h);                        
-                        Float9 dist9 = Float9.zero;
+                        Float9 dist9 = new Float9();
                         dist9[terrainIndexPosition] = 1;
                         terrainShares = Float9.lerp(terrainShares, dist9, h, indices.Length);
                     }
                 }
-                
-                TerrainInfo terrainInfo = new TerrainInfo(indices, terrainShares);
-                _segmentation[y * _trianglePairsX + x] = terrainInfo;
+                TopKSorter sorter = new(indices, terrainShares);
+                int4 top4Indices;
+                float4 top4Shares;
+                sorter.GetFourHighestValues(out top4Indices, out top4Shares);
+                TerrainWeighting weights = new TerrainWeighting(top4Indices, top4Shares);
+                _segmentation[y * _trianglePairsX + x] = weights;
                 if(x < _trianglePairsX && y < _trianglePairsY)
                 {
-                    int maxIndex = terrainInfo.GetMaxIndex();
-                    // count the occurences of each terrain for each job execution
-                    NativeCollectionHelper.IncrementAt(_submeshCounters, (uint) maxIndex);                    
+                    // count the occurences if a vertex belongs to a submesh
+                    NativeCollectionHelper.IncrementAt(_submeshCounters, (uint) top4Indices[0]);                    
                 }                
                 
             }
