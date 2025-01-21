@@ -37,7 +37,7 @@ namespace MultiTerrain.DebugTools
 
         Texture2D _heightTexture;
         
-        NativeArray<TerrainInfo> _segmentation;
+        NativeArray<TerrainWeighting> _segmentation;
 
         TerrainTypeStruct[] _terrainTypes;
 
@@ -104,7 +104,7 @@ namespace MultiTerrain.DebugTools
             return texture;
         }
 
-        Texture2D[] VisualizeSegmentation( NativeArray<TerrainInfo> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
+        Texture2D[] VisualizeSegmentation( NativeArray<TerrainWeighting> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
         {
 
             Texture2D[] textures = new Texture2D[terrainTypes.Length + 1];
@@ -116,15 +116,15 @@ namespace MultiTerrain.DebugTools
             {
                 for (int x = 0; x < width; x++)
                 {
-                    TerrainInfo info = segmentation[y * width + x];
-                    Float9 intensities = info.Intensities;
-                    Int9 indices = info.Indices;
+                    TerrainWeighting info = segmentation[y * width + x];
+                    float4 intensities = info.Intensities;
+                    int4 indices = info.Ids;
                     Color[] colors = new Color[terrainTypes.Length + 1];
                     for( int i = 0; i < colors.Length; i++ )
                     {
                         colors[i] = Color.black; 
                     }
-                    for (uint i = 0; i < indices.Length; i++)
+                    for (int i = 0; i < 4; i++)
                     {                        
                         int terrainIndex = indices[i];
                         float3 col = terrainTypes[terrainIndex].Color;

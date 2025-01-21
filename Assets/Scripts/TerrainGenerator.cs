@@ -46,13 +46,11 @@ namespace MultiTerrain
         [SerializeField] Shader _terrainShader;
         [SerializeField, Range(1, 4)] int _submeshSplitLevel = 1;
 
-
-
         Mesh _mesh;
 
         NativeArray<float> _heightMap;
 
-        NativeArray<TerrainInfo> _terrainMap;
+        NativeArray<TerrainWeighting> _terrainMap;
 
         NativeArray<float> _maxNoiseValues;
 
@@ -124,6 +122,7 @@ namespace MultiTerrain
                 _noiseScale,
                 _borderGranularity,
                 _borderSmoothness,
+                _submeshSplitLevel,
                 types,
                 _terrainMap,
                 coordinates,
@@ -178,7 +177,7 @@ namespace MultiTerrain
                 _mesh,
                 meshData);
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);                       
-            _terrainBuffer = new(_terrainMap.Length, TerrainInfo.SizeInBytes );
+            _terrainBuffer = new(_terrainMap.Length, TerrainWeighting.SizeInBytes );
             _terrainBuffer.SetData(_terrainMap); 
             multiTerrainMaterial.SetBuffer("_TerrainMap", _terrainBuffer);
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());

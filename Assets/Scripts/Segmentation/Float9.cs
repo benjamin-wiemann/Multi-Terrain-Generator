@@ -16,8 +16,6 @@ namespace MultiTerrain.Segmentation
         public float h;
         public float i;
 
-        public static readonly Float9 zero;
-
         public static int SizeInBytes { get => sizeof(float) * 9; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,7 +54,7 @@ namespace MultiTerrain.Segmentation
 
         public static Float9 lerp(Float9 left, Float9 right, float delta, uint count = 9)
         {            
-            Float9 result = Float9.zero;
+            Float9 result = new Float9();
             for (uint i = 0; i < count; i++)
                 result[i] = (1 - delta) * left[i] + delta * right[i];
 
