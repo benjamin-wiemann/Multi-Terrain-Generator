@@ -55,6 +55,8 @@ namespace MultiTerrain
         NativeArray<float> _maxNoiseValues;
 
         NativeArray<float> _minNoiseValues;
+        
+        NativeHashMap<int, int> _idsToIndices;
 
         ComputeBuffer _terrainBuffer;
         
@@ -100,16 +102,21 @@ namespace MultiTerrain
             NativeArray<int2> coordinates = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
-            NativeList<int> submeshCounters = new (Mathf.RoundToInt(Mathf.Pow(_terrainTypes.Count, _submeshSplitLevel)), Allocator.Persistent);
+            int numTerrainCombinations = MathHelper.GetBinCoeff(_terrainTypes.Count, _submeshSplitLevel);
+            NativeList<int> submeshCounters = new (numTerrainCombinations,  
+                Allocator.Persistent);
             NativeList<TerrainTypeStruct> types = new(_terrainTypes.Count, Allocator.Persistent);
+            IdGenerator idGenerator = new(_terrainTypes.Count);
             foreach (TerrainType terrainType in _terrainTypes)
             {
                 if (terrainType._active)
                 {
-                    types.Add(TerrainTypeStruct.Convert(terrainType));
+                    types.Add(TerrainTypeStruct.Convert(terrainType, idGenerator.GetPrimeNumber()));
                     submeshCounters.Add(0);
                 }
             }
+            _idsToIndices = new(numTerrainCombinations, Allocator.Persistent);
+            IdCombination.MapIdsToIndices(types, _submeshSplitLevel, ref _idsToIndices);            
             TerrainSegmentator.GetTerrainSegmentation(
                 triangleGrid.NumX,
                 triangleGrid.NumZ,
@@ -123,6 +130,7 @@ namespace MultiTerrain
                 _borderGranularity,
                 _borderSmoothness,
                 _submeshSplitLevel,
+                _idsToIndices,
                 types,
                 _terrainMap,
                 coordinates,
@@ -183,6 +191,7 @@ namespace MultiTerrain
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             _onMeshFinished?.Invoke(args);
             
+            _idsToIndices.Dispose();
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
             _heightMap.Dispose();
@@ -210,13 +219,20 @@ namespace MultiTerrain
             if (_heightOctaves < 0)
             {
                 _heightOctaves = 0;
-            }            
+            }   
+            IdGenerator generator = new(_terrainTypes.Count);         
             if ( _terrainTypes.Count == 0 )
             {
                 _terrainTypes.Add(new TerrainType() {
                     _name = "Default Terrain",
                     _color = Color.green });
             }
+            else if ( _terrainTypes.Count > generator.PrimeNumbersCapacity )
+            {   
+                // Limit number of terrains by number of available prime numbers
+                _terrainTypes.RemoveRange(generator.PrimeNumbersCapacity, _terrainTypes.Count - 1);
+            }
+            _submeshSplitLevel = Mathf.Min( _terrainTypes.Count, _submeshSplitLevel);
             for (int i = 0; i < _terrainTypes.Count; i++)
             {
                 var type = _terrainTypes[i];
@@ -229,6 +245,7 @@ namespace MultiTerrain
                     type._name = type._name.Substring(0, 125);
                 }
             }
+            
         }
 
         void OnDestroy()

@@ -21,5 +21,26 @@ namespace MultiTerrain.Helper
         {
             return (a / Gcf(a, b)) * b;
         }
+
+        public static int CalculateFactorialFromTo(int n, int lowerThreshold)
+        {
+            if (n <= lowerThreshold || n <= 1) 
+                return 1;
+            return n * CalculateFactorialFromTo(n - 1, lowerThreshold);
+        }
+
+        public static int GetBinCoeff(int n, long k)
+        {            
+            int r = 1;
+            int d;
+            if (k > n) 
+                return 0;
+            for (d = 1; d <= k; d++)
+            {
+                r *= n--;
+                r /= d;
+            }
+            return r;
+        }
     }
 }

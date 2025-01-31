@@ -41,7 +41,7 @@ namespace MultiTerrain.Helper
 
         }
 
-        public void SortTopFourById(ref int4 topIds, ref float4 topValues)
+        public static void SortTopFourById(ref int4 topIds, ref float4 topValues)
         {
             // Perform a simple insertion sort since the array has only 4 elements
             for (int i = 1; i < 4; i++)
@@ -60,6 +60,12 @@ namespace MultiTerrain.Helper
                 topIds[j + 1] = id;
                 topValues[j + 1] = value;
             }
+        }
+
+        public void GetFourHighestValuesSortedById(out int4 ids, out float4 values)
+        {
+            GetFourHighestValues(out ids, out values);
+            SortTopFourById(ref ids, ref values);
         }
 
 

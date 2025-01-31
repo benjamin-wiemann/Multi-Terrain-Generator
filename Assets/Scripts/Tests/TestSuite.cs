@@ -8,6 +8,7 @@ using System;
 using MultiTerrain.DebugTools;
 using MultiTerrain.Segmentation;
 
+
 public class TestSuite
 {
 
@@ -71,14 +72,14 @@ public class TestSuite
     {
         int width = 3;
         int[] segmentation = new int[] { 0, 1, 2, 2, 1, 2, 0, 1, 2 };
-        NativeArray<TerrainInfo> terrainSegmentation = new(segmentation.Length, Allocator.Persistent);
+        NativeArray<TerrainWeighting> terrainSegmentation = new(segmentation.Length, Allocator.Persistent);
         for (int i = 0; i < segmentation.Length; i++)
         {
-            Float9 intensities = Float9.zero;
+            float4 intensities = 0;
             intensities[0] = 1f;
-            Int9 indices = new Int9();
+            int4 indices = new int4();
             indices[0] = segmentation[i];
-            TerrainInfo info = new TerrainInfo(indices, intensities);
+            TerrainWeighting info = new TerrainWeighting(indices, intensities);
             terrainSegmentation[i] = info;
         }        
         NativeArray<int> terrainCounters = new(3, Allocator.Persistent);
@@ -157,13 +158,64 @@ public class TestSuite
         TopKSorter sorter = new(ids, values);
         int4 topIds;
         float4 topValues;
-        sorter.GetTopFour(out topIds, out topValues);
+        sorter.GetFourHighestValues(out topIds, out topValues);
         Assert.That(topValues[0], Is.EqualTo(0.9f));
         Assert.That(topValues[1], Is.EqualTo(0.8f));
         Assert.That(topValues[2], Is.EqualTo(0.7f));
         Assert.That(topValues[3], Is.EqualTo(0.5f));
 
     }
+
+    [Test]
+    public void TopKSorterSortsFourEntriesInCorrectOrder()
+    {
+        int4 ids = new (4, 2, 3, 1);
+        float4 values = new ( 0.4f, 0.3f, 0.1f, 0.8f);
+        TopKSorter.SortTopFourById(ref ids, ref values);
+        Assert.That(ids[0], Is.EqualTo(1));
+        Assert.That(ids[1], Is.EqualTo(2));
+        Assert.That(ids[2], Is.EqualTo(3));
+        Assert.That(ids[3], Is.EqualTo(4));
+        Assert.That(values[0], Is.EqualTo(0.8f));
+        Assert.That(values[1], Is.EqualTo(0.3f));
+        Assert.That(values[2], Is.EqualTo(0.1f));
+        Assert.That(values[3], Is.EqualTo(0.4f));
+
+    }
+
+    [Test]
+    public void IdCombination_MapIdsToIndices_Finds_Correct_Key_Value_Pairs()
+    {
+        NativeList<TerrainTypeStruct> terrainList = new (4, Allocator.Persistent);
+        TerrainType protoType = new();
+        protoType._name = "test";
+        terrainList.Add(TerrainTypeStruct.Convert(protoType, 2));
+        terrainList.Add(TerrainTypeStruct.Convert(protoType, 3));
+        terrainList.Add(TerrainTypeStruct.Convert(protoType, 5));
+        terrainList.Add(TerrainTypeStruct.Convert(protoType, 7));
+        int k = 2;
+        int binCoeff = MathHelper.GetBinCoeff(terrainList.Length, k);
+        NativeHashMap<int, int> keyValues = new(binCoeff, Allocator.Persistent);
+        IdCombination.MapIdsToIndices(terrainList, k, ref keyValues);
+        Assert.That(keyValues.ContainsKey(2 * 3), Is.True);
+        Assert.That(keyValues.ContainsKey(2 * 5), Is.True);
+        Assert.That(keyValues.ContainsKey(2 * 7), Is.True);
+        Assert.That(keyValues.ContainsKey(3 * 5), Is.True);
+        Assert.That(keyValues.ContainsKey(3 * 7), Is.True);
+        Assert.That(keyValues.ContainsKey(5 * 7), Is.True);
+
+        NativeArray<int> values = keyValues.GetValueArray( Allocator.Persistent);
+        Assert.That(values.Contains(0), Is.True);
+        Assert.That(values.Contains(1), Is.True);
+        Assert.That(values.Contains(2), Is.True);
+        Assert.That(values.Contains(3), Is.True);
+        Assert.That(values.Contains(4), Is.True);
+        Assert.That(values.Contains(5), Is.True);
+
+        terrainList.Dispose();
+        keyValues.Dispose();
+    }
+
 
 
 }
