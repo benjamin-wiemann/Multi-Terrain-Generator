@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using static Unity.Mathematics.math;
 using System.Reflection;
 using MultiTerrain.Segmentation;
+using System.Linq;
 
 namespace MultiTerrain
 {
@@ -25,6 +26,7 @@ namespace MultiTerrain
             float borderGranularity,
             float borderSmoothing,
             int submeshSplitLevel,
+            NativeHashMap<int, int> terrainIdsToIndices,
             NativeList<TerrainTypeStruct> terrainTypes,  // inout
             NativeArray<TerrainWeighting> terrainMap,        // out
             NativeArray<int2> coordinates,     // out
@@ -35,7 +37,7 @@ namespace MultiTerrain
             uint seedPointsX = (uint) round(width * seedPointDensity);
             uint seedPointsY = (uint) round(height * seedPointDensity);
             NativeArray<int> terrainIndices = new((int) ((seedPointsX + 6) * (seedPointsY + 6)), Allocator.Persistent);
-            GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes.Length);
+            GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes);
             
             TerrainSegmentationJob.ScheduleParallel(                
                 terrainTypes,
@@ -51,6 +53,7 @@ namespace MultiTerrain
                 perlinOffset,
                 perlinScale,
                 submeshSplitLevel,
+                terrainIdsToIndices,
                 terrainMap,
                 submeshCounters);
             SortCoordinatesJob.ScheduleParallel(
@@ -65,12 +68,12 @@ namespace MultiTerrain
         private static void GenerateSeedTerrainIndices(
             NativeArray<int> indices, 
             uint seed, 
-            int numTerrainTypes)
+            NativeList<TerrainTypeStruct> terrainTypes)
         {
             Unity.Mathematics.Random random = new(seed);
             for (int i = 0; i < indices.Length; i++)
             {
-                indices[i] = random.NextInt(numTerrainTypes);                
+                indices[i] = terrainTypes[random.NextInt(terrainTypes.Length)].PrimeId;                
             }
 
         }

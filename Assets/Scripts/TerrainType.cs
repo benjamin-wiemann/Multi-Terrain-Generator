@@ -2,6 +2,7 @@
 using UnityEngine;
 using System;
 using Unity.Mathematics;
+using MultiTerrain.Helper;
 
 namespace MultiTerrain
 {
@@ -12,6 +13,7 @@ namespace MultiTerrain
     [System.Serializable]
     public struct TerrainTypeStruct
     {
+        public int PrimeId { get; }
         public FixedString128Bytes Name { get; }
         public float3 Color { get; }
         public uint NumTrianglePairs { get; }
@@ -23,6 +25,7 @@ namespace MultiTerrain
         public float HeightOffset { get; }
 
         public TerrainTypeStruct(
+            int primeId,
             string name, 
             float3 color,
             float height = 1,
@@ -34,6 +37,7 @@ namespace MultiTerrain
             uint numTrianglePairs = 0
             )
         {
+            PrimeId = primeId;
             Name = new FixedString128Bytes(name);
             Color = color;
             NumTrianglePairs = numTrianglePairs;
@@ -45,9 +49,10 @@ namespace MultiTerrain
             HeightOffset = heightOffset;
         }
 
-        public static TerrainTypeStruct Convert(TerrainType type)
+        public static TerrainTypeStruct Convert(TerrainType type, int primeId)
         {
             return new TerrainTypeStruct(
+                primeId,
                 type._name, 
                 new float3(type._color.r, type._color.g, type._color.b),
                 type._height,
