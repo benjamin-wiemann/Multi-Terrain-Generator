@@ -27,9 +27,6 @@ namespace MultiTerrain
         uint _seed;
         int _submeshSplitLevel;
 
-        [NativeDisableContainerSafetyRestriction]
-        NativeArray<TerrainTypeStruct> _terrainTypes;
-
         [WriteOnly, NativeDisableParallelForRestriction]
         NativeArray<TerrainWeighting> _segmentation;
 
@@ -39,11 +36,10 @@ namespace MultiTerrain
         [ReadOnly, NativeDisableParallelForRestriction]
         NativeArray<int> _terrainIds;
 
-        [WriteOnly, NativeDisableParallelForRestriction]
+        [ReadOnly, NativeDisableParallelForRestriction]
         NativeHashMap<int, int> _idsToIndices;
 
         public static void ScheduleParallel(
-            NativeArray<TerrainTypeStruct> terrainTypes,
             NativeArray<int> terrainIds,
             uint seed,
             uint seedPointsX,
@@ -72,7 +68,6 @@ namespace MultiTerrain
             job._height = trianglePairsY / triangleResolution;
             job._borderGranularity = borderGranularity;
             job._borderSmoothing = borderSmoothing;
-            job._terrainTypes = terrainTypes;
             job._perlinOffset = perlinOffset;
             job._noiseScale = perlinScale;
             job._submeshCounters = submeshCounters;

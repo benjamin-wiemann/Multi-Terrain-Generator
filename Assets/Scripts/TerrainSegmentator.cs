@@ -39,8 +39,7 @@ namespace MultiTerrain
             NativeArray<int> terrainIndices = new((int) ((seedPointsX + 6) * (seedPointsY + 6)), Allocator.Persistent);
             GenerateSeedTerrainIndices(terrainIndices, seed, terrainTypes);
             
-            TerrainSegmentationJob.ScheduleParallel(                
-                terrainTypes,
+            TerrainSegmentationJob.ScheduleParallel(       
                 terrainIndices,
                 seed,
                 seedPointsX,
@@ -60,6 +59,8 @@ namespace MultiTerrain
                 terrainMap,
                 submeshCounters,
                 trianglePairsY,
+                submeshSplitLevel,
+                terrainIdsToIndices,
                 coordinates);
 
             terrainIndices.Dispose();

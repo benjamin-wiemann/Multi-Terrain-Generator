@@ -44,7 +44,14 @@ namespace MultiTerrain
         [SerializeField] public bool autoUpdate;
         [SerializeField] MeshFinishedEvent _onMeshFinished;
         [SerializeField] Shader _terrainShader;
+        [SerializeField] TextureSizeEnum _textureSize = TextureSizeEnum._2k;
         [SerializeField, Range(1, 4)] int _submeshSplitLevel = 1;
+
+        public enum TextureSizeEnum {
+            _1k = 1024,
+            _2k = 2048,
+            _4k = 4096
+        }
 
         Mesh _mesh;
 
@@ -90,12 +97,7 @@ namespace MultiTerrain
                 _meshZ,
                 _tiling,
                 _height
-            );
-            List<Material> materials = new();
-            Material multiTerrainMaterial = new(_terrainShader);
-            MaterialTools.SetProperties(_terrainTypes, _meshResolution, _meshX, _meshZ, ref multiTerrainMaterial);
-            materials.Add(multiTerrainMaterial);
-            GetComponent<Renderer>().SetSharedMaterials(materials);
+            );            
             _terrainMap = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
@@ -106,13 +108,17 @@ namespace MultiTerrain
             NativeList<int> submeshCounters = new (numTerrainCombinations,  
                 Allocator.Persistent);
             NativeList<TerrainTypeStruct> types = new(_terrainTypes.Count, Allocator.Persistent);
+            NativeHashMap<int, int> terrainPrimeIdsToIndices =  new(_terrainTypes.Count, Allocator.Persistent);
             IdGenerator idGenerator = new(_terrainTypes.Count);
-            foreach (TerrainType terrainType in _terrainTypes)
+            for (int i = 0; i < _terrainTypes.Count; i++)
             {
+                TerrainType terrainType = _terrainTypes[i];
                 if (terrainType._active)
                 {
-                    types.Add(TerrainTypeStruct.Convert(terrainType, idGenerator.GetPrimeNumber()));
+                    int primeId = idGenerator.GetPrimeNumber();
+                    types.Add(TerrainTypeStruct.Convert(terrainType, primeId));
                     submeshCounters.Add(0);
+                    terrainPrimeIdsToIndices[primeId] = i;
                 }
             }
             _idsToIndices = new(numTerrainCombinations, Allocator.Persistent);
@@ -147,6 +153,7 @@ namespace MultiTerrain
             NoiseJob.ScheduleParallel(   
                 _terrainMap,
                 types,
+                terrainPrimeIdsToIndices,
                 numVerticesX,
                 numVerticesY,
                 _heightScale,
@@ -184,18 +191,26 @@ namespace MultiTerrain
                 bounds,
                 _mesh,
                 meshData);
-            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh);                       
+            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh); 
+
+            List<Material> materials = new();
+            Material multiTerrainMaterial = new(_terrainShader);
+            MaterialTools.SetProperties(_terrainTypes, _meshResolution, _meshX, _meshZ, _textureSize, ref multiTerrainMaterial);
+            materials.Add(multiTerrainMaterial);
+            GetComponent<Renderer>().SetSharedMaterials(materials);                      
             _terrainBuffer = new(_terrainMap.Length, TerrainWeighting.SizeInBytes );
             _terrainBuffer.SetData(_terrainMap); 
+
             multiTerrainMaterial.SetBuffer("_TerrainMap", _terrainBuffer);
-            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
+            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray(), terrainPrimeIdsToIndices);
             _onMeshFinished?.Invoke(args);
             
             _idsToIndices.Dispose();
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
             _heightMap.Dispose();
-            _terrainMap.Dispose();            
+            _terrainMap.Dispose();    
+            terrainPrimeIdsToIndices.Dispose();        
             coordinates.Dispose();
             submeshCounters.Dispose();
             types.Dispose();

@@ -3,27 +3,28 @@ Shader "Terrain/PatchShader"
 {
     Properties
     {
-        [MainTexture] _BaseMap ("Texture", 2D) = "white" {}
-        [Toggle(_NORMALMAP)] _NormalMapToggle ("Use Normal Map", Float) = 0
-        [NoScaleOffset] _BumpMap ("Normal Map", 2D) = "bump" {}
-        _BumpScale("Bump Scale", Float) = 1
+        // [NoScaleOffset] _TerrainMap ("Terrain Map" , 2D) = "" {}
 
-        [NoScaleOffset] _SpecGlossMap ("Specular Map", 2D) = "specular" {}
-        _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.3
-        _SpecColor("Specular Color", Color) = (0.5, 0.5, 0.5, 0.5)
-        [NoScaleOffset] _OcclusionMap("Occlusion Map", 2D) = "occlusion" {}
-		_OcclusionStrength("Occlusion Strength", Range(0.0, 1.0)) = 0.5
+        // [MainTexture] _BaseMap ("Texture", 2D) = "white" {}
+        // [Toggle(_NORMALMAP)] _NormalMapToggle ("Use Normal Map", Float) = 0
+        // [NoScaleOffset] _BumpMap ("Normal Map", 2D) = "bump" {}
+        // _BumpScale("Bump Scale", Float) = 1
 
-        [Toggle(_HEIGHTMAP)] _HeightMapToggle ("Use Height Map", Float) = 0
-        [NoScaleOffset] _HeightMap ("Height Map", 2D) = "height" {}
-        _HeightScale("HeightScale", Float) = 0
+        // [NoScaleOffset] _SpecGlossMap ("Specular Map", 2D) = "specular" {}
+        // _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.3
+        // _SpecColor("Specular Color", Color) = (0.5, 0.5, 0.5, 0.5)
+        // [NoScaleOffset] _OcclusionMap("Occlusion Map", 2D) = "occlusion" {}
+		// _OcclusionStrength("Occlusion Strength", Range(0.0, 1.0)) = 0.5
 
-        [Toggle(_HEIGHTBASEDTRIBLEND)] _HeightTriblendToggle ("Use height based triblend", Float) = 1
-        _HeightmapBlending("Height map blending scale", Range(0.01,1.0)) = 0.3
+        // [Toggle(_HEIGHTMAP)] _HeightMapToggle ("Use Height Map", Float) = 0
+        // [NoScaleOffset] _HeightMap ("Height Map", 2D) = "height" {}
+        // _HeightScale("HeightScale", Range(0.005, 0.08)) = 0.005
+
+        // [Toggle(_HEIGHTBASEDTRIBLEND)] _HeightTriblendToggle ("Use height based triblend", Float) = 1
+        // _HeightmapBlending("Height map blending scale", Range(0.01,1.0)) = 0.3
         
     }
 
-    // The SubShader block containing the Shader code.
     SubShader
     {
         Tags {
@@ -35,15 +36,19 @@ Shader "Terrain/PatchShader"
         HLSLINCLUDE
 		#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-		CBUFFER_START(UnityPerMaterial)
-		float4 _BaseMap_ST;
-		float4 _SpecColor;
-		float _Smoothness;
-		float _OcclusionStrength;
-		float _BumpScale;
-        float _HeightScale;
-        float _HeightmapBlending;
-		CBUFFER_END
+        #define MAX_NUMBER_MATERIALS 100
+		
+        int _MeshResolution;
+        float _MeshX;
+        float _MeshZ;
+		float4 _BaseMap_ST[MAX_NUMBER_MATERIALS];
+		float3 _SpecColor[MAX_NUMBER_MATERIALS];
+        float _Smoothness[MAX_NUMBER_MATERIALS];
+		float _OcclusionStrength[MAX_NUMBER_MATERIALS];
+		float _BumpScale[MAX_NUMBER_MATERIALS];
+        float _HeightScale[MAX_NUMBER_MATERIALS];
+        float _HeightmapBlending[MAX_NUMBER_MATERIALS];
+
 		ENDHLSL
 
         // LOD 100
@@ -59,13 +64,13 @@ Shader "Terrain/PatchShader"
             #pragma fragment frag
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ParallaxMapping.hlsl"
             // #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/PerPixelDisplacement.hlsl"
 
             // Shadows
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local _HEIGHTMAP
+            #pragma shader_feature_local _SPECULARMAP
             #pragma shader_feature_local _HEIGHTBASEDTRIBLEND
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -89,10 +94,40 @@ Shader "Terrain/PatchShader"
 
             // offset UVs to prevent obvious mirroring
             #define TRIPLANAR_UV_OFFSET
+            
 
-            TEXTURE2D(_SpecGlossMap); 	SAMPLER(sampler_SpecGlossMap);
-            TEXTURE2D(_OcclusionMap); 	SAMPLER(sampler_OcclusionMap);
-            TEXTURE2D(_HeightMap);      SAMPLER(sampler_HeightMap);
+            struct Int9
+            {
+                int a;
+                int b;
+                int c;
+                int d;
+                int e;
+                int f;
+                int g;
+                int h;
+                int i;
+                int pointer;
+            };
+
+            struct Float9
+            {
+                int a;
+                int b;
+                int c;
+                int d;
+                int e;
+                int f;
+                int g;
+                int h;
+                int i;
+            };
+
+            struct TerrainInfo
+            {
+                Int9 indices;
+                Float9 intensities;
+            };
 
             struct VertexInput
             {
@@ -108,13 +143,14 @@ Shader "Terrain/PatchShader"
                 float4 posCS        : SV_POSITION;
                 float3 posWS        : TEXCOORD0;
                 half3 normalWS		: TEXCOORD1;    
-				half3 tangentWS		: TEXCOORD2;    
+				half4 tangentWS		: TEXCOORD2;    
 				half3 bitangentWS	: TEXCOORD3;
                 // half3 viewDirWS       : TEXCOORD4;
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
 					float4 shadowCoord 				: TEXCOORD5;
 				#endif
                 DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 6);
+                Float9 terrainShares;
             };
 
             // used to pass triplanar uv coordinates ( two coordinates for each axis )
@@ -125,13 +161,21 @@ Shader "Terrain/PatchShader"
                 float2 z;
             };
 
+            TEXTURE2D_ARRAY(_BaseMap); 	    SAMPLER(sampler_BaseMap);
+            TEXTURE2D_ARRAY(_BumpMap); 	    SAMPLER(sampler_BumpMap);
+            TEXTURE2D_ARRAY(_SpecularMap); 	SAMPLER(sampler_SpecularMap);
+            TEXTURE2D_ARRAY(_SmoothnessMap); SAMPLER(sampler_SmoothnessMap);
+            TEXTURE2D_ARRAY(_OcclusionMap); 	SAMPLER(sampler_OcclusionMap);
+            TEXTURE2D_ARRAY(_HeightMap);     SAMPLER(sampler_HeightMap);
+
+            StructuredBuffer<TerrainInfo> _TerrainMap;
 
             FragmentInput vert (VertexInput vertIn)
             {
                 FragmentInput fragIn;
                 fragIn.posCS = TransformObjectToHClip(vertIn.positionOS.xyz);
                 fragIn.posWS = TransformObjectToWorld(vertIn.positionOS.xyz);
-                fragIn.tangentWS = TransformObjectToWorldDir(vertIn.tangentOS.xyz);                
+                fragIn.tangentWS = half4(TransformObjectToWorldDir(vertIn.tangentOS.xyz), vertIn.tangentOS.w);                
                 fragIn.normalWS = TransformObjectToWorldNormal(vertIn.normalOS);
                 fragIn.bitangentWS = TransformObjectToWorldDir(cross( vertIn.tangentOS.xyz * vertIn.tangentOS.w, vertIn.normalOS.xyz )  );
                 // fragIn.viewDirWS = GetWorldSpaceViewDir(positionInputs.positionWS);
@@ -142,6 +186,7 @@ Shader "Terrain/PatchShader"
 
                 OUTPUT_LIGHTMAP_UV(vertIn.lightmapUV, unity_LightmapST, fragIn.lightmapUV);
 				OUTPUT_SH(fragIn.normalWS, fragIn.vertexSH);
+                fragIn.terrainShares = _TerrainMap[(int) round(vertIn.positionOS.z * _MeshResolution *_MeshX + vertIn.positionOS.x * _MeshResolution)].intensities;
 
                 return fragIn;
             }
@@ -160,7 +205,7 @@ Shader "Terrain/PatchShader"
                 triblend = abs(normalWS.xyz);
                 triblend /= dot(triblend, float3(1,1,1));                
                 heights += (triblend * 3.0);
-                float heightStart = max(max(heights.x, heights.y), heights.z) - _HeightmapBlending;
+                float heightStart = max(max(heights.x, heights.y), heights.z) - _HeightmapBlending[0];
                 float3 h = max(heights - heightStart.xxx, float3(0,0,0));
                 triblend = h / dot(h, float3(1,1,1));
             }
@@ -176,19 +221,15 @@ Shader "Terrain/PatchShader"
                 return n1 * dot(n1, n2) / n1.z - n2;
             }
 
-
+            // Generates triplanar UV according to 
+            // https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#ce80
             TriplanarUV GenerateTriplanarUV(FragmentInput fragIn)
             {               
 
-                // calculate triplanar uvs
-                // applying texture scale and offset values ala TRANSFORM_TEX macro
                 TriplanarUV triUV = (TriplanarUV) 0;
-                triUV.x = fragIn.posWS.zy * _BaseMap_ST.xy + _BaseMap_ST.zw;
-                triUV.y = fragIn.posWS.xz * _BaseMap_ST.xy + _BaseMap_ST.zw;
-                triUV.z = fragIn.posWS.xy * _BaseMap_ST.xy + _BaseMap_ST.zw;
-
-                // half viewDirXTS = fragIN.posWS
-                // triUV.x = triUV.x + ParallaxMapping(_Heightmap, sampler_Heightmap, IN.TangentSpaceViewDirection, _HeightScale * 0.01, triUV.x);
+                triUV.x = fragIn.posWS.zy * _BaseMap_ST[0].xy + _BaseMap_ST[0].zw;
+                triUV.y = fragIn.posWS.xz * _BaseMap_ST[0].xy + _BaseMap_ST[0].zw;
+                triUV.z = fragIn.posWS.xy * _BaseMap_ST[0].xy + _BaseMap_ST[0].zw;
 
                 // offset UVs to prevent obvious mirroring
             #if defined(TRIPLANAR_UV_OFFSET)
@@ -196,7 +237,7 @@ Shader "Terrain/PatchShader"
                 triUV.z += 0.67;
             #endif
 
-                // minor optimization of sign(). prevents return value of 0
+                // sign function which never returns 0
                 half3 axisSign = fragIn.normalWS.xyz < 0 ? -1 : 1;
 
                 // flip UVs horizontally to correct for back side projection
@@ -241,33 +282,46 @@ Shader "Terrain/PatchShader"
 	            inputData.shadowMask = SAMPLE_SHADOWMASK(fragIn.lightmapUV);
             }
 
-            half4 SampleSpecGloss(float2 uv) {
-                half4 specGloss = 0;
-                // #ifdef _SPECGLOSSMAP
-                    specGloss = SAMPLE_TEXTURE2D(_SpecGlossMap, sampler_SpecGlossMap, uv);
-                    specGloss.a *= _Smoothness;                    
-                // #endif
-                return specGloss;
+            half3 SampleSpecularTriplanar(TriplanarUV triUV, float3 triblend) {
+                half3 specularX = SAMPLE_TEXTURE2D(_SpecularMap, sampler_SpecularMap, triUV.x);
+                half3 specularY = SAMPLE_TEXTURE2D(_SpecularMap, sampler_SpecularMap, triUV.y);                                    
+                half3 specularZ = SAMPLE_TEXTURE2D(_SpecularMap, sampler_SpecularMap, triUV.z);
+                return specularX * triblend.x + specularY * triblend.y + specularZ * triblend.z;
             }
 
             half SampleOcclusion(float2 uv) {
-                // #ifdef _OCCLUSIONMAP
                     #if defined(SHADER_API_GLES)
                         return SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;
                     #else
                         half occ = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;
                         return LerpWhiteTo(occ, _OcclusionStrength);
                     #endif
-                // #else
-                //     return 1.0;
-                // #endif
+            }
+
+            half SampleOcclusionTriplanar(TriplanarUV triUV, float3 triblend){
+                half occlusionX = SampleOcclusion(triUV.x);
+                half occlusionY = SampleOcclusion(triUV.y);
+                half occlusionZ = SampleOcclusion(triUV.z);
+                return occlusionX * triblend.x + occlusionY * triblend.y + occlusionZ * triblend.z;
+            }
+
+            half SampleSmoothnessTriplanar(triUV, triblend){
+                half3 smoothnessX = SAMPLE_TEXTURE2D(_SpecGlossMap, sampler_SpecGlossMap, triUV.x);
+                half3 smoothnessY = SAMPLE_TEXTURE2D(_SpecGlossMap, sampler_SpecGlossMap, triUV.y);                                    
+                half3 smoothnessZ = SAMPLE_TEXTURE2D(_SpecGlossMap, sampler_SpecGlossMap, triUV.z);
+                return (specularX * triblend.x + specularY * triblend.y + specularZ * triblend.z) * _Smoothness;
             }
 
 
             void InitializeSurfaceData(FragmentInput fragIn, out SurfaceData surfaceData, out half3 normalWS, out half3 triblend, out half3 viewDirTS){
-                surfaceData = (SurfaceData)0; // avoids "not completely initalized" errors
+                surfaceData = (SurfaceData)0; 
 
-                half3x3 worldToTangent = transpose(float3x3(fragIn.tangentWS, fragIn.bitangentWS, fragIn.normalWS));
+                half3x3 worldToTangentX = transpose(float3x3(fragIn.normalWS, fragIn.bitangentWS, fragIn.tangentWS.xyz));
+                half3x3 worldToTangentY = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.normalWS, fragIn.bitangentWS));
+                half3x3 worldToTangentZ = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.bitangentWS, fragIn.normalWS));
+
+                half3 absVertNormal = abs(fragIn.normalWS);
+                // half3 absTangent = abs( fragIn.tangentWS);
                 
                 TriplanarUV triUV = GenerateTriplanarUV( fragIn);
                 
@@ -281,23 +335,24 @@ Shader "Terrain/PatchShader"
                     #else
                         GenerateTriblend(fragIn.normalWS, triblend);
                     #endif
-                    viewDirTS = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangent);                   
-                    // half height = heights.x * triblend.x + heights.y * triblend.y + heights.z * triblend.z;  
-                    // half2 uvOffset = ParallaxOffset1Step( height, _HeightScale, viewDirTS);
-                    // triUV.x += uvOffset;
-                    // triUV.y += uvOffset;
-                    // triUV.z += uvOffset;
-                    // triUV.x += ParallaxOffset1Step( heights.x, _HeightScale, viewDirTS);
-                    // triUV.y += ParallaxOffset1Step( heights.y, _HeightScale, viewDirTS);
-                    // triUV.z += ParallaxOffset1Step( heights.z, _HeightScale, viewDirTS);  
+                    // viewDirTSX = GetViewDirectionTangentSpace(fragIn.tangentWS, fragIn.normalWS, GetWorldSpaceNormalizeViewDir(fragIn.posWS));
+                    // half3 viewDirTSX = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentX);
+                    // half3 viewDirTSY = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentY);
+                    half3 viewDirTSZ = GetWorldSpaceNormalizeViewDir(fragIn.posWS); //TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentZ);       
+                    triUV.x -= viewDirTSZ.zy / viewDirTSZ.x * (heights.x * _HeightScale);
+                    triUV.y -= viewDirTSZ.xz / viewDirTSZ.y * (heights.y * _HeightScale);
+                    triUV.z -= viewDirTSZ.xy / viewDirTSZ.z * (heights.z * _HeightScale);
+                    // triUV.x -= ParallaxOffset1Step( heights.x, _HeightScale, half3(viewDirTSZ.zy, viewDirTSZ.x));
+                    // triUV.y -= ParallaxOffset1Step( heights.y, _HeightScale, half3(viewDirTSZ.xz, viewDirTSZ.y));                    
+                    // triUV.z -= ParallaxOffset1Step( heights.z, _HeightScale, viewDirTSZ);
+                    viewDirTS = half3(viewDirTSZ.zy, viewDirTSZ.x);  
                 #else 
                     GenerateTriblend(fragIn.normalWS, triblend);
                     viewDirTS = 0;
-                #endif
-                        
+                #endif                        
 
                 // albedo textures
-                half4 colX = SampleAlbedoAlpha(triUV.x, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap));
+                half4 colX = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.x, SLICE_ARRAY_INDEX);
                 half4 colY = SampleAlbedoAlpha(triUV.y, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap));
                 half4 colZ = SampleAlbedoAlpha(triUV.z, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap));
                 surfaceData.albedo = colX.rgb * triblend.x + colY.rgb * triblend.y + colZ.rgb * triblend.z;
@@ -317,8 +372,6 @@ Shader "Terrain/PatchShader"
                     normalTSZ.x *= -axisSign.z;
                 #endif
 
-                half3 absVertNormal = abs(fragIn.normalWS);
-
                 // swizzle world normals to match tangent space and apply reoriented normal mapping blend
                 normalTSX = blendRNM(half3(fragIn.normalWS.zy, absVertNormal.x), normalTSX);
                 normalTSY = blendRNM(half3(fragIn.normalWS.xz, absVertNormal.y), normalTSY);
@@ -329,32 +382,24 @@ Shader "Terrain/PatchShader"
                 normalTSY.z *= axisSign.y;
                 normalTSZ.z *= axisSign.z;
 
-                // // sizzle tangent normals to match world normal and blend together
+                // swizzle tangent normals to match world normal and blend together
                 normalWS = normalize(
                     normalTSX.zyx * triblend.x +
                     normalTSY.xzy * triblend.y +
                     normalTSZ.xyz * triblend.z
                     );
-        
-                surfaceData.normalTS = TransformWorldToTangent(normalWS, worldToTangent);
+                // normalWS.z *= -1;
+                surfaceData.normalTS = TransformWorldToTangent(normalWS, worldToTangentZ);
 
-                half occlusionX = SampleOcclusion(triUV.x);
-                half occlusionY = SampleOcclusion(triUV.y);
-                half occlusionZ = SampleOcclusion(triUV.z);
-                surfaceData.occlusion = occlusionX * triblend.x + occlusionY * triblend.y + occlusionZ * triblend.z;
-                                
-                half4 specGlossX = SampleSpecGloss(triUV.x);
-                half4 specGlossY = SampleSpecGloss(triUV.y);
-                half4 specGlossZ = SampleSpecGloss(triUV.z);
-                half4 specGloss = specGlossX * triblend.x + specGlossY * triblend.y + specGlossZ * triblend.z;
-                surfaceData.specular = specGloss.rgb;               
-                surfaceData.smoothness = specGloss.a;
-
-
-
+                surfaceData.occlusion = SampleOcclusionTriplanar(triUV, triblend);                
+                surfaceData.smoothness = SampleSmoothnessTriplanar(triUV, triblend);
+                #ifdef _SPECULARMAP      
+                    surfaceData.specular = SampleSpecularTriplanar(triUV, triblend);
+                #else
+                    surfaceData.specular = _SpecColor;
+                #endif
                 surfaceData.emission = 0; 
-                surfaceData.metallic = 0.0h;                            
-                
+                surfaceData.metallic = 0.0h;  
             }
 
 

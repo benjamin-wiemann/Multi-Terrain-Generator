@@ -87,7 +87,7 @@ namespace MultiTerrain
         public float _heightOffset;
 
         [Header("Surface Shader")]     
-        public Texture2D _albedo;
+        public Texture2D _diffuse;
         public float2 _tiling;
         public float2 _offset;
 

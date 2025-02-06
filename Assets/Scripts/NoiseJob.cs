@@ -48,11 +48,15 @@ namespace MultiTerrain
         private NativeArray<TerrainWeighting> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
-        NativeArray<TerrainTypeStruct> _terrainTypes;
+        private NativeArray<TerrainTypeStruct> _terrainTypes;
+
+        [ReadOnly, NativeDisableContainerSafetyRestriction]
+        private NativeHashMap<int, int> _terrainIdsToIndices;
 
         public static void ScheduleParallel( 
             NativeArray<TerrainWeighting> terrainMap,
             NativeArray<TerrainTypeStruct> terrainTypes,
+            NativeHashMap<int, int> terrainIdsToIndices,
             int mapWidth,
             int mapHeight,
             float scale,
@@ -69,6 +73,7 @@ namespace MultiTerrain
 
             noiseJob._terrainMap = terrainMap;
             noiseJob._terrainTypes = terrainTypes;
+            noiseJob._terrainIdsToIndices = terrainIdsToIndices;
             noiseJob._noiseScale = scale;
             noiseJob._mapHeight = mapHeight;
             noiseJob._mapWidth = mapWidth;
@@ -126,7 +131,7 @@ namespace MultiTerrain
                 TerrainWeighting info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
                 for (int j = 0; j < 4; j++)
                 {
-                    int terrainIndex = info.Ids[j];
+                    int terrainIndex = _terrainIdsToIndices[info.Ids[j]];
                     float terrainAmplitude = amplitude;
                     float terrainFrequency = frequency;
                     float terrainNoiseHeight = 0;
@@ -142,7 +147,6 @@ namespace MultiTerrain
                     noiseHeight += (terrainNoiseHeight * _terrainTypes[terrainIndex].Height + _terrainTypes[terrainIndex].HeightOffset) * info.Intensities[j];
                 }
 
-                //noiseHeight += ;
                 _maxNoiseHeights[y] = max(noiseHeight, _maxNoiseHeights[y]);
                 _minNoiseHeights[y] = min(noiseHeight, _minNoiseHeights[y]);
                                     

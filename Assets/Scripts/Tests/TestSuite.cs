@@ -71,16 +71,21 @@ public class TestSuite
     public void SortCoordinatesJobSortsCorrectly()
     {
         int width = 3;
-        int[] segmentation = new int[] { 0, 1, 2, 2, 1, 2, 0, 1, 2 };
+        int subMeshSplitLevel = 2;
+        int4 combi0 = new int4(1,2,0,0);
+        int4 combi1 = new int4(1,3,0,0);
+        int4 combi2 = new int4(2,3,0,0);
+        int4[] segmentation = new int4[] { 
+            combi0, combi1, combi2,
+            combi2, combi1, combi2, 
+            combi0, combi1, combi2 };
         NativeArray<TerrainWeighting> terrainSegmentation = new(segmentation.Length, Allocator.Persistent);
         for (int i = 0; i < segmentation.Length; i++)
         {
             float4 intensities = 0;
-            intensities[0] = 1f;
-            int4 indices = new int4();
-            indices[0] = segmentation[i];
-            TerrainWeighting info = new TerrainWeighting(indices, intensities);
-            terrainSegmentation[i] = info;
+            // intensities[0] = 1f;            
+            TerrainWeighting weighting = new TerrainWeighting( segmentation[i], intensities);
+            terrainSegmentation[i] = weighting;
         }        
         NativeArray<int> terrainCounters = new(3, Allocator.Persistent);
         terrainCounters[0] = 2;
@@ -90,19 +95,33 @@ public class TestSuite
         int2[] coordinatesExpected = new int2[] {
             new int2 (1,1), new int2(1, 3),
             new int2 (2,1), new int2(2, 2), new int2(2, 3),
-            new int2 (3, 1), new int2 (1,2), new int2(3, 2), new int2(3, 3)};
+            new int2 (3, 1), new int2 (1,2), new int2(3, 2), new int2(3, 3)};        
+        
+        NativeHashMap<int, int> terrainIdsToIndices = new(3, Allocator.Persistent);
+        terrainIdsToIndices[2] = 0;
+        terrainIdsToIndices[3] = 1;
+        terrainIdsToIndices[6] = 2;
+
         JobTools.Get()._runParallel = false;
         SortCoordinatesJob.ScheduleParallel(
             terrainSegmentation,
             terrainCounters,
             segmentation.Length / width,
+            subMeshSplitLevel,
+            terrainIdsToIndices,
             coordinates);
         Assert.That(coordinates.ToArray(), Is.EqualTo(coordinatesExpected));
+
+        coordinates.Dispose();
+        coordinates = new(segmentation.Length, Allocator.Persistent);
+
         JobTools.Get()._runParallel = true;
         SortCoordinatesJob.ScheduleParallel(
             terrainSegmentation,
             terrainCounters,
             segmentation.Length / width,
+            subMeshSplitLevel,
+            terrainIdsToIndices,
             coordinates);
         NativeArray<int2> terrain0 = coordinates.GetSubArray(0, 2);
         Assert.That(terrain0.ToArray(), Contains.Item(coordinatesExpected[0]));
@@ -116,6 +135,7 @@ public class TestSuite
         Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[6]));
         Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[7]));
         Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[8]));
+        terrainIdsToIndices.Dispose();
         terrainSegmentation.Dispose();
         terrainCounters.Dispose();
         coordinates.Dispose();
