@@ -61,7 +61,7 @@ namespace MultiTerrain.DebugTools
             _segmentation = args.TerrainSegmentation;
             _terrainTypes = args.TerrainTypes;
             _heigthMap = args.HeightMap;
-            _segmentationTextures = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height - 1);
+            _segmentationTextures = VisualizeSegmentation(_segmentation, _terrainTypes, args.TerrainIdsToIndices, _width - 1, _height - 1);
             _heightTexture = VisualizeHeightMap(_heigthMap, _width, _height);
             OnValidate();
             Visualize();
@@ -104,7 +104,12 @@ namespace MultiTerrain.DebugTools
             return texture;
         }
 
-        Texture2D[] VisualizeSegmentation( NativeArray<TerrainWeighting> segmentation, TerrainTypeStruct[] terrainTypes, int width, int height )
+        Texture2D[] VisualizeSegmentation( 
+            NativeArray<TerrainWeighting> segmentation, 
+            TerrainTypeStruct[] terrainTypes, 
+            NativeHashMap<int, int> idsToIndices,
+            int width, 
+            int height )
         {
 
             Texture2D[] textures = new Texture2D[terrainTypes.Length + 1];
@@ -116,9 +121,9 @@ namespace MultiTerrain.DebugTools
             {
                 for (int x = 0; x < width; x++)
                 {
-                    TerrainWeighting info = segmentation[y * width + x];
-                    float4 intensities = info.Intensities;
-                    int4 indices = info.Ids;
+                    TerrainWeighting weighting = segmentation[y * width + x];
+                    float4 intensities = weighting.Intensities;
+                    int4 primeIds = weighting.Ids;
                     Color[] colors = new Color[terrainTypes.Length + 1];
                     for( int i = 0; i < colors.Length; i++ )
                     {
@@ -126,7 +131,7 @@ namespace MultiTerrain.DebugTools
                     }
                     for (int i = 0; i < 4; i++)
                     {                        
-                        int terrainIndex = indices[i];
+                        int terrainIndex = idsToIndices[primeIds[i]];
                         float3 col = terrainTypes[terrainIndex].Color;
                         Color terrainColor = new Color(col.x, col.y, col.z) * intensities[i];
                         colors[terrainIndex] = terrainColor;                        

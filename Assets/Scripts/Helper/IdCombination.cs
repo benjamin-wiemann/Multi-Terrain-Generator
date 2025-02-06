@@ -56,50 +56,5 @@ namespace MultiTerrain.Helper
             }
         }
 
-    //     public static void MapIdsToIndices( NativeList<TerrainTypeStruct> primeIds, int submeshSplitLevel, out NativeHashMap<int, int> idsToIndices )
-    //     {
-    //         List<int[]> combinations = GenerateCombinations(primeIds, 4);
-    //         idsToIndices = new();            
-    //         int terrainIndex = 0;
-    //         foreach( int[] combi in combinations)
-    //         {
-    //             int terrainCombinationId = 1;
-    //             for(int i = 0; i < submeshSplitLevel; i++)
-    //             {
-    //                 terrainCombinationId *= combi[i];
-    //             }
-    //             idsToIndices[terrainIndex] = terrainCombinationId;  
-    //             terrainIndex++;              
-    //         }
-            
-    //     }
-    
-    //     public static List<int[]> GenerateCombinations(int[] set, int k)
-    //     {
-    //         List<int[]> combinations = new List<int[]>();
-    //         int[] combination = new int[k];
-
-    //         GenerateCombinations(set, k, 0, 0, combination, combinations);
-
-    //         return combinations;
-    //     }
-
-    //     static void GenerateCombinations(int[] set, int k, int startIndex, int currentLength, int[] combination, List<int[]> combinations)
-    //     {
-    //         if (currentLength == k)
-    //         {
-    //             int[] combo = new int[k];
-    //             Array.Copy(combination, combo, k);
-    //             combinations.Add(combo);
-    //             return;
-    //         }
-
-    //         for (int i = startIndex; i < set.Length; i++)
-    //         {
-    //             combination[currentLength] = set[i];
-    //             GenerateCombinations(set, k, i + 1, currentLength + 1, combination, combinations);
-    //         }
-    //     }
-    // }
     }
 }

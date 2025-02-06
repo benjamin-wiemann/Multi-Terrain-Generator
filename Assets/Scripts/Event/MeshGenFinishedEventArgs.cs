@@ -12,7 +12,8 @@ namespace MultiTerrain.Event
             int numVerticesY,
             NativeArray<float> heightMap,
             NativeArray<TerrainWeighting> terrainSegmentation,
-            TerrainTypeStruct[] terrainTypes
+            TerrainTypeStruct[] terrainTypes,
+            NativeHashMap<int, int> terrainIdsToIndices
             )
         {
             NumVerticesX = numVerticesX;
@@ -20,6 +21,7 @@ namespace MultiTerrain.Event
             TerrainSegmentation = terrainSegmentation;
             TerrainTypes = terrainTypes;
             HeightMap = heightMap;
+            TerrainIdsToIndices = terrainIdsToIndices;
         }
 
         public int NumVerticesX { get; }
@@ -29,6 +31,8 @@ namespace MultiTerrain.Event
 
         public NativeArray<TerrainWeighting> TerrainSegmentation { get; }
         public TerrainTypeStruct[] TerrainTypes { get; }
+
+        public NativeHashMap<int, int> TerrainIdsToIndices { get; }
 
     }
 }

@@ -55,9 +55,19 @@ namespace MultiTerrain
         {
             meshData.subMeshCount = terrainCounters.Length;
             int startIndex = 0;
+            int subMeshEndIndex = 0;
             for (int i = 0; i < terrainCounters.Length; i++)
-            {
-                var subMeshDescriptor = new SubMeshDescriptor((int) startIndex, (int) terrainCounters[i] * 6)
+            {   
+                if (terrainCounters[i] == subMeshEndIndex)
+                {
+                    subMeshEndIndex = terrainCounters[i];    
+                }
+                else
+                {   
+                    // skip to eliminate identical entries
+                    continue;
+                }
+                var subMeshDescriptor = new SubMeshDescriptor( startIndex, subMeshEndIndex * 6)
                 {
                     bounds = bounds,
                     vertexCount = vertexCount
@@ -67,7 +77,7 @@ namespace MultiTerrain
                     MeshUpdateFlags.DontRecalculateBounds |
                     MeshUpdateFlags.DontValidateIndices
                 );
-                startIndex += terrainCounters[i] * 6;
+                startIndex += subMeshEndIndex * 6;
             }
         }
 
