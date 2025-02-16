@@ -23,8 +23,10 @@ namespace MultiTerrain.Helper
         }
 
         // Returns the top 4 highest numbers
-        public void GetFourHighestValues( out int4 topIds, out float4 topValues)
+        public void GetKHighestValues(int k, out int4 topIds, out float4 topValues)
         {
+            if (k > 4 || k < 1)
+                throw new ArgumentException("Parameter k must be between 1 and 4.");
             topIds = 0;
             topValues = 0;
 
@@ -32,7 +34,7 @@ namespace MultiTerrain.Helper
 
             int topId;
             float topVal;
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < k; i++)
             {                
                 ExtractMax(out topId, out topVal);
                 topIds[i] = topId;
@@ -41,10 +43,12 @@ namespace MultiTerrain.Helper
 
         }
 
-        public static void SortTopFourById(ref int4 topIds, ref float4 topValues)
+        public static void SortTopKById(int k, ref int4 topIds, ref float4 topValues)
         {
-            // Perform a simple insertion sort since the array has only 4 elements
-            for (int i = 1; i < 4; i++)
+            if (k > 4 || k < 1)
+                throw new ArgumentException("Parameter k must be between 1 and 4.");
+            // Insertion sort
+            for (int i = 1; i < k; i++)
             {
                 int id = topIds[i];
                 float value = topValues[i];
@@ -62,10 +66,10 @@ namespace MultiTerrain.Helper
             }
         }
 
-        public void GetFourHighestValuesSortedById(out int4 ids, out float4 values)
+        public void GetKHighestValuesSortedById(int k, out int4 ids, out float4 values)
         {
-            GetFourHighestValues(out ids, out values);
-            SortTopFourById(ref ids, ref values);
+            GetKHighestValues(k, out ids, out values);
+            SortTopKById(k, ref ids, ref values);
         }
 
 

@@ -36,7 +36,7 @@ namespace MultiTerrain
         public static void ScheduleParallel(
             SharedTriangleGrid generator,
             NativeArray<float> noiseMap,
-            NativeList<int> terrainCounters,
+            NativeArray<int> submeshCounters,
             NativeArray<int2> coordinates,
             Bounds bounds,
             Mesh mesh,
@@ -57,7 +57,7 @@ namespace MultiTerrain
                 job._generator.IndexCount
             );
 
-            int threadCount = MathHelper.Lcm(SystemInfo.processorCount, terrainCounters.Length);
+            int threadCount = MathHelper.Lcm(SystemInfo.processorCount, submeshCounters.Length);
             job._threadStartIndices = new(threadCount + 1, Allocator.Persistent);
             int numTrianglePairs = job._generator.NumX * job._generator.NumZ;
             for ( int i = 0; i < job._threadStartIndices.Length; i++)
@@ -70,7 +70,7 @@ namespace MultiTerrain
             else
                 job.Run(threadCount);
             
-            job._stream.SetSubMeshes(meshData, terrainCounters, bounds, job._generator.VertexCount);
+            job._stream.SetSubMeshes(meshData, submeshCounters, bounds, job._generator.VertexCount);
             job._threadStartIndices.Dispose();
         }
     }

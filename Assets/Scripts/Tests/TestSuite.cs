@@ -153,6 +153,17 @@ public class TestSuite
     }
 
     [Test]
+    public void Int9_Adding_Element_Returns_Correct_Index()
+    {
+        Int9 test = new Int9();              
+        uint index = test.Add(2);
+        Assert.That(index, Is.EqualTo(0));
+        Assert.That(test[0], Is.EqualTo(2));
+        test[1] = 3;
+        Assert.That(test[1], Is.EqualTo(3));
+    }
+
+    [Test]
     public void Int9AddingAtTooHighIndexRaisesException()
     {
         Int9 test = new Int9();
@@ -178,7 +189,8 @@ public class TestSuite
         TopKSorter sorter = new(ids, values);
         int4 topIds;
         float4 topValues;
-        sorter.GetFourHighestValues(out topIds, out topValues);
+        int k = 4;
+        sorter.GetKHighestValues(k, out topIds, out topValues);
         Assert.That(topValues[0], Is.EqualTo(0.9f));
         Assert.That(topValues[1], Is.EqualTo(0.8f));
         Assert.That(topValues[2], Is.EqualTo(0.7f));
@@ -191,7 +203,8 @@ public class TestSuite
     {
         int4 ids = new (4, 2, 3, 1);
         float4 values = new ( 0.4f, 0.3f, 0.1f, 0.8f);
-        TopKSorter.SortTopFourById(ref ids, ref values);
+        int k = 4;
+        TopKSorter.SortTopKById(k, ref ids, ref values);
         Assert.That(ids[0], Is.EqualTo(1));
         Assert.That(ids[1], Is.EqualTo(2));
         Assert.That(ids[2], Is.EqualTo(3));

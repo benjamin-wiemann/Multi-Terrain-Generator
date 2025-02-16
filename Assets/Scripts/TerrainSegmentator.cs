@@ -41,6 +41,7 @@ namespace MultiTerrain
             
             TerrainSegmentationJob.ScheduleParallel(       
                 terrainIndices,
+                terrainTypes.Length,
                 seed,
                 seedPointsX,
                 seedPointsY,

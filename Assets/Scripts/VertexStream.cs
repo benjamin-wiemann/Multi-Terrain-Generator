@@ -51,16 +51,16 @@ namespace MultiTerrain
             triangles = meshData.GetIndexData<int>().Reinterpret<int3>(4);
         }
 
-        public void SetSubMeshes( MeshData meshData, NativeList<int> terrainCounters, Bounds bounds, int vertexCount)
+        public void SetSubMeshes( MeshData meshData, NativeArray<int> submeshCounters, Bounds bounds, int vertexCount)
         {
-            meshData.subMeshCount = terrainCounters.Length;
+            meshData.subMeshCount = submeshCounters.Length;
             int startIndex = 0;
             int subMeshEndIndex = 0;
-            for (int i = 0; i < terrainCounters.Length; i++)
+            for (int i = 0; i < submeshCounters.Length; i++)
             {   
-                if (terrainCounters[i] == subMeshEndIndex)
+                if (submeshCounters[i] != subMeshEndIndex)
                 {
-                    subMeshEndIndex = terrainCounters[i];    
+                    subMeshEndIndex = submeshCounters[i];    
                 }
                 else
                 {   
