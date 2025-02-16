@@ -129,7 +129,7 @@ namespace MultiTerrain
                 }
 
                 TerrainWeighting info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
-                for (int j = 0; j < 4; j++)
+                for (int j = 0; j < min(_terrainTypes.Length, 4); j++)
                 {
                     int terrainIndex = _terrainIdsToIndices[info.Ids[j]];
                     float terrainAmplitude = amplitude;

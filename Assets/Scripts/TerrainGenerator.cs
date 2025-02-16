@@ -63,7 +63,7 @@ namespace MultiTerrain
 
         NativeArray<float> _minNoiseValues;
         
-        NativeHashMap<int, int> _idsToIndices;
+        NativeHashMap<int, int> _submeshIdsToIndices;
 
         ComputeBuffer _terrainBuffer;
         
@@ -104,25 +104,32 @@ namespace MultiTerrain
             NativeArray<int2> coordinates = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
-            int numTerrainCombinations = MathHelper.GetBinCoeff(_terrainTypes.Count, _submeshSplitLevel);
-            NativeList<int> submeshCounters = new (numTerrainCombinations,  
-                Allocator.Persistent);
-            NativeList<TerrainTypeStruct> types = new(_terrainTypes.Count, Allocator.Persistent);
-            NativeHashMap<int, int> terrainPrimeIdsToIndices =  new(_terrainTypes.Count, Allocator.Persistent);
-            IdGenerator idGenerator = new(_terrainTypes.Count);
-            for (int i = 0; i < _terrainTypes.Count; i++)
+            int numTerrainTypes = 0;
+            foreach( TerrainType type in _terrainTypes )
             {
-                TerrainType terrainType = _terrainTypes[i];
+                if(type._active)
+                {
+                    numTerrainTypes++;
+                }
+            }
+            int numSubmeshes = MathHelper.GetBinCoeff(numTerrainTypes, _submeshSplitLevel);
+            NativeArray<int> submeshCounters = new (numSubmeshes, Allocator.Persistent);
+            NativeList<TerrainTypeStruct> types = new(numTerrainTypes, Allocator.Persistent);
+            NativeHashMap<int, int> terrainIdsToIndices =  new(numTerrainTypes, Allocator.Persistent);
+            IdGenerator idGenerator = new(numTerrainTypes);
+            int internalTerrainIndex = 0;
+            foreach (TerrainType terrainType in _terrainTypes)
+            {
                 if (terrainType._active)
                 {
                     int primeId = idGenerator.GetPrimeNumber();
                     types.Add(TerrainTypeStruct.Convert(terrainType, primeId));
-                    submeshCounters.Add(0);
-                    terrainPrimeIdsToIndices[primeId] = i;
+                    terrainIdsToIndices[primeId] = internalTerrainIndex;
+                    internalTerrainIndex++;
                 }
             }
-            _idsToIndices = new(numTerrainCombinations, Allocator.Persistent);
-            IdCombination.MapIdsToIndices(types, _submeshSplitLevel, ref _idsToIndices);            
+            _submeshIdsToIndices = new(numSubmeshes, Allocator.Persistent);
+            IdCombination.MapIdsToIndices(types, _submeshSplitLevel, ref _submeshIdsToIndices);            
             TerrainSegmentator.GetTerrainSegmentation(
                 triangleGrid.NumX,
                 triangleGrid.NumZ,
@@ -136,7 +143,7 @@ namespace MultiTerrain
                 _borderGranularity,
                 _borderSmoothness,
                 _submeshSplitLevel,
-                _idsToIndices,
+                _submeshIdsToIndices,
                 types,
                 _terrainMap,
                 coordinates,
@@ -153,7 +160,7 @@ namespace MultiTerrain
             NoiseJob.ScheduleParallel(   
                 _terrainMap,
                 types,
-                terrainPrimeIdsToIndices,
+                terrainIdsToIndices,
                 numVerticesX,
                 numVerticesY,
                 _heightScale,
@@ -196,21 +203,24 @@ namespace MultiTerrain
             List<Material> materials = new();
             Material multiTerrainMaterial = new(_terrainShader);
             MaterialTools.SetProperties(_terrainTypes, _meshResolution, _meshX, _meshZ, _textureSize, ref multiTerrainMaterial);
-            materials.Add(multiTerrainMaterial);
+            for( int i = 0; i < numTerrainTypes; i++)
+            {
+                materials.Add(multiTerrainMaterial);
+            }
             GetComponent<Renderer>().SetSharedMaterials(materials);                      
             _terrainBuffer = new(_terrainMap.Length, TerrainWeighting.SizeInBytes );
             _terrainBuffer.SetData(_terrainMap); 
 
             multiTerrainMaterial.SetBuffer("_TerrainMap", _terrainBuffer);
-            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray(), terrainPrimeIdsToIndices);
+            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray(), terrainIdsToIndices);
             _onMeshFinished?.Invoke(args);
             
-            _idsToIndices.Dispose();
+            _submeshIdsToIndices.Dispose();
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
             _heightMap.Dispose();
             _terrainMap.Dispose();    
-            terrainPrimeIdsToIndices.Dispose();        
+            terrainIdsToIndices.Dispose();        
             coordinates.Dispose();
             submeshCounters.Dispose();
             types.Dispose();
@@ -247,7 +257,15 @@ namespace MultiTerrain
                 // Limit number of terrains by number of available prime numbers
                 _terrainTypes.RemoveRange(generator.PrimeNumbersCapacity, _terrainTypes.Count - 1);
             }
-            _submeshSplitLevel = Mathf.Min( _terrainTypes.Count, _submeshSplitLevel);
+            int numTerrainTypes = 0;
+            foreach( TerrainType type in _terrainTypes )
+            {
+                if(type._active)
+                {
+                    numTerrainTypes++;
+                }
+            }
+            _submeshSplitLevel = Mathf.Min( numTerrainTypes, _submeshSplitLevel);
             for (int i = 0; i < _terrainTypes.Count; i++)
             {
                 var type = _terrainTypes[i];

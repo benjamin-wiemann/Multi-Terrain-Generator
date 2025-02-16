@@ -129,14 +129,14 @@ namespace MultiTerrain.DebugTools
                     {
                         colors[i] = Color.black; 
                     }
-                    for (int i = 0; i < 4; i++)
+                    for (int i = 0; i < Mathf.Min(terrainTypes.Length, 4); i++)
                     {                        
                         int terrainIndex = idsToIndices[primeIds[i]];
                         float3 col = terrainTypes[terrainIndex].Color;
                         Color terrainColor = new Color(col.x, col.y, col.z) * intensities[i];
                         colors[terrainIndex] = terrainColor;                        
                         colors[colors.Length - 1] += terrainColor;
-                        textures[terrainIndex].SetPixel(x, y, colors[terrainIndex]);
+                        textures[terrainIndex].SetPixel(x, y, terrainColor);
                     }
                     //colors[colors.Length - 1] = new Color(info.Color.x, info.Color.y, info.Color.z) ;
                     textures[textures.Length - 1].SetPixel(x, y, colors[colors.Length - 1]);                    

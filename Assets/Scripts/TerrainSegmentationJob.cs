@@ -14,6 +14,7 @@ namespace MultiTerrain
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
     public struct TerrainSegmentationJob : IJobFor
     {
+        int _numTerrainTypes;
         uint _seedPointsX;
         uint _seedPointsY;
         int _trianglePairsX;
@@ -37,10 +38,11 @@ namespace MultiTerrain
         NativeArray<int> _terrainIds;
 
         [ReadOnly, NativeDisableParallelForRestriction]
-        NativeHashMap<int, int> _idsToIndices;
+        NativeHashMap<int, int> _submeshIdsToIndices;
 
         public static void ScheduleParallel(
             NativeArray<int> terrainIds,
+            int numTerrainTypes,
             uint seed,
             uint seedPointsX,
             uint seedPointsY,
@@ -52,12 +54,13 @@ namespace MultiTerrain
             float perlinOffset,
             float perlinScale,
             int submeshSplitLevel,
-            NativeHashMap<int, int> terrainIdsToIndices, // in
+            NativeHashMap<int, int> submeshIdsToIndices, // in
             NativeArray<TerrainWeighting> terrainSegmentation,   // out
             NativeArray<int> submeshCounters        // out              
         )
         {
             TerrainSegmentationJob job = new();
+            job._numTerrainTypes = numTerrainTypes;
             job._segmentation = terrainSegmentation;
             job._terrainIds = terrainIds;
             job._seedPointsX = seedPointsX;
@@ -73,7 +76,7 @@ namespace MultiTerrain
             job._submeshCounters = submeshCounters;
             job._seed = seed;
             job._submeshSplitLevel = submeshSplitLevel;
-            job._idsToIndices = terrainIdsToIndices;
+            job._submeshIdsToIndices = submeshIdsToIndices;
 
             if (JobTools.Get()._runParallel)
                 job.ScheduleParallel(trianglePairsY, (int) JobTools.Get()._batchCountInRow, default).Complete();
@@ -121,19 +124,21 @@ namespace MultiTerrain
                 TopKSorter sorter = new(ids, terrainShares);
                 int4 top4Ids;
                 float4 top4Shares;
-                sorter.GetFourHighestValuesSortedById(out top4Ids, out top4Shares);
-                TerrainWeighting weights = new TerrainWeighting(top4Ids, top4Shares);
-                _segmentation[y * _trianglePairsX + x] = weights;
+                int numTerrainIds = min(_numTerrainTypes, 4);
+                sorter.GetKHighestValues( numTerrainIds, out top4Ids, out top4Shares);                
                 if(x < _trianglePairsX && y < _trianglePairsY)
                 {
                     // count the occurences if a vertex belongs to a submesh
-                    int terrainCombinationId = 1;
+                    int submeshId = 1;
                     for(int i = 0; i < _submeshSplitLevel; i++)
                     {
-                        terrainCombinationId *= top4Ids[i];
+                        submeshId *= top4Ids[i];
                     }
-                    NativeCollectionHelper.IncrementAt(_submeshCounters, (uint) _idsToIndices[terrainCombinationId]);                    
-                }                
+                    NativeCollectionHelper.IncrementAt(_submeshCounters, (uint) _submeshIdsToIndices[submeshId]);                    
+                } 
+                TopKSorter.SortTopKById( numTerrainIds, ref top4Ids, ref top4Shares);
+                TerrainWeighting weights = new TerrainWeighting(top4Ids, top4Shares);
+                _segmentation[y * _trianglePairsX + x] = weights;               
                 
             }
         }

@@ -95,7 +95,7 @@ namespace MultiTerrain
             }
 
         }
-
+ 
         private int ConfigureAndSetVertex( VertexStream stream, int x, int z, NativeArray<float> noiseMap)
         {
             int vi = (NumX + 1) * z + x;

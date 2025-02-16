@@ -68,7 +68,7 @@ namespace MultiTerrain.Segmentation
                     return i;
             }
             this[_pointer ] = v;
-            return _pointer;
+            return _pointer - 1;
         }
 
         public static Int9 operator -(Int9 a, int b)
