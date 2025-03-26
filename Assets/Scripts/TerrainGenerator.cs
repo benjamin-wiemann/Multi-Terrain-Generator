@@ -202,7 +202,7 @@ namespace MultiTerrain
 
             List<Material> materials = new();
             Material multiTerrainMaterial = new(_terrainShader);
-            MaterialTools.SetProperties(_terrainTypes, _meshResolution, _meshX, _meshZ, _textureSize, ref multiTerrainMaterial);
+            MaterialTools.SetProperties(_terrainTypes, _meshResolution, _meshX, _meshZ, _textureSize, _submeshSplitLevel, ref multiTerrainMaterial);
             for( int i = 0; i < numTerrainTypes; i++)
             {
                 materials.Add(multiTerrainMaterial);

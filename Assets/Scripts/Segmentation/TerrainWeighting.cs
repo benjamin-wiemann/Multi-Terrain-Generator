@@ -19,35 +19,6 @@ namespace MultiTerrain.Segmentation
 
         public static unsafe int SizeInBytes { get => sizeof(int4) + sizeof(float4);} 
 
-        // public int GetMaxIndex()
-        // {
-        //     int index = 0;
-        //     float val = 0f;
-        //     for (uint i = 0; i < Indices.Length; i++)
-        //     {
-        //         if (this.Intensities[i] > val )
-        //         {
-        //             val = this.Intensities[i];
-        //             index = this.Indices[i];
-        //         }
-        //     }
-        //     return index;
-        // }
-
-        // public int GetMinIndex()
-        // {
-        //     int index = 0;
-        //     float val = float.MaxValue;
-        //     for (uint i = 0; i < Indices.Length; i++)
-        //     {
-        //         if (this.Intensities[i] < val )
-        //         {
-        //             val = this.Intensities[i];
-        //             index = this.Indices[i];
-        //         }
-        //     }
-        //     return index;
-        // }
 
     }
 

@@ -11,8 +11,9 @@ namespace MultiTerrain
             int meshResolution, 
             float meshX, 
             float meshZ,
-            TerrainGenerator.TextureSizeEnum textureSize, 
-            ref Material material )
+            TerrainGenerator.TextureSizeEnum textureSize,
+            int submeshSplitLevel,
+            ref Material material)
         {
             var shader = material.shader;
             int len = terrainTypes.Count;
@@ -55,6 +56,8 @@ namespace MultiTerrain
             Shader.SetGlobalInteger("_MeshResolution", meshResolution);
             Shader.SetGlobalFloat("_MeshX", meshX);
             Shader.SetGlobalFloat("_MeshZ", meshZ);
+            Shader.SetGlobalInteger("_SubmeshSplitLevel", submeshSplitLevel);
+
             Shader.SetGlobalTexture("_BaseMap", diffuse); 
             Shader.SetGlobalVectorArray("_BaseMap_ST", tilingOffset);
 
