@@ -1,3 +1,5 @@
+// This file contains triplanar sampling functions
+
 // Reoriented Normal Mapping
 // http://blog.selfshadow.com/publications/blending-in-detail/
 // Altered to take normals (-1 to 1 ranges) rather than unsigned bitangentOS maps (0 to 1 ranges)
@@ -9,76 +11,156 @@ half3 blendRNM(half3 n1, half3 n2)
     return n1 * dot(n1, n2) / n1.z - n2;
 }
 
-half3 SampleAlbedoTriplanar(TriplanarUV triUV, half3 triblend, int textureIndex)
+half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices)
 {
-    half4 colX = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.x, textureIndex);
-    half4 colY = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.y, textureIndex);
-    half4 colZ = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.z, textureIndex);
-    return colX.rgb * triblend.x + colY.rgb * triblend.y + colZ.rgb * triblend.z;
+    half4x3 albedoMat = 0;
+    half3 albedo;
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {                       
+        if (i >= _SubmeshSplitLevel) 
+            break;
+        half3 colX = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.x[i], textureIndices[i]).xyz;
+        half3 colY = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.y[i], textureIndices[i]).xyz;
+        half3 colZ = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.z[i], textureIndices[i]).xyz;
+        albedoMat[i] = colX * triblend[i].x + colY * triblend[i].y + colZ * triblend[i].z;
+    }
+    [unroll]
+    for (int i = 0; i < 3; i++)
+    {
+        albedo[i] = dot(half4(albedoMat[0][i], albedoMat[1][i], albedoMat[2][i], albedoMat[3][i]), half4(1,1,1,1));
+    }
+    return albedo;
 }
 
-half3 SampleNormalTriplanar(FragmentInput fragIn, TriplanarUV triUV, half3 triblend, int textureIndex)
+half4x3 SampleHeightTriplanar(TriplanarUV triUV, int4 textureIndices)
 {
-    
-    // tangent space normal maps
-    half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x, textureIndex));
-    half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x, textureIndex));
-    half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x, textureIndex));
-    half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
+    half4x3 heights = 0;
+    for (int i = 0; i < 4; i++)
+    {                       
+        if (i >= _SubmeshSplitLevel) 
+            break;
+        heights[i] = half3(
+            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.x[i], textureIndices[i]).r,
+            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.y[i], textureIndices[i]).r,
+            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.z[i], textureIndices[i]).r);
+        heights[i] *= _HeightScale[i];
+    }
+    return heights;
+}
 
-    // flip normal maps' x axis to account for flipped UVs
-    #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
-        normalTSX.x *= axisSign.x;
-        normalTSY.x *= axisSign.y;
-        normalTSZ.x *= -axisSign.z;
-    #endif
+half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 triblend, int4 textureIndices)
+{
+    half4x3 normalWSMat = 0;
+    half3 normalOut;
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {                       
+        if (i >= _SubmeshSplitLevel) 
+            break;
+        // tangent space normal maps
+        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x[i], textureIndices[i]));
+        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x[i], textureIndices[i]));
+        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x[i], textureIndices[i]));
+        half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
 
-    half3 absVertNormal = abs(fragIn.normalWS);
-    // swizzle world normals to match tangent space and apply reoriented normal mapping blend
-    normalTSX = blendRNM(half3(fragIn.normalWS.zy, absVertNormal.x), normalTSX);
-    normalTSY = blendRNM(half3(fragIn.normalWS.xz, absVertNormal.y), normalTSY);
-    normalTSZ = blendRNM(half3(fragIn.normalWS.xy, absVertNormal.z), normalTSZ);
+        // flip normal maps' x axis to account for flipped UVs
+        #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
+            normalTSX.x *= axisSign.x;
+            normalTSY.x *= axisSign.y;
+            normalTSZ.x *= -axisSign.z;
+        #endif
 
-    // apply world space sign to tangent space Z
-    normalTSX.z *= axisSign.x;
-    normalTSY.z *= axisSign.y;
-    normalTSZ.z *= axisSign.z;
+        half3 absVertNormal = abs(fragIn.normalWS);
+        // swizzle world normals to match tangent space and apply reoriented normal mapping blend
+        normalTSX = blendRNM(half3(fragIn.normalWS.zy, absVertNormal.x), normalTSX);
+        normalTSY = blendRNM(half3(fragIn.normalWS.xz, absVertNormal.y), normalTSY);
+        normalTSZ = blendRNM(half3(fragIn.normalWS.xy, absVertNormal.z), normalTSZ);
 
-    // swizzle tangent normals to match world normal and blend together
-    half3 outNormalTS = normalize(
-        normalTSX * triblend.x +
-        normalTSY * triblend.y +
-        normalTSZ * triblend.z
+        // apply world space sign to tangent space Z
+        normalTSX.z *= axisSign.x;
+        normalTSY.z *= axisSign.y;
+        normalTSZ.z *= axisSign.z;
+        
+        // swizzle tangent normals to match world normal and blend together
+        normalWSMat[i] = normalize(
+            normalTSX.zyx * triblend[i].x +
+            normalTSY.xzy * triblend[i].y +
+            normalTSZ.xyz * triblend[i].z
         );
-    return outNormalTS;
+    }
+    [unroll]
+    for (int i = 0; i < 3; i++)
+    {
+        normalOut[i] = dot(half4(normalWSMat[0][i], normalWSMat[1][i], normalWSMat[2][i], normalWSMat[3][i]), half4(1,1,1,1));
+    }
+
+    return normalize(normalOut);
 }
 
-half3 SampleSpecularTriplanar(TriplanarUV triUV, half3 triblend, int textureIndex) {
-    half3 specularX = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.x, textureIndex).xyz;
-    half3 specularY = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.y, textureIndex).xyz;                                    
-    half3 specularZ = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.z, textureIndex).xyz;
-    return specularX * triblend.x + specularY * triblend.y + specularZ * triblend.z;
+half3 SampleSpecularTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices) {
+    half4x3 specMat = 0;
+    half3 specular;
+        
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {                       
+        if (i >= _SubmeshSplitLevel) 
+            break;
+        #ifdef _SPECULARMAP
+            half3 specularX = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.x[i], textureIndices[i]).xyz;
+            half3 specularY = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.y[i], textureIndices[i]).xyz;
+            half3 specularZ = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.z[i], textureIndices[i]).xyz;
+            specMat[i] = specularX * triblend[i].x + specularY * triblend[i].y + specularZ * triblend[i].z;
+        #else
+            specMat[i] = _SpecColorSmoothness[textureIndices[i]].rgb;
+        #endif
+    }
+    [unroll]
+    for (int i = 0; i < 3; i++)
+    {
+        specular[i] = dot(half4(specMat[0][i], specMat[1][i], specMat[2][i], specMat[3][i]), half4(1,1,1,1));
+    }
+    return specular;    
 }
 
 half SampleOcclusion(float2 uv, int textureIndex) {
         #if defined(SHADER_API_GLES)
-            return SAMPLE_TEXTURE2D_ARRAY(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).g;
+            return SAMPLE_TEXTURE2D_ARRAY(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).r;
         #else
-            half occ = SAMPLE_TEXTURE2D_ARRAY(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).g;
+            half occ = SAMPLE_TEXTURE2D_ARRAY(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).r;
             return LerpWhiteTo(occ, _OcclusionStrength[textureIndex]);
         #endif
 }
 
-half SampleOcclusionTriplanar(TriplanarUV triUV, half3 triblend, int textureIndex){
-    half occlusionX = SampleOcclusion(triUV.x, textureIndex);
-    half occlusionY = SampleOcclusion(triUV.y, textureIndex);
-    half occlusionZ = SampleOcclusion(triUV.z, textureIndex);
-    return occlusionX * triblend.x + occlusionY * triblend.y + occlusionZ * triblend.z;
+half SampleOcclusionTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices){
+    half4 occlusionVec;
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {                       
+        if (i >= _SubmeshSplitLevel) 
+            break;
+        half3 triOcclusion;
+        triOcclusion.x = SampleOcclusion(triUV.x[i], textureIndices[i]);
+        triOcclusion.y = SampleOcclusion(triUV.y[i], textureIndices[i]);
+        triOcclusion.z = SampleOcclusion(triUV.z[i], textureIndices[i]);
+        occlusionVec[i] = dot(triOcclusion, triblend[i]) * _OcclusionStrength[textureIndices[i]];
+    }
+    return dot(occlusionVec, half4(1,1,1,1));
 }
 
-half SampleSmoothnessTriplanar(TriplanarUV triUV, half3 triblend, int textureIndex){
-    half smoothnessX = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.x, textureIndex).r;
-    half smoothnessY = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.y, textureIndex).r;                                    
-    half smoothnessZ = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.z, textureIndex).r;
-    return (smoothnessX * triblend.x + smoothnessY * triblend.y + smoothnessZ * triblend.z) * (1 - _Smoothness[textureIndex]);
+half SampleSmoothnessTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices){
+    half4 smoothnessVec;
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {                       
+        if (i >= _SubmeshSplitLevel) 
+            break;
+        half3 triSmoothness;
+        triSmoothness.x = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.x[i], textureIndices[i]).r;
+        triSmoothness.y = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.y[i], textureIndices[i]).r;                                    
+        triSmoothness.z = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.z[i], textureIndices[i]).r;
+        smoothnessVec[i] = dot(triSmoothness, triblend[i]) * (1 - _SpecColorSmoothness[textureIndices[i]].a);
+    }
+    return dot(smoothnessVec, half4(1, 1, 1, 1));
 }
