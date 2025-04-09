@@ -21,8 +21,8 @@ Shader "Terrain/PatchShader"
         int _SubmeshSplitLevel;
 
 		float4 _BaseMap_ST[MAX_NUMBER_MATERIALS];
-		float3 _SpecColor[MAX_NUMBER_MATERIALS];
-        float _Smoothness[MAX_NUMBER_MATERIALS];
+        // contains fixed specular color in rgb and smoothness in alpha channel
+		float4 _SpecColorSmoothness[MAX_NUMBER_MATERIALS];        
 		float _OcclusionStrength[MAX_NUMBER_MATERIALS];
 		float _BumpScale[MAX_NUMBER_MATERIALS];
         float _HeightScale[MAX_NUMBER_MATERIALS];
@@ -59,7 +59,13 @@ Shader "Terrain/PatchShader"
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local _HEIGHTMAP
             #pragma shader_feature_local _SPECULARMAP
+            // indicates if triplanar blend is based on height information
             #pragma shader_feature_local _HEIGHTBASEDTRIBLEND
+            // flip UVs horizontally to correct for back side projection
+            #pragma shader_feature_local TRIPLANAR_CORRECT_PROJECTED_U
+            // offset UVs to prevent obvious mirroring
+            #pragma shader_feature_local TRIPLANAR_UV_OFFSET
+
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
@@ -77,13 +83,9 @@ Shader "Terrain/PatchShader"
             #pragma multi_compile _ DOTS_INSTANCING_ON
             #pragma multi_compile _ _SCREEN_SPACE_OCCLUSION
 
-            // flip UVs horizontally to correct for back side projection
-            // #define TRIPLANAR_CORRECT_PROJECTED_U
-
-            // offset UVs to prevent obvious mirroring
-            #define TRIPLANAR_UV_OFFSET
+            
                         
-            StructuredBuffer<TerrainWeighting> _TerrainMap;
+            StructuredBuffer<TerrainCombination> _TerrainMap;
 
             FragmentInput vert (VertexInput vertIn)
             {
@@ -107,15 +109,16 @@ Shader "Terrain/PatchShader"
             }
 
             // Simple triblend generation
-            void GenerateTriblend(half3 normalWS, out half3 triblend)
+            void GenerateTriblend(half3 normalWS, out half4x3 triblendMat)
             {                
-                triblend = saturate(pow(normalWS, 4));
+                half3 triblend = saturate(pow(normalWS, 4));
                 triblend /= max(dot(triblend, half3(1,1,1)), 0.0001);
+                triblendMat = half4x3(triblend, triblend, triblend, triblend);
             }
 
             // Triblend based on height information from height maps
             // https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#ce80
-            void GenerateHeightTriblend(half3 normalWS, float3 heights, out half3 triblend)
+            void GenerateHeightTriblend(half3 normalWS, half3 heights, out half3 triblend)
             {                
                 triblend = abs(normalWS.xyz);
                 triblend /= dot(triblend, float3(1,1,1));                
@@ -125,31 +128,65 @@ Shader "Terrain/PatchShader"
                 triblend = h / dot(h, float3(1,1,1));
             }
 
+            half4x3 GenerateTerrainBlend(half3 normalWS, half4x3 heights, half4 weightings)
+            {                
+                half3 triblend = abs(normalWS.xyz);;
+                triblend /= dot(triblend, half3(1,1,1));
+                triblend *= 3.0;                
+                half4x3 triblend4 = half4x3(triblend, triblend, triblend, triblend);
+                heights += triblend4;
+                half heightStart = 0;
+                [unroll]
+                for (int i = 0; i < 4; i++)
+                {
+                    if (i >= _SubmeshSplitLevel) 
+                        break;
+                    heightStart = max(max(max(heights[0][i], heights[1][i]), heights[2][i]), heightStart);
+                }
+                heightStart -= _HeightmapBlending[0];
+                half4x3 h = max(heights - heightStart, half4x3(0,0,0,0,0,0,0,0,0,0,0,0));
+                half3 ones = half3(1, 1, 1);
+                // normalize each row by the sum of the  
+                half4 normalizationPerTerrain = half4(dot(h[0], ones), dot(h[1], ones), dot(h[2], ones), dot(h[2], ones));
+                [unroll]
+                for (int i = 0; i < 4; i++)
+                {
+                    triblend4[i] = h[i] / normalizationPerTerrain[i];
+                }
+                return triblend4;
+            }
+
             // Generates triplanar UV according to 
             // https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#ce80
-            TriplanarUV GenerateTriplanarUV(FragmentInput fragIn)
-            {               
+            // but for up to 
+            TriplanarUV GenerateTriplanarUV(FragmentInput fragIn, int4 textureIndices)
+            {             
+                TriplanarUV triUV = (TriplanarUV) 0;  
+                [unroll]
+                for (int i = 0; i < 4; i++)
+                {                       
+                    if (i >= _SubmeshSplitLevel) 
+                        break;                    
+                    int ti = textureIndices[i];
+                    triUV.x[i] = fragIn.posWS.zy * _BaseMap_ST[ti].xy + _BaseMap_ST[ti].zw;
+                    triUV.y[i] = fragIn.posWS.xz * _BaseMap_ST[ti].xy + _BaseMap_ST[ti].zw;
+                    triUV.z[i] = fragIn.posWS.xy * _BaseMap_ST[ti].xy + _BaseMap_ST[ti].zw;
 
-                TriplanarUV triUV = (TriplanarUV) 0;
-                triUV.x = fragIn.posWS.zy * _BaseMap_ST[0].xy + _BaseMap_ST[0].zw;
-                triUV.y = fragIn.posWS.xz * _BaseMap_ST[0].xy + _BaseMap_ST[0].zw;
-                triUV.z = fragIn.posWS.xy * _BaseMap_ST[0].xy + _BaseMap_ST[0].zw;
+                    // sign function which never returns 0
+                    half3 axisSign = fragIn.normalWS.xyz < 0 ? -1 : 1;
 
+                    // flip UVs horizontally to correct for back side projection
+                    #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
+                        triUV.x[i].x *= axisSign.x;
+                        triUV.y[i].x *= axisSign.y;
+                        triUV.z[i].x *= -axisSign.z;
+                    #endif
+                }
                 // offset UVs to prevent obvious mirroring
-            #if defined(TRIPLANAR_UV_OFFSET)
-                triUV.y += 0.33;
-                triUV.z += 0.67;
-            #endif
-
-                // sign function which never returns 0
-                half3 axisSign = fragIn.normalWS.xyz < 0 ? -1 : 1;
-
-                // flip UVs horizontally to correct for back side projection
-            #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
-                triUV.x.x *= axisSign.x;
-                triUV.y.x *= axisSign.y;
-                triUV.z.x *= -axisSign.z;
-            #endif
+                #if defined(TRIPLANAR_UV_OFFSET)
+                    triUV.y += 0.33;
+                    triUV.z += 0.67;
+                #endif
                 
                 return triUV; 
             }
@@ -187,74 +224,55 @@ Shader "Terrain/PatchShader"
             }
 
 
-            void InitializeSurfaceData(FragmentInput fragIn, out SurfaceData surfaceData, out half3 normalWS, out half3 triblend, out half3 viewDirTS){
+            void InitializeSurfaceData(FragmentInput fragIn, out SurfaceData surfaceData, out half3 normalWS, out half4x3 triblend, out half3 viewDirTS){
                 surfaceData = (SurfaceData)0; 
 
-                               
-                TriplanarUV triUV = GenerateTriplanarUV( fragIn);
-
-                TerrainWeighting weighting = _TerrainMap[(int) round(fragIn.terrainCoordinateOS.y *_MeshX) + (int) round(fragIn.terrainCoordinateOS.x)];
-                int4 terrainIndices = weighting.indices;
-                float4 terrainIntensities = weighting.intensities;
-                normalWS = fragIn.normalWS;
-
-                [unroll]
-                for (int i = 0; i < 4; i++)
-                {
-                    if (i >= _SubmeshSplitLevel) break;
-                    
-                    int terrainIndex = terrainIndices[i];
-                
-                    #ifdef _HEIGHTMAP
-                        half3 heights = half3(
-                            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.x, terrainIndex).r,
-                            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.y, terrainIndex).r,
-                            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.z, terrainIndex).r);
-                        #ifdef _HEIGHTBASEDTRIBLEND
-                            GenerateHeightTriblend( fragIn.normalWS, heights, triblend);
-                        #else
-                            GenerateTriblend(fragIn.normalWS, triblend);
-                        #endif
-                        half3x3 worldToTangentX = transpose(float3x3(fragIn.normalWS, fragIn.bitangentWS, fragIn.tangentWS.xyz));
-                        half3x3 worldToTangentY = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.normalWS, fragIn.bitangentWS));
-                        half3x3 worldToTangentZ = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.bitangentWS, fragIn.normalWS));
-                        // viewDirTSX = GetViewDirectionTangentSpace(fragIn.tangentWS, fragIn.normalWS, GetWorldSpaceNormalizeViewDir(fragIn.posWS));
-                        // half3 viewDirTSX = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentX);
-                        // half3 viewDirTSY = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentY);
-
-                        half3 viewDirTSZ = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentZ);       
-                        // triUV.x -= viewDirTSZ.zy / viewDirTSZ.x * (heights.x * _HeightScale);
-                        // triUV.y -= viewDirTSZ.xz / viewDirTSZ.y * (heights.y * _HeightScale);
-                        // triUV.z -= viewDirTSZ.xy / viewDirTSZ.z * (heights.z * _HeightScale);
-
-                        // triUV.x -= ParallaxOffset1Step( heights.x, _HeightScale, half3(viewDirTSZ.zy, viewDirTSZ.x));
-                        // triUV.y -= ParallaxOffset1Step( heights.y, _HeightScale, half3(viewDirTSZ.xz, viewDirTSZ.y));                    
-                        // triUV.z -= ParallaxOffset1Step( heights.z, _HeightScale, viewDirTSZ);
-                        viewDirTS = half3(viewDirTSZ.zy, viewDirTSZ.x);  
-                    #else 
-                        GenerateTriblend(fragIn.normalWS, triblend);
-                        viewDirTS = 0;
-                    #endif                        
-
-                    // albedo textures                    
-                    surfaceData.albedo = SampleAlbedoTriplanar(triUV, triblend, terrainIndex);
-                    // currently not supporting alpha values
-                    surfaceData.alpha = 1;
-
-                    
-                    // normalWS.z *= -1;
-                    surfaceData.normalTS = SampleNormalTriplanar(fragIn, triUV, triblend, terrainIndex);
-
-                    surfaceData.occlusion = SampleOcclusionTriplanar(triUV, triblend, terrainIndex);                
-                    surfaceData.smoothness = 1 - SampleSmoothnessTriplanar(triUV, triblend, terrainIndex);
-                    #ifdef _SPECULARMAP      
-                        surfaceData.specular = SampleSpecularTriplanar(triUV, triblend, terrainIndex);
+                TerrainCombination combination = _TerrainMap[(int) round(fragIn.terrainCoordinateOS.y *_MeshX) + (int) round(fragIn.terrainCoordinateOS.x)];
+                int4 terrainIndices = combination.indices;
+                half4 terrainWeightings = combination.weightings;
+                 
+                TriplanarUV triUV = GenerateTriplanarUV( fragIn, terrainIndices);
+                // half3x3 worldToTangentX = transpose(float3x3(fragIn.normalWS, fragIn.bitangentWS, fragIn.tangentWS.xyz));
+                // half3x3 worldToTangentY = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.normalWS, fragIn.bitangentWS));
+                half3x3 worldToTangentZ = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.bitangentWS, fragIn.normalWS));
+            
+                #ifdef _HEIGHTMAP
+                    half4x3 heights = SampleHeightTriplanar(triUV, terrainIndices);                    
+                    #ifdef _HEIGHTBASEDTRIBLEND
+                        triblend = GenerateTerrainBlend(fragIn.normalWS, heights, terrainWeightings);
                     #else
-                        surfaceData.specular = _SpecColor[terrainIndex];
+                        GenerateTriblend(fragIn.normalWS, triblend);
                     #endif
-                    surfaceData.emission = 0; 
-                    surfaceData.metallic = 0.0h;  
-                }
+                    
+                    half3 viewDirTSZ = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentZ);       
+                    // triUV.x -= viewDirTSZ.zy / viewDirTSZ.x * (heights.x * _HeightScale);
+                    // triUV.y -= viewDirTSZ.xz / viewDirTSZ.y * (heights.y * _HeightScale);
+                    // triUV.z -= viewDirTSZ.xy / viewDirTSZ.z * (heights.z * _HeightScale);
+
+                    // triUV.x -= ParallaxOffset1Step( heights.x, _HeightScale, half3(viewDirTSZ.zy, viewDirTSZ.x));
+                    // triUV.y -= ParallaxOffset1Step( heights.y, _HeightScale, half3(viewDirTSZ.xz, viewDirTSZ.y));                    
+                    // triUV.z -= ParallaxOffset1Step( heights.z, _HeightScale, viewDirTSZ);
+                    viewDirTS = half3(viewDirTSZ.zy, viewDirTSZ.x);  
+                #else 
+                    GenerateTriblend(fragIn.normalWS, triblend);
+                    viewDirTS = 0;
+                #endif                        
+
+                // albedo textures                    
+                surfaceData.albedo = SampleAlbedoTriplanar(triUV, triblend, terrainIndices);
+                // currently not supporting alpha values
+                surfaceData.alpha = 1;
+                
+                // normalWS.z *= -1;
+                normalWS = SampleNormalWSTriplanar(fragIn, triUV, triblend, terrainIndices);
+                surfaceData.normalTS = TransformWorldToTangent(normalWS, worldToTangentZ);
+
+                surfaceData.occlusion = SampleOcclusionTriplanar(triUV, triblend, terrainIndices);                
+                surfaceData.smoothness = 1 - SampleSmoothnessTriplanar(triUV, triblend, terrainIndices);
+                surfaceData.specular = SampleSpecularTriplanar(triUV, triblend, terrainIndices);
+                surfaceData.emission = 0; 
+                surfaceData.metallic = 0.0h;  
+            
             }
 
 
@@ -264,7 +282,7 @@ Shader "Terrain/PatchShader"
 				SurfaceData surfaceData;
                 InputData inputData;
                 half3 normalWS;
-                half3 triblend;
+                half4x3 triblend;
                 half3 viewDirTS;
                 // Setup SurfaceData
 				InitializeSurfaceData(fragIn, surfaceData, normalWS, triblend, viewDirTS);
@@ -279,7 +297,7 @@ Shader "Terrain/PatchShader"
 				
                 // return half4(triblend, 0);
 				// return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
-                // return half4(normalWS.xyz * 0.5 + 0.5, 0);
+                return half4(normalWS.xyz * 0.5 + 0.5, 0);
                 // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
                 // return half4(surfaceData.albedo, 0);
                 // return half4(surfaceData.occlusion, 0,0, 0);
@@ -287,39 +305,39 @@ Shader "Terrain/PatchShader"
                 // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
                 // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
                 // return half4(viewDirTS * 0.5 + 0.5, 0);
-                return color;
+                // return color;
 
             }
             ENDHLSL
         }
 
-        Pass {
-			Name "ShadowCaster"
-			Tags { "LightMode"="ShadowCaster" }
+        // Pass {
+		// 	Name "ShadowCaster"
+		// 	Tags { "LightMode"="ShadowCaster" }
 
-			ZWrite On
-			ZTest LEqual
+		// 	ZWrite On
+		// 	ZTest LEqual
 
-			HLSLPROGRAM
-			#pragma vertex ShadowPassVertex
-			#pragma fragment ShadowPassFragment
+		// 	HLSLPROGRAM
+		// 	#pragma vertex ShadowPassVertex
+		// 	#pragma fragment ShadowPassFragment
 
-			// Material Keywords
-			#pragma shader_feature_local_fragment _ALPHATEST_ON
-			#pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+		// 	// Material Keywords
+		// 	#pragma shader_feature_local_fragment _ALPHATEST_ON
+		// 	#pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
-			// GPU Instancing
-			#pragma multi_compile_instancing
-			//#pragma multi_compile _ DOTS_INSTANCING_ON
+		// 	// GPU Instancing
+		// 	#pragma multi_compile_instancing
+		// 	//#pragma multi_compile _ DOTS_INSTANCING_ON
 
-			// Universal Pipeline Keywords
-			// (v11+) This is used during shadow map generation to differentiate between directional and punctual (point/spot) light shadows, as they use different formulas to apply Normal Bias
-			#pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+		// 	// Universal Pipeline Keywords
+		// 	// (v11+) This is used during shadow map generation to differentiate between directional and punctual (point/spot) light shadows, as they use different formulas to apply Normal Bias
+		// 	#pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
-			#include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
-            ENDHLSL
-        }
+		// 	#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+		// 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
+		// 	#include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+        //     ENDHLSL
+        // }
     }
 }

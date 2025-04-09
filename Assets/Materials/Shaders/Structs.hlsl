@@ -2,15 +2,15 @@
 // used to pass triplanar uv coordinates ( two coordinates for each axis )
 struct TriplanarUV
 {
-    float2 x;
-    float2 y;
-    float2 z;
+    float4x2 x;
+    float4x2 y;
+    float4x2 z;
 };
 
-struct TerrainWeighting
+struct TerrainCombination
 {
     int4 indices;
-    float4 intensities;
+    float4 weightings;
 };
 
 struct VertexInput
