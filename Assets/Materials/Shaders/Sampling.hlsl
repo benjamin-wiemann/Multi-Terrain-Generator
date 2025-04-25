@@ -15,8 +15,9 @@ half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureInd
 {
     half4x3 albedoMat = 0;
     half3 albedo;
+    int i;
     [unroll]
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
     {                       
         if (i >= _SubmeshSplitLevel) 
             break;
@@ -26,7 +27,7 @@ half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureInd
         albedoMat[i] = colX * triblend[i].x + colY * triblend[i].y + colZ * triblend[i].z;
     }
     [unroll]
-    for (int i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++)
     {
         albedo[i] = dot(half4(albedoMat[0][i], albedoMat[1][i], albedoMat[2][i], albedoMat[3][i]), half4(1,1,1,1));
     }
@@ -53,8 +54,9 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
 {
     half4x3 normalWSMat = 0;
     half3 normalOut;
+    int i;
     [unroll]
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
     {                       
         if (i >= _SubmeshSplitLevel) 
             break;
@@ -90,7 +92,7 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
         );
     }
     [unroll]
-    for (int i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++)
     {
         normalOut[i] = dot(half4(normalWSMat[0][i], normalWSMat[1][i], normalWSMat[2][i], normalWSMat[3][i]), half4(1,1,1,1));
     }
@@ -101,9 +103,9 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
 half3 SampleSpecularTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices) {
     half4x3 specMat = 0;
     half3 specular;
-        
+    int i;
     [unroll]
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
     {                       
         if (i >= _SubmeshSplitLevel) 
             break;
@@ -117,7 +119,7 @@ half3 SampleSpecularTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureI
         #endif
     }
     [unroll]
-    for (int i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++)
     {
         specular[i] = dot(half4(specMat[0][i], specMat[1][i], specMat[2][i], specMat[3][i]), half4(1,1,1,1));
     }
@@ -134,23 +136,24 @@ half SampleOcclusion(float2 uv, int textureIndex) {
 }
 
 half SampleOcclusionTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices){
-    half4 occlusionVec;
+    half4 occlusionVec = 0;
+    half3 triOcclusion = 0;
     [unroll]
     for (int i = 0; i < 4; i++)
     {                       
         if (i >= _SubmeshSplitLevel) 
             break;
-        half3 triOcclusion;
+        
         triOcclusion.x = SampleOcclusion(triUV.x[i], textureIndices[i]);
         triOcclusion.y = SampleOcclusion(triUV.y[i], textureIndices[i]);
         triOcclusion.z = SampleOcclusion(triUV.z[i], textureIndices[i]);
         occlusionVec[i] = dot(triOcclusion, triblend[i]) * _OcclusionStrength[textureIndices[i]];
     }
-    return dot(occlusionVec, half4(1,1,1,1));
+    return triOcclusion.x; //return dot(occlusionVec, half4(1,1,1,1));
 }
 
 half SampleSmoothnessTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices){
-    half4 smoothnessVec;
+    half4 smoothnessVec = 0;
     [unroll]
     for (int i = 0; i < 4; i++)
     {                       

@@ -13,6 +13,9 @@ namespace MultiTerrain
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class TerrainGenerator : MonoBehaviour
     {
+        [Header("Debug")]
+        [SerializeField]
+        bool _showTerrainColors = false;
         [Header("Mesh Properties")]
         [SerializeField,
             Range(1, 100)] float _meshX = 10;
@@ -178,7 +181,7 @@ namespace MultiTerrain
             {                
                 NormalizeNoiseJob.ScheduleParallel(
                     _heightMap,
-                    yMax,
+                    yMax,   
                     yMin,
                     numVerticesX,
                     numVerticesY);
@@ -202,7 +205,15 @@ namespace MultiTerrain
 
             List<Material> materials = new();
             Material multiTerrainMaterial = new(_terrainShader);
-            MaterialTools.SetProperties(_terrainTypes, _meshResolution, _meshX, _meshZ, _textureSize, _submeshSplitLevel, ref multiTerrainMaterial);
+            MaterialTools.SetProperties(
+                _terrainTypes,
+                _meshResolution, 
+                _meshX, 
+                _meshZ, 
+                _textureSize, 
+                _submeshSplitLevel,
+                _showTerrainColors, 
+                ref multiTerrainMaterial);
             for( int i = 0; i < numTerrainTypes; i++)
             {
                 materials.Add(multiTerrainMaterial);

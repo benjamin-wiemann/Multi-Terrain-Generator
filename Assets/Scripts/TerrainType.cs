@@ -88,8 +88,8 @@ namespace MultiTerrain
 
         [Header("Surface Shader")]     
         public Texture2D _diffuse;
-        public float2 _tiling;
-        public float2 _offset;
+        public Vector2 _tiling;
+        public Vector2 _offset;
 
         public Texture2D _normalMap;
         public float _bumpScale = 1f;
@@ -98,7 +98,7 @@ namespace MultiTerrain
         [Range(0.005f, 0.08f)]
         public float _heightScale = 0.005f;
         [Range(0.01f, 1.00f)]
-        public float _TriplanarBlending = 0.01f;
+        public float _triplanarBlending = 0.01f;
 
         public Texture2D _occlusionMap;
         public float _occlusionStrength = 0.5f;

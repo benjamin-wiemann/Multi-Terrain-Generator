@@ -13,6 +13,7 @@ namespace MultiTerrain
             float meshZ,
             TerrainGenerator.TextureSizeEnum textureSize,
             int submeshSplitLevel,
+            bool showTerrainColors,
             ref Material material)
         {
             var shader = material.shader;
@@ -35,6 +36,8 @@ namespace MultiTerrain
             Vector4[] specColorSmoothness = new Vector4[len];
             bool specularMissing = false;
 
+            Vector4[] debugTerrainColor = new Vector4[len];
+
             for ( int i = 0; i < len; i++)
             {
                 TerrainType type = terrainTypes[i];
@@ -52,6 +55,13 @@ namespace MultiTerrain
                     specularMissing = true;                    
                 // }
                 
+                tilingOffset[i] = new Vector4(type._tiling.x, type._tiling.y, type._offset.x, type._offset.y);
+                bumpScale[i] = type._bumpScale;
+                heightScale[i] = type._heightScale;
+                blendingScale[i] = type._triplanarBlending;
+                occlusionStrength[i] = type._occlusionStrength;
+                specColorSmoothness[i] = new Vector4(type._specColor.r, type._specColor.b, type._specColor.g, type._smoothness);
+                debugTerrainColor[i] = new Vector4(type._color.r, type._color.g, type._color.b, 0);
             }
             Shader.SetGlobalInteger("_MeshResolution", meshResolution);
             Shader.SetGlobalFloat("_MeshX", meshX);
@@ -73,6 +83,8 @@ namespace MultiTerrain
 
             Shader.SetGlobalTexture("_SmoothnessMap", smoothness);
             Shader.SetGlobalVectorArray("_SpecColorSmoothness" , specColorSmoothness);
+
+            Shader.SetGlobalVectorArray("_DebugTerrainColor" , debugTerrainColor);
             
             // If a material doesn't have specular maps, only a fixed specular color per material is used
             LocalKeyword specularMapKeyword = new(shader, "_SPECULARMAP");
@@ -85,6 +97,11 @@ namespace MultiTerrain
             {                
                 material.SetKeyword(specularMapKeyword, false);                
             }
+            LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
+            material.SetKeyword(heightBasedBlendKeyword, true);
+
+            LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
+            material.SetKeyword(debugShowTerrainColors, showTerrainColors);
 
         }
     }
