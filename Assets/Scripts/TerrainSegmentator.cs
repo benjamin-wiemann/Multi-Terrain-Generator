@@ -28,7 +28,7 @@ namespace MultiTerrain
             int submeshSplitLevel,
             NativeHashMap<int, int> terrainIdsToIndices,
             NativeList<TerrainTypeStruct> terrainTypes,  // inout
-            NativeArray<TerrainWeighting> terrainMap,        // out
+            NativeArray<TerrainCombination> terrainMap,        // out
             NativeArray<int2> coordinates,     // out
             NativeArray<int> submeshCounters // out
         )

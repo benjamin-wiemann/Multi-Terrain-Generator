@@ -5,13 +5,13 @@ using Unity.Mathematics;
 namespace MultiTerrain.Segmentation
 {
     [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
-    public struct TerrainWeighting
+    public struct TerrainCombination
     {
 
         public int4 Ids;
         public float4 Intensities;
 
-        public TerrainWeighting( int4 indices, float4 intensities)
+        public TerrainCombination( int4 indices, float4 intensities)
         {
             this.Ids = indices;
             this.Intensities = intensities;            

@@ -14,7 +14,7 @@ namespace MultiTerrain
     public struct SortCoordinatesJob : IJobFor
     {
         [ReadOnly]
-        NativeArray<TerrainWeighting> _terrainSegmentation;
+        NativeArray<TerrainCombination> _terrainSegmentation;
 
         [NativeDisableContainerSafetyRestriction]
         NativeArray<int> _subMeshIndices;
@@ -29,7 +29,7 @@ namespace MultiTerrain
         private int _subMeshSplitLevel;
 
         public static void ScheduleParallel(
-            NativeArray<TerrainWeighting> terrainSegmentation,
+            NativeArray<TerrainCombination> terrainSegmentation,
             NativeArray<int> subMeshCounters,
             int height,
             int subMeshSplitLevel,
@@ -64,7 +64,7 @@ namespace MultiTerrain
         {
             for(int x = 0; x < _width; x++)
             {
-                TerrainWeighting weighting = _terrainSegmentation[y * _width + x ];
+                TerrainCombination weighting = _terrainSegmentation[y * _width + x ];
                 int terrainCombinationId = 1;
                 for(int i = 0; i < _subMeshSplitLevel; i++)
                 {

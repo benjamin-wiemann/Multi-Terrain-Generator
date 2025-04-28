@@ -1,4 +1,5 @@
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -7,13 +8,13 @@ namespace MultiTerrain
 {
     public class MaterialTools
     {
-        public static void SetProperties(List<TerrainType> terrainTypes, 
+        public static void SetProperties(
+            List<TerrainType> terrainTypes, 
             int meshResolution, 
             float meshX, 
             float meshZ,
             TerrainGenerator.TextureSizeEnum textureSize,
             int submeshSplitLevel,
-            bool showTerrainColors,
             ref Material material)
         {
             var shader = material.shader;
@@ -100,9 +101,13 @@ namespace MultiTerrain
             LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
             material.SetKeyword(heightBasedBlendKeyword, true);
 
+        }
+
+        internal static void SetDebugShowTerrainColors(bool showTerrainColors, ref Material material)
+        {
+            var shader = material.shader;
             LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
             material.SetKeyword(debugShowTerrainColors, showTerrainColors);
-
         }
     }
 

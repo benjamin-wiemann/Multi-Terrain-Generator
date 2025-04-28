@@ -29,7 +29,7 @@ namespace MultiTerrain
         int _submeshSplitLevel;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        NativeArray<TerrainWeighting> _segmentation;
+        NativeArray<TerrainCombination> _segmentation;
 
         [NativeDisableParallelForRestriction]
         NativeArray<int> _submeshCounters;
@@ -55,7 +55,7 @@ namespace MultiTerrain
             float perlinScale,
             int submeshSplitLevel,
             NativeHashMap<int, int> submeshIdsToIndices, // in
-            NativeArray<TerrainWeighting> terrainSegmentation,   // out
+            NativeArray<TerrainCombination> terrainSegmentation,   // out
             NativeArray<int> submeshCounters        // out              
         )
         {
@@ -123,9 +123,9 @@ namespace MultiTerrain
                 }
                 TopKSorter sorter = new(ids, terrainShares);
                 int4 top4Ids;
-                float4 top4Shares;
+                float4 top4Weightings;
                 int numTerrainIds = min(_numTerrainTypes, 4);
-                sorter.GetKHighestValues( numTerrainIds, out top4Ids, out top4Shares);                
+                sorter.GetKHighestValues( numTerrainIds, out top4Ids, out top4Weightings);                
                 if(x < _trianglePairsX && y < _trianglePairsY)
                 {
                     // count the occurences if a vertex belongs to a submesh
@@ -136,9 +136,9 @@ namespace MultiTerrain
                     }
                     NativeCollectionHelper.IncrementAt(_submeshCounters, (uint) _submeshIdsToIndices[submeshId]);                    
                 } 
-                TopKSorter.SortTopKById( numTerrainIds, ref top4Ids, ref top4Shares);
-                TerrainWeighting weights = new TerrainWeighting(top4Ids, top4Shares);
-                _segmentation[y * _trianglePairsX + x] = weights;               
+                TopKSorter.SortTopKById( numTerrainIds, ref top4Ids, ref top4Weightings);
+                TerrainCombination terrainCombi = new TerrainCombination(top4Ids, top4Weightings);
+                _segmentation[y * _trianglePairsX + x] = terrainCombi;               
                 
             }
         }
