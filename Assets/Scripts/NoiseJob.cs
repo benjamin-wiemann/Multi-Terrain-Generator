@@ -45,7 +45,7 @@ namespace MultiTerrain
         private NativeArray<float> _minNoiseHeights;
 
         [ReadOnly, NativeDisableContainerSafetyRestriction]
-        private NativeArray<TerrainWeighting> _terrainMap;
+        private NativeArray<TerrainCombination> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
         private NativeArray<TerrainTypeStruct> _terrainTypes;
@@ -54,7 +54,7 @@ namespace MultiTerrain
         private NativeHashMap<int, int> _terrainIdsToIndices;
 
         public static void ScheduleParallel( 
-            NativeArray<TerrainWeighting> terrainMap,
+            NativeArray<TerrainCombination> terrainMap,
             NativeArray<TerrainTypeStruct> terrainTypes,
             NativeHashMap<int, int> terrainIdsToIndices,
             int mapWidth,
@@ -128,7 +128,7 @@ namespace MultiTerrain
                                         
                 }
 
-                TerrainWeighting info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
+                TerrainCombination info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
                 for (int j = 0; j < min(_terrainTypes.Length, 4); j++)
                 {
                     int terrainIndex = _terrainIdsToIndices[info.Ids[j]];

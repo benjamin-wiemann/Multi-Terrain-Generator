@@ -79,12 +79,12 @@ public class TestSuite
             combi0, combi1, combi2,
             combi2, combi1, combi2, 
             combi0, combi1, combi2 };
-        NativeArray<TerrainWeighting> terrainSegmentation = new(segmentation.Length, Allocator.Persistent);
+        NativeArray<TerrainCombination> terrainSegmentation = new(segmentation.Length, Allocator.Persistent);
         for (int i = 0; i < segmentation.Length; i++)
         {
             float4 intensities = 0;
             // intensities[0] = 1f;            
-            TerrainWeighting weighting = new TerrainWeighting( segmentation[i], intensities);
+            TerrainCombination weighting = new TerrainCombination( segmentation[i], intensities);
             terrainSegmentation[i] = weighting;
         }        
         NativeArray<int> terrainCounters = new(3, Allocator.Persistent);

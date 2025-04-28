@@ -317,7 +317,10 @@ Shader "Terrain/PatchShader"
                     terrainIndices,
                     terrainWeightings);
 				// Setup InputData				
-				InitializeInputData(fragIn, normalWS, inputData);
+				InitializeInputData(
+                    fragIn, 
+                    normalWS, 
+                    inputData);
 
 				half4 color = UniversalFragmentPBR(inputData, surfaceData);
                 // half4 color = UniversalFragmentBlinnPhong(inputData, surfaceData);
@@ -332,15 +335,15 @@ Shader "Terrain/PatchShader"
                     [unroll]
                     for( i = 0; i < 3; i++)
                         debugColor[i] = dot(half4(
-                                    // _DebugTerrainColor[terrainIndices[0]][i], 
-                                    // _DebugTerrainColor[terrainIndices[1]][i],
-                                    // _DebugTerrainColor[terrainIndices[2]][i],
-                                    // _DebugTerrainColor[terrainIndices[3]][i]),
-                                    _DebugTerrainColor[0][i], 
-                                    _DebugTerrainColor[1][i],
-                                    _DebugTerrainColor[2][i],
-                                    _DebugTerrainColor[3][i]),
-                                terrainWeightings);                                
+                            // _DebugTerrainColor[terrainIndices[0]][i], 
+                            // _DebugTerrainColor[terrainIndices[1]][i],
+                            // _DebugTerrainColor[terrainIndices[2]][i],
+                            // _DebugTerrainColor[terrainIndices[3]][i]),
+                            _DebugTerrainColor[0][i], 
+                            _DebugTerrainColor[1][i],
+                            _DebugTerrainColor[2][i],
+                            _DebugTerrainColor[3][i]),
+                            terrainWeightings);                                
                     return debugColor;
                 #else
                 // return half4(triblend[0], 0);

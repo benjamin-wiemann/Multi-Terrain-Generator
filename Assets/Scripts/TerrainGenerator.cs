@@ -60,7 +60,7 @@ namespace MultiTerrain
 
         NativeArray<float> _heightMap;
 
-        NativeArray<TerrainWeighting> _terrainMap;
+        NativeArray<TerrainCombination> _terrainMap;
 
         NativeArray<float> _maxNoiseValues;
 
@@ -69,6 +69,8 @@ namespace MultiTerrain
         NativeHashMap<int, int> _submeshIdsToIndices;
 
         ComputeBuffer _terrainBuffer;
+
+        Material _multiTerrainMaterial;
         
 
         [System.Serializable]
@@ -204,25 +206,26 @@ namespace MultiTerrain
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh); 
 
             List<Material> materials = new();
-            Material multiTerrainMaterial = new(_terrainShader);
+            _multiTerrainMaterial = new(_terrainShader);
             MaterialTools.SetProperties(
                 _terrainTypes,
                 _meshResolution, 
                 _meshX, 
                 _meshZ, 
                 _textureSize, 
-                _submeshSplitLevel,
-                _showTerrainColors, 
-                ref multiTerrainMaterial);
+                _submeshSplitLevel, 
+                ref _multiTerrainMaterial);
+            MaterialTools.SetDebugShowTerrainColors(_showTerrainColors, ref _multiTerrainMaterial);
+
             for( int i = 0; i < numTerrainTypes; i++)
             {
-                materials.Add(multiTerrainMaterial);
+                materials.Add(_multiTerrainMaterial);
             }
             GetComponent<Renderer>().SetSharedMaterials(materials);                      
-            _terrainBuffer = new(_terrainMap.Length, TerrainWeighting.SizeInBytes );
+            _terrainBuffer = new(_terrainMap.Length, TerrainCombination.SizeInBytes );
             _terrainBuffer.SetData(_terrainMap); 
+            _multiTerrainMaterial.SetBuffer("_TerrainMap", _terrainBuffer);
 
-            multiTerrainMaterial.SetBuffer("_TerrainMap", _terrainBuffer);
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray(), terrainIdsToIndices);
             _onMeshFinished?.Invoke(args);
             
@@ -288,6 +291,10 @@ namespace MultiTerrain
                 {
                     type._name = type._name.Substring(0, 125);
                 }
+            }
+            if( _multiTerrainMaterial != null)
+            {
+                MaterialTools.SetDebugShowTerrainColors(_showTerrainColors, ref _multiTerrainMaterial);
             }
             
         }
