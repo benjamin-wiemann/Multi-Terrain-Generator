@@ -1,6 +1,8 @@
 
 using System;
 using System.Collections.Generic;
+using MultiTerrain.Segmentation;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -8,16 +10,18 @@ namespace MultiTerrain
 {
     public class MaterialTools
     {
-        public static void SetProperties(
-            List<TerrainType> terrainTypes, 
+        public static List<Material> SetProperties(
+            Shader shader,
+            List<TerrainType> terrainTypes,
+            NativeArray<TerrainCombination> terrainMap,
             int meshResolution, 
             float meshX, 
             float meshZ,
             TerrainGenerator.TextureSizeEnum textureSize,
-            int submeshSplitLevel,
-            ref Material material)
+            int numSamplingClasses,
+            out ComputeBuffer terrainBuffer)
         {
-            var shader = material.shader;
+            List<Material> materials = new(numSamplingClasses);
             int len = terrainTypes.Count;
             Texture2DArray diffuse = new((int) textureSize, (int) textureSize, len, TextureFormat.RGB24, true);
             Vector4[] tilingOffset = new Vector4[len];     
@@ -67,7 +71,6 @@ namespace MultiTerrain
             Shader.SetGlobalInteger("_MeshResolution", meshResolution);
             Shader.SetGlobalFloat("_MeshX", meshX);
             Shader.SetGlobalFloat("_MeshZ", meshZ);
-            Shader.SetGlobalInteger("_SubmeshSplitLevel", submeshSplitLevel);
 
             Shader.SetGlobalTexture("_BaseMap", diffuse); 
             Shader.SetGlobalVectorArray("_BaseMap_ST", tilingOffset);
@@ -86,28 +89,45 @@ namespace MultiTerrain
             Shader.SetGlobalVectorArray("_SpecColorSmoothness" , specColorSmoothness);
 
             Shader.SetGlobalVectorArray("_DebugTerrainColor" , debugTerrainColor);
-            
-            // If a material doesn't have specular maps, only a fixed specular color per material is used
-            LocalKeyword specularMapKeyword = new(shader, "_SPECULARMAP");
-            if(!specularMissing)
+
+            terrainBuffer = new(terrainMap.Length, TerrainCombination.SizeInBytes );
+            terrainBuffer.SetData(terrainMap);             
+            Shader.SetGlobalBuffer("_TerrainMap", terrainBuffer);
+                        
+            for( int i = 0; i < numSamplingClasses; i++)
             {
-                material.SetTexture("_SpecularMap", specular);                
-                material.SetKeyword(specularMapKeyword, true);
-            }                
-            else
-            {                
-                material.SetKeyword(specularMapKeyword, false);                
+                Material material = new(shader);
+                // If a material doesn't have specular maps, only a fixed specular color per material is used
+                LocalKeyword specularMapKeyword = new(shader, "_SPECULARMAP");
+                if(!specularMissing)
+                {
+                    material.SetTexture("_SpecularMap", specular);                
+                    material.SetKeyword(specularMapKeyword, true);
+                }                
+                else
+                {                
+                    material.SetKeyword(specularMapKeyword, false);                
+                }
+                LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
+                material.SetKeyword(heightBasedBlendKeyword, true);
+
+                material.SetInteger("_SamplingLevel", i);
+                materials.Add(material);
             }
-            LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
-            material.SetKeyword(heightBasedBlendKeyword, true);
+            
+            
+            return materials;
 
         }
 
-        internal static void SetDebugShowTerrainColors(bool showTerrainColors, ref Material material)
+        internal static void SetDebugShowTerrainColors(bool showTerrainColors, ref List<Material> materials)
         {
-            var shader = material.shader;
-            LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
-            material.SetKeyword(debugShowTerrainColors, showTerrainColors);
+            foreach ( Material material in materials)
+            {
+                var shader = material.shader;
+                LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
+                material.SetKeyword(debugShowTerrainColors, showTerrainColors);
+            }            
         }
     }
 

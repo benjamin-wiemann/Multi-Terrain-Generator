@@ -61,7 +61,7 @@ namespace MultiTerrain.DebugTools
             _segmentation = args.TerrainSegmentation;
             _terrainTypes = args.TerrainTypes;
             _heigthMap = args.HeightMap;
-            _segmentationTextures = VisualizeSegmentation(_segmentation, _terrainTypes, args.TerrainIdsToIndices, _width - 1, _height - 1);
+            _segmentationTextures = VisualizeSegmentation(_segmentation, _terrainTypes, _width - 1, _height - 1);
             _heightTexture = VisualizeHeightMap(_heigthMap, _width, _height);
             OnValidate();
             Visualize();
@@ -107,7 +107,6 @@ namespace MultiTerrain.DebugTools
         Texture2D[] VisualizeSegmentation( 
             NativeArray<TerrainCombination> segmentation, 
             TerrainTypeStruct[] terrainTypes, 
-            NativeHashMap<int, int> idsToIndices,
             int width, 
             int height )
         {
@@ -122,8 +121,8 @@ namespace MultiTerrain.DebugTools
                 for (int x = 0; x < width; x++)
                 {
                     TerrainCombination weighting = segmentation[y * width + x];
-                    float4 intensities = weighting.Intensities;
-                    int4 primeIds = weighting.Ids;
+                    float4 intensities = weighting.Weightings;
+                    int4 indices = weighting.Ids;
                     Color[] colors = new Color[terrainTypes.Length + 1];
                     for( int i = 0; i < colors.Length; i++ )
                     {
@@ -131,14 +130,13 @@ namespace MultiTerrain.DebugTools
                     }
                     for (int i = 0; i < Mathf.Min(terrainTypes.Length, 4); i++)
                     {                        
-                        int terrainIndex = idsToIndices[primeIds[i]];
+                        int terrainIndex = indices[i];
                         float3 col = terrainTypes[terrainIndex].Color;
                         Color terrainColor = new Color(col.x, col.y, col.z) * intensities[i];
                         colors[terrainIndex] = terrainColor;                        
                         colors[colors.Length - 1] += terrainColor;
                         textures[terrainIndex].SetPixel(x, y, terrainColor);
-                    }
-                    //colors[colors.Length - 1] = new Color(info.Color.x, info.Color.y, info.Color.z) ;
+                    }                    
                     textures[textures.Length - 1].SetPixel(x, y, colors[colors.Length - 1]);                    
                 }
                 

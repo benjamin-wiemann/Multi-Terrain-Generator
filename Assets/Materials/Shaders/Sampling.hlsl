@@ -19,7 +19,7 @@ half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureInd
     [unroll]
     for (i = 0; i < 4; i++)
     {                       
-        if (i >= _SubmeshSplitLevel) 
+        if (i >= _SamplingLevel) 
             break;
         half3 colX = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.x[i], textureIndices[i]).xyz;
         half3 colY = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.y[i], textureIndices[i]).xyz;
@@ -39,7 +39,7 @@ half4x3 SampleHeightTriplanar(TriplanarUV triUV, int4 textureIndices)
     half4x3 heights = 0;
     for (int i = 0; i < 4; i++)
     {                       
-        if (i >= _SubmeshSplitLevel) 
+        if (i >= _SamplingLevel) 
             break;
         heights[i] = half3(
             SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.x[i], textureIndices[i]).r,
@@ -58,7 +58,7 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
     [unroll]
     for (i = 0; i < 4; i++)
     {                       
-        if (i >= _SubmeshSplitLevel) 
+        if (i >= _SamplingLevel) 
             break;
         // tangent space normal maps
         half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x[i], textureIndices[i]));
@@ -107,7 +107,7 @@ half3 SampleSpecularTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureI
     [unroll]
     for (i = 0; i < 4; i++)
     {                       
-        if (i >= _SubmeshSplitLevel) 
+        if (i >= _SamplingLevel) 
             break;
         #ifdef _SPECULARMAP
             half3 specularX = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.x[i], textureIndices[i]).xyz;
@@ -141,7 +141,7 @@ half SampleOcclusionTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureI
     [unroll]
     for (int i = 0; i < 4; i++)
     {                       
-        if (i >= _SubmeshSplitLevel) 
+        if (i >= _SamplingLevel) 
             break;
         
         triOcclusion.x = SampleOcclusion(triUV.x[i], textureIndices[i]);
@@ -157,7 +157,7 @@ half SampleSmoothnessTriplanar(TriplanarUV triUV, half4x3 triblend, int4 texture
     [unroll]
     for (int i = 0; i < 4; i++)
     {                       
-        if (i >= _SubmeshSplitLevel) 
+        if (i >= _SamplingLevel) 
             break;
         half3 triSmoothness;
         triSmoothness.x = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.x[i], textureIndices[i]).r;
