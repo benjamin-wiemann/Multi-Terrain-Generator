@@ -23,12 +23,13 @@ namespace MultiTerrain.Helper
         }
 
         // Returns the top 4 highest numbers
-        public void GetKHighestValues(int k, out int4 topIds, out float4 topValues)
+        public void GetKHighestValues(int k, float threshold, out int4 topIds, out float4 topValues, out int numAboveThreshold)
         {
             if (k > 4 || k < 1)
                 throw new ArgumentException("Parameter k must be between 1 and 4.");
             topIds = 0;
             topValues = 0;
+            numAboveThreshold = 0;
 
             BuildMaxHeap();
 
@@ -37,8 +38,16 @@ namespace MultiTerrain.Helper
             for (int i = 0; i < k; i++)
             {                
                 ExtractMax(out topId, out topVal);
-                topIds[i] = topId;
-                topValues[i] = topVal;
+                if( topVal > threshold)
+                {
+                    topIds[i] = topId;
+                    topValues[i] = topVal;
+                    numAboveThreshold++;
+                }
+                else
+                {
+                    break;
+                }
             }
 
         }
@@ -64,12 +73,6 @@ namespace MultiTerrain.Helper
                 topIds[j + 1] = id;
                 topValues[j + 1] = value;
             }
-        }
-
-        public void GetKHighestValuesSortedById(int k, out int4 ids, out float4 values)
-        {
-            GetKHighestValues(k, out ids, out values);
-            SortTopKById(k, ref ids, ref values);
         }
 
 

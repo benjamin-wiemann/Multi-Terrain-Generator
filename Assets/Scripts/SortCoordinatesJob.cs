@@ -22,26 +22,19 @@ namespace MultiTerrain
         [WriteOnly, NativeDisableContainerSafetyRestriction]
         NativeArray<int2> _coordinates;
 
-        [ReadOnly]
-        private NativeHashMap<int, int> _terrainIdsToIndices;
-
         int _width;
-        private int _subMeshSplitLevel;
+
 
         public static void ScheduleParallel(
             NativeArray<TerrainCombination> terrainSegmentation,
             NativeArray<int> subMeshCounters,
             int height,
-            int subMeshSplitLevel,
-            NativeHashMap<int, int> terrainIdsToIndices,
             NativeArray<int2> coordinates)
         {
             SortCoordinatesJob job = new();
             job._terrainSegmentation = terrainSegmentation;
             job._coordinates = coordinates;
             job._width = terrainSegmentation.Length / height;
-            job._subMeshSplitLevel = subMeshSplitLevel;
-            job._terrainIdsToIndices = terrainIdsToIndices;
             job._subMeshIndices = new(subMeshCounters.Length, Allocator.Persistent);
             job._subMeshIndices[0] = 0;
             
@@ -64,13 +57,8 @@ namespace MultiTerrain
         {
             for(int x = 0; x < _width; x++)
             {
-                TerrainCombination weighting = _terrainSegmentation[y * _width + x ];
-                int terrainCombinationId = 1;
-                for(int i = 0; i < _subMeshSplitLevel; i++)
-                {
-                    terrainCombinationId *= weighting.Ids[i];
-                }
-                int submeshIndex = _terrainIdsToIndices[terrainCombinationId];
+                TerrainCombination combination = _terrainSegmentation[y * _width + x ];
+                int submeshIndex = combination.Length - 1;                
                 int trianglePairIndex = NativeCollectionHelper.IncrementAt(_subMeshIndices, (uint) submeshIndex) - 1;
                 _coordinates[trianglePairIndex] = new int2(x + 1, y + 1);
             }

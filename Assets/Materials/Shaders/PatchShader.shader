@@ -1,7 +1,10 @@
 // This shader is responsible for the texture sampling and PBR in general. 
 Shader "Terrain/PatchShader"
 {
-   
+    Properties
+    {
+        _SamplingLevel ("Sampling Level", Integer) = 4
+    }
     SubShader
     {
         Tags {
@@ -18,7 +21,7 @@ Shader "Terrain/PatchShader"
         int _MeshResolution;
         float _MeshX;
         float _MeshZ;
-        int _SubmeshSplitLevel;
+        int _SamplingLevel;
 
 		float4 _BaseMap_ST[MAX_NUMBER_MATERIALS];
         // contains fixed specular color in rgb and smoothness in alpha channel
@@ -51,6 +54,10 @@ Shader "Terrain/PatchShader"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ParallaxMapping.hlsl"
             // #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/PerPixelDisplacement.hlsl"
             #include "Structs.hlsl"
+            int Test()
+            {
+                _SamplingLevel++;
+            }
             #include "Sampling.hlsl"
             
             StructuredBuffer<TerrainCombination> _TerrainMap;
@@ -91,9 +98,6 @@ Shader "Terrain/PatchShader"
             #pragma multi_compile _ DOTS_INSTANCING_ON
             #pragma multi_compile _ _SCREEN_SPACE_OCCLUSION
 
-            
-                        
-            
 
             FragmentInput vert (VertexInput vertIn)
             {
@@ -148,7 +152,7 @@ Shader "Terrain/PatchShader"
                 [unroll]
                 for (i = 0; i < 4; i++)
                 {
-                    if (i >= _SubmeshSplitLevel) 
+                    if (i >= _SamplingLevel) 
                         break;
                     heightStart = max(max(max(heights[0][i], heights[1][i]), heights[2][i]), heightStart);
                 }
@@ -174,7 +178,7 @@ Shader "Terrain/PatchShader"
                 [unroll]
                 for (int i = 0; i < 4; i++)
                 {                       
-                    if (i >= _SubmeshSplitLevel) 
+                    if (i >= _SamplingLevel) 
                         break;                    
                     int ti = textureIndices[i];
                     triUV.x[i] = fragIn.posWS.zy * _BaseMap_ST[ti].xy + _BaseMap_ST[ti].zw;

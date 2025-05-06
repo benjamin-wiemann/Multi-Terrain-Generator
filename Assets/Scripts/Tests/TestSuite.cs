@@ -71,44 +71,38 @@ public class TestSuite
     public void SortCoordinatesJobSortsCorrectly()
     {
         int width = 3;
-        int subMeshSplitLevel = 2;
-        int4 combi0 = new int4(1,2,0,0);
-        int4 combi1 = new int4(1,3,0,0);
-        int4 combi2 = new int4(2,3,0,0);
-        int4[] segmentation = new int4[] { 
-            combi0, combi1, combi2,
-            combi2, combi1, combi2, 
-            combi0, combi1, combi2 };
+        float4 combi4 = new float4(0.9f, 0.4f, 0.2f, 0.1f);
+        float4 combi3 = new float4(0.4f, 0.2f, 0.1f, 0);
+        float4 combi2 = new float4(0.2f, 0.1f, 0, 0);
+        float4 combi1 = new float4(0.1f, 0, 0, 0);
+        float4[] segmentation = new float4[] { 
+            combi4, combi3, combi2,
+            combi2, combi3, combi1, 
+            combi4, combi3, combi2 };
         NativeArray<TerrainCombination> terrainSegmentation = new(segmentation.Length, Allocator.Persistent);
         for (int i = 0; i < segmentation.Length; i++)
         {
-            float4 intensities = 0;
-            // intensities[0] = 1f;            
-            TerrainCombination weighting = new TerrainCombination( segmentation[i], intensities);
-            terrainSegmentation[i] = weighting;
+            int4 ids = 0;         
+            terrainSegmentation[i] = new TerrainCombination( ids, segmentation[i]);
         }        
-        NativeArray<int> terrainCounters = new(3, Allocator.Persistent);
-        terrainCounters[0] = 2;
-        terrainCounters[1] = 3;
-        terrainCounters[2] = 4;
+        NativeArray<int> submeshCounters = new(4, Allocator.Persistent);
+        submeshCounters[0] = 1;
+        submeshCounters[1] = 3;
+        submeshCounters[2] = 3;
+        submeshCounters[3] = 2;
         NativeArray<int2> coordinates = new(segmentation.Length, Allocator.Persistent);
         int2[] coordinatesExpected = new int2[] {
-            new int2 (1,1), new int2(1, 3),
+            new int2(3, 2),
+            new int2 (3, 1), new int2 (1,2), new int2(3, 3), 
             new int2 (2,1), new int2(2, 2), new int2(2, 3),
-            new int2 (3, 1), new int2 (1,2), new int2(3, 2), new int2(3, 3)};        
-        
-        NativeHashMap<int, int> terrainIdsToIndices = new(3, Allocator.Persistent);
-        terrainIdsToIndices[2] = 0;
-        terrainIdsToIndices[3] = 1;
-        terrainIdsToIndices[6] = 2;
+            new int2 (1,1), new int2(1, 3)
+        };        
 
         JobTools.Get()._runParallel = false;
         SortCoordinatesJob.ScheduleParallel(
             terrainSegmentation,
-            terrainCounters,
+            submeshCounters,
             segmentation.Length / width,
-            subMeshSplitLevel,
-            terrainIdsToIndices,
             coordinates);
         Assert.That(coordinates.ToArray(), Is.EqualTo(coordinatesExpected));
 
@@ -118,26 +112,12 @@ public class TestSuite
         JobTools.Get()._runParallel = true;
         SortCoordinatesJob.ScheduleParallel(
             terrainSegmentation,
-            terrainCounters,
+            submeshCounters,
             segmentation.Length / width,
-            subMeshSplitLevel,
-            terrainIdsToIndices,
             coordinates);
-        NativeArray<int2> terrain0 = coordinates.GetSubArray(0, 2);
-        Assert.That(terrain0.ToArray(), Contains.Item(coordinatesExpected[0]));
-        Assert.That(terrain0.ToArray(), Contains.Item(coordinatesExpected[1]));
-        NativeArray<int2> terrain1 = coordinates.GetSubArray(2, 3);
-        Assert.That(terrain1.ToArray(), Contains.Item(coordinatesExpected[2]));
-        Assert.That(terrain1.ToArray(), Contains.Item(coordinatesExpected[3]));
-        Assert.That(terrain1.ToArray(), Contains.Item(coordinatesExpected[4]));
-        NativeArray<int2> terrain2 = coordinates.GetSubArray(5, 4);
-        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[5]));
-        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[6]));
-        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[7]));
-        Assert.That(terrain2.ToArray(), Contains.Item(coordinatesExpected[8]));
-        terrainIdsToIndices.Dispose();
+        Assert.That(coordinates.ToArray(), Is.EqualTo(coordinatesExpected));
         terrainSegmentation.Dispose();
-        terrainCounters.Dispose();
+        submeshCounters.Dispose();
         coordinates.Dispose();
     }
 
@@ -188,9 +168,11 @@ public class TestSuite
         Float9 values = new Float9( 0.4f, 0.3f, 0.1f, 0.8f, 0.9f, 0.2f, 0.7f, 0f, 0.5f);
         TopKSorter sorter = new(ids, values);
         int4 topIds;
-        float4 topValues;
+        float4 topValues;        
+        int numAboveThreshold;
         int k = 4;
-        sorter.GetKHighestValues(k, out topIds, out topValues);
+        float threshold = 0.1f;
+        sorter.GetKHighestValues(k, threshold, out topIds, out topValues, out numAboveThreshold);
         Assert.That(topValues[0], Is.EqualTo(0.9f));
         Assert.That(topValues[1], Is.EqualTo(0.8f));
         Assert.That(topValues[2], Is.EqualTo(0.7f));
@@ -215,40 +197,6 @@ public class TestSuite
         Assert.That(values[3], Is.EqualTo(0.4f));
 
     }
-
-    [Test]
-    public void IdCombination_MapIdsToIndices_Finds_Correct_Key_Value_Pairs()
-    {
-        NativeList<TerrainTypeStruct> terrainList = new (4, Allocator.Persistent);
-        TerrainType protoType = new();
-        protoType._name = "test";
-        terrainList.Add(TerrainTypeStruct.Convert(protoType, 2));
-        terrainList.Add(TerrainTypeStruct.Convert(protoType, 3));
-        terrainList.Add(TerrainTypeStruct.Convert(protoType, 5));
-        terrainList.Add(TerrainTypeStruct.Convert(protoType, 7));
-        int k = 2;
-        int binCoeff = MathHelper.GetBinCoeff(terrainList.Length, k);
-        NativeHashMap<int, int> keyValues = new(binCoeff, Allocator.Persistent);
-        IdCombination.MapIdsToIndices(terrainList, k, ref keyValues);
-        Assert.That(keyValues.ContainsKey(2 * 3), Is.True);
-        Assert.That(keyValues.ContainsKey(2 * 5), Is.True);
-        Assert.That(keyValues.ContainsKey(2 * 7), Is.True);
-        Assert.That(keyValues.ContainsKey(3 * 5), Is.True);
-        Assert.That(keyValues.ContainsKey(3 * 7), Is.True);
-        Assert.That(keyValues.ContainsKey(5 * 7), Is.True);
-
-        NativeArray<int> values = keyValues.GetValueArray( Allocator.Persistent);
-        Assert.That(values.Contains(0), Is.True);
-        Assert.That(values.Contains(1), Is.True);
-        Assert.That(values.Contains(2), Is.True);
-        Assert.That(values.Contains(3), Is.True);
-        Assert.That(values.Contains(4), Is.True);
-        Assert.That(values.Contains(5), Is.True);
-
-        terrainList.Dispose();
-        keyValues.Dispose();
-    }
-
 
 
 }

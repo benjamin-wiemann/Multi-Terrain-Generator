@@ -50,13 +50,10 @@ namespace MultiTerrain
         [NativeDisableContainerSafetyRestriction]
         private NativeArray<TerrainTypeStruct> _terrainTypes;
 
-        [ReadOnly, NativeDisableContainerSafetyRestriction]
-        private NativeHashMap<int, int> _terrainIdsToIndices;
 
         public static void ScheduleParallel( 
             NativeArray<TerrainCombination> terrainMap,
             NativeArray<TerrainTypeStruct> terrainTypes,
-            NativeHashMap<int, int> terrainIdsToIndices,
             int mapWidth,
             int mapHeight,
             float scale,
@@ -73,7 +70,6 @@ namespace MultiTerrain
 
             noiseJob._terrainMap = terrainMap;
             noiseJob._terrainTypes = terrainTypes;
-            noiseJob._terrainIdsToIndices = terrainIdsToIndices;
             noiseJob._noiseScale = scale;
             noiseJob._mapHeight = mapHeight;
             noiseJob._mapWidth = mapWidth;
@@ -128,10 +124,10 @@ namespace MultiTerrain
                                         
                 }
 
-                TerrainCombination info = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
-                for (int j = 0; j < min(_terrainTypes.Length, 4); j++)
+                TerrainCombination combination = _terrainMap[terrainY * (_mapWidth - 1) + terrainX];
+                for (int j = 0; j < combination.Length; j++)
                 {
-                    int terrainIndex = _terrainIdsToIndices[info.Ids[j]];
+                    int terrainIndex = combination.Ids[j];
                     float terrainAmplitude = amplitude;
                     float terrainFrequency = frequency;
                     float terrainNoiseHeight = 0;
@@ -144,7 +140,7 @@ namespace MultiTerrain
                         float perlinValue = noise.cnoise(new float2(sampleX, sampleY)) * 2 - 1;
                         terrainNoiseHeight += perlinValue * terrainAmplitude;
                     }
-                    noiseHeight += (terrainNoiseHeight * _terrainTypes[terrainIndex].Height + _terrainTypes[terrainIndex].HeightOffset) * info.Intensities[j];
+                    noiseHeight += (terrainNoiseHeight * _terrainTypes[terrainIndex].Height + _terrainTypes[terrainIndex].HeightOffset) * combination.Weightings[j];
                 }
 
                 _maxNoiseHeights[y] = max(noiseHeight, _maxNoiseHeights[y]);

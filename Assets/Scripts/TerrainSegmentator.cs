@@ -25,8 +25,7 @@ namespace MultiTerrain
             float perlinScale,
             float borderGranularity,
             float borderSmoothing,
-            int submeshSplitLevel,
-            NativeHashMap<int, int> terrainIdsToIndices,
+            float terrainInclusionThreshold,
             NativeList<TerrainTypeStruct> terrainTypes,  // inout
             NativeArray<TerrainCombination> terrainMap,        // out
             NativeArray<int2> coordinates,     // out
@@ -52,16 +51,13 @@ namespace MultiTerrain
                 borderSmoothing,
                 perlinOffset,
                 perlinScale,
-                submeshSplitLevel,
-                terrainIdsToIndices,
+                terrainInclusionThreshold,
                 terrainMap,
                 submeshCounters);
             SortCoordinatesJob.ScheduleParallel(
                 terrainMap,
                 submeshCounters,
                 trianglePairsY,
-                submeshSplitLevel,
-                terrainIdsToIndices,
                 coordinates);
 
             terrainIndices.Dispose();
@@ -75,7 +71,7 @@ namespace MultiTerrain
             Unity.Mathematics.Random random = new(seed);
             for (int i = 0; i < indices.Length; i++)
             {
-                indices[i] = terrainTypes[random.NextInt(terrainTypes.Length)].PrimeId;                
+                indices[i] = random.NextInt(terrainTypes.Length); 
             }
 
         }
