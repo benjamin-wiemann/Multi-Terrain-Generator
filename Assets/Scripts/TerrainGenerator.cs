@@ -15,7 +15,8 @@ namespace MultiTerrain
     {
         [Header("Debug")]
         [SerializeField]
-        bool _showTerrainColors = false;
+        MaterialTools.DebugView _debugViewMode = MaterialTools.DebugView.None;
+
         [Header("Mesh Properties")]
         [SerializeField,
             Range(1, 100)] float _meshX = 10;
@@ -70,8 +71,6 @@ namespace MultiTerrain
         NativeArray<float> _maxNoiseValues;
 
         NativeArray<float> _minNoiseValues;
-        
-        NativeHashMap<int, int> _submeshIdsToIndices;
 
         ComputeBuffer _terrainBuffer;
 
@@ -214,15 +213,14 @@ namespace MultiTerrain
                 _numSamplingClasses,
                 out _terrainBuffer);
             
-            MaterialTools.SetDebugShowTerrainColors(_showTerrainColors, ref _materials);
+            MaterialTools.SetDebugMode(_debugViewMode, ref _materials);
 
             GetComponent<Renderer>().SetSharedMaterials(_materials);                      
             
 
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             _onMeshFinished?.Invoke(args);
-            
-            _submeshIdsToIndices.Dispose();
+
             _minNoiseValues.Dispose();
             _maxNoiseValues.Dispose();
             _heightMap.Dispose();
@@ -280,7 +278,7 @@ namespace MultiTerrain
             }
             if( _materials != null)
             {
-                MaterialTools.SetDebugShowTerrainColors(_showTerrainColors, ref _materials);
+                MaterialTools.SetDebugMode(_debugViewMode, ref _materials);
             }
         }
 

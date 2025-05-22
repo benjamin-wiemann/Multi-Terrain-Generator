@@ -10,6 +10,14 @@ namespace MultiTerrain
 {
     public class MaterialTools
     {
+        public enum DebugView
+        {
+            None,
+            TerrainColors,
+            Submeshes,
+            Coordinates
+        }
+
         public static List<Material> SetProperties(
             Shader shader,
             List<TerrainType> terrainTypes,
@@ -109,7 +117,7 @@ namespace MultiTerrain
                     material.SetKeyword(specularMapKeyword, false);                
                 }
                 LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
-                material.SetKeyword(heightBasedBlendKeyword, true);
+                material.SetKeyword(heightBasedBlendKeyword, false);
 
                 material.SetInteger("_SamplingLevel", i);
                 materials.Add(material);
@@ -120,15 +128,42 @@ namespace MultiTerrain
 
         }
 
-        internal static void SetDebugShowTerrainColors(bool showTerrainColors, ref List<Material> materials)
+        internal static void SetDebugMode(DebugView debugView, ref List<Material> materials)
         {
             foreach ( Material material in materials)
             {
                 var shader = material.shader;
                 LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
-                material.SetKeyword(debugShowTerrainColors, showTerrainColors);
-            }            
+                LocalKeyword debugShowSubmeshes = new(shader, "_DEBUG_SHOW_SUBMESHES");
+                LocalKeyword debugShowCoordinates = new(shader, "_DEBUG_SHOW_COORDINATES");
+                switch (debugView)
+                {
+                    case DebugView.None:
+                        material.SetKeyword(debugShowTerrainColors, false);
+                        material.SetKeyword(debugShowSubmeshes, false);
+                        material.SetKeyword(debugShowCoordinates, false);
+                        break;
+                    case DebugView.TerrainColors:
+                        material.SetKeyword(debugShowTerrainColors, true);
+                        material.SetKeyword(debugShowSubmeshes, false);
+                        material.SetKeyword(debugShowCoordinates, false);
+                        break;
+                    case DebugView.Submeshes:
+                        material.SetKeyword(debugShowTerrainColors, false);
+                        material.SetKeyword(debugShowSubmeshes, true);
+                        material.SetKeyword(debugShowCoordinates, false);
+                        break;
+                    case DebugView.Coordinates:
+                        material.SetKeyword(debugShowTerrainColors, false);
+                        material.SetKeyword(debugShowSubmeshes, false);
+                        material.SetKeyword(debugShowCoordinates, true);
+                        break;
+                }
+            }
+                        
         }
+
+
     }
 
 }

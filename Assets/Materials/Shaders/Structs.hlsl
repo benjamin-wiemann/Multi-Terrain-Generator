@@ -15,7 +15,7 @@ struct TerrainCombination
 
 struct VertexInput
 {
-    float4 positionOS   : POSITION;
+    float3 positionOS   : POSITION;
     //
     float3 normalOS      : NORMAL;
     half4 tangentOS     : TANGENT;

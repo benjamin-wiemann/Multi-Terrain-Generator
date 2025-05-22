@@ -3,7 +3,7 @@ Shader "Terrain/PatchShader"
 {
     Properties
     {
-        _SamplingLevel ("Sampling Level", Integer) = 4
+        _SamplingLevel ("Sampling Level", Integer) = 3
     }
     SubShader
     {
@@ -18,10 +18,14 @@ Shader "Terrain/PatchShader"
 
         #define MAX_NUMBER_MATERIALS 100
 		
+        CBUFFER_START(UnityPerMaterial)
+        int _SamplingLevel;
+        CBUFFER_END
+
         int _MeshResolution;
         float _MeshX;
         float _MeshZ;
-        int _SamplingLevel;
+        
 
 		float4 _BaseMap_ST[MAX_NUMBER_MATERIALS];
         // contains fixed specular color in rgb and smoothness in alpha channel
@@ -54,10 +58,6 @@ Shader "Terrain/PatchShader"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ParallaxMapping.hlsl"
             // #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/PerPixelDisplacement.hlsl"
             #include "Structs.hlsl"
-            int Test()
-            {
-                _SamplingLevel++;
-            }
             #include "Sampling.hlsl"
             
             StructuredBuffer<TerrainCombination> _TerrainMap;
@@ -79,7 +79,7 @@ Shader "Terrain/PatchShader"
             #pragma multi_compile _ _HEIGHTBASEDTRIBLEND
 
             // shows the terrain color on the mesh instead of sampling
-            #pragma multi_compile _ _DEBUG_SHOW_TERRAIN_COLORS 
+            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -115,7 +115,7 @@ Shader "Terrain/PatchShader"
 
                 OUTPUT_LIGHTMAP_UV(vertIn.lightmapUV, unity_LightmapST, fragIn.lightmapUV);
 				OUTPUT_SH(fragIn.normalWS, fragIn.vertexSH);
-                fragIn.terrainCoordinateOS = half2(vertIn.positionOS.xz * _MeshResolution);
+                fragIn.terrainCoordinateOS = half2(vertIn.positionOS.x + _MeshX * 0.5, vertIn.positionOS.z + _MeshZ * 0.5) * _MeshResolution;
                 
                 return fragIn;
             }
@@ -125,7 +125,8 @@ Shader "Terrain/PatchShader"
             {                
                 half3 triblend = saturate(pow(normalWS, 4));
                 triblend /= max(dot(triblend, half3(1,1,1)), 0.0001);
-                triblendMat = half4x3(triblend, triblend, triblend, triblend);
+                half4 weighting = half4(0.6,0.2,0.1,0);
+                triblendMat = half4x3(triblend * weighting[0], triblend * weighting[1], triblend * weighting[2], triblend * weighting[3]);
             }
 
             // Triblend based on height information from height maps
@@ -152,7 +153,7 @@ Shader "Terrain/PatchShader"
                 [unroll]
                 for (i = 0; i < 4; i++)
                 {
-                    if (i >= _SamplingLevel) 
+                    if (i > _SamplingLevel) 
                         break;
                     heightStart = max(max(max(heights[0][i], heights[1][i]), heights[2][i]), heightStart);
                 }
@@ -160,11 +161,11 @@ Shader "Terrain/PatchShader"
                 half4x3 h = max(heights - heightStart, half4x3(0,0,0,0,0,0,0,0,0,0,0,0));
                 half3 ones = half3(1, 1, 1);
                 // normalize each row by the sum of the  
-                half4 normalizationPerTerrain = half4(dot(h[0], ones), dot(h[1], ones), dot(h[2], ones), dot(h[2], ones));
+                half4 normalizationPerTerrain = half4(dot(h[0], ones), dot(h[1], ones), dot(h[2], ones), dot(h[3], ones));
                 [unroll]
                 for (i = 0; i < 4; i++)
                 {
-                    triblend4[i] = h[i] / normalizationPerTerrain[i];
+                    triblend4[i] = h[i] * weightings[i] / normalizationPerTerrain[i];
                 }
                 return triblend4;
             }
@@ -178,7 +179,7 @@ Shader "Terrain/PatchShader"
                 [unroll]
                 for (int i = 0; i < 4; i++)
                 {                       
-                    if (i >= _SamplingLevel) 
+                    if (i > _SamplingLevel) 
                         break;                    
                     int ti = textureIndices[i];
                     triUV.x[i] = fragIn.posWS.zy * _BaseMap_ST[ti].xy + _BaseMap_ST[ti].zw;
@@ -240,16 +241,19 @@ Shader "Terrain/PatchShader"
             void InitializeSurfaceData(
                 FragmentInput fragIn, 
                 out SurfaceData surfaceData, 
-                out half3 normalWS, 
+                out half3 normalWS,         // debug
                 out half4x3 triblend,       // debug
                 out half3 viewDirTS,        // debug
                 out half4x3 heights,        // debug
                 out int4 terrainIndices,    // debug
                 out float4 terrainWeightings) // debug
-                {
+            {
                 surfaceData = (SurfaceData)0; 
-
-                TerrainCombination combination =  _TerrainMap[0];// _TerrainMap[(int) round(fragIn.terrainCoordinateOS.y *_MeshX) + (int) round(fragIn.terrainCoordinateOS.x)];
+                int4 terrainIds = int4(1,2,3,0);
+                float4 weightings = float4(0.6,0.2,0.1,0);     
+                TerrainCombination combination = _TerrainMap[(int) round(fragIn.terrainCoordinateOS.y *_MeshX * _MeshResolution ) + (int) round(fragIn.terrainCoordinateOS.x)];
+                // combination.indices = terrainIds;
+                // combination.weightings = weightings;
                 terrainIndices = combination.indices;
                 terrainWeightings = combination.weightings;
                  
@@ -333,36 +337,54 @@ Shader "Terrain/PatchShader"
 				color.rgb = MixFog(color.rgb, inputData.fogCoord);
 				
                 #ifdef _DEBUG_SHOW_TERRAIN_COLORS
-                // return terrainWeightings;
                     half4 debugColor = 0;
                     int i;
                     [unroll]
                     for( i = 0; i < 3; i++)
                         debugColor[i] = dot(half4(
-                            // _DebugTerrainColor[terrainIndices[0]][i], 
-                            // _DebugTerrainColor[terrainIndices[1]][i],
-                            // _DebugTerrainColor[terrainIndices[2]][i],
-                            // _DebugTerrainColor[terrainIndices[3]][i]),
-                            _DebugTerrainColor[0][i], 
-                            _DebugTerrainColor[1][i],
-                            _DebugTerrainColor[2][i],
-                            _DebugTerrainColor[3][i]),
+                            _DebugTerrainColor[terrainIndices[0]][i], 
+                            _DebugTerrainColor[terrainIndices[1]][i],
+                            _DebugTerrainColor[terrainIndices[2]][i],
+                            _DebugTerrainColor[terrainIndices[3]][i]),
                             terrainWeightings);                                
                     return debugColor;
+                #elif _DEBUG_SHOW_SUBMESHES
+                    half4 submeshTest = 0;
+                    [unroll]
+                    for( int i = 0; i < 4; i++)
+                    {
+                        if(i == _SamplingLevel )
+                        {
+                            if(i == 3)
+                            {
+                                submeshTest[0] = 1;
+                                submeshTest[1] = 1;
+                            }
+                            else
+                            {
+                                submeshTest[i] = 1;    
+                            }                            
+                            break;
+                        }                    
+                    }                
+                    return submeshTest;
+                #elif _DEBUG_SHOW_COORDINATES                    
+                    half4 debugColor = half4( (int) round(fragIn.terrainCoordinateOS.x) / _MeshX, 0, (int) round(fragIn.terrainCoordinateOS.y) / _MeshZ , 0) / _MeshResolution;
+                    return debugColor;
                 #else
-                // return half4(triblend[0], 0);
-				// return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
-                // return half4(normalWS.xyz * 0.5 + 0.5, 0);
-                // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
-                return half4(surfaceData.albedo, 0);
-                // return half4(surfaceData.occlusion, 0,0, 0);
-                // return half4(surfaceData.smoothness, 0,0, 0);
-                // return half4(heights[0], 0);
-                // return half4(surfaceData.specular, 0);
-                // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
-                // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
-                // return half4(viewDirTS * 0.5 + 0.5, 0);
-                // return color;
+                    // return half4(triblend[0], 0);
+                    // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
+                    // return half4(normalWS.xyz * 0.5 + 0.5, 0);
+                    // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);         
+                    // return half4(surfaceData.albedo, 0);
+                    // return half4(surfaceData.occlusion, 0,0, 0);
+                    // return half4(surfaceData.smoothness, 0,0, 0);
+                    // return half4(heights[0], 0);
+                    // return half4(surfaceData.specular, 0);
+                    // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
+                    // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
+                    // return half4(viewDirTS * 0.5 + 0.5, 0);
+                    return color;
                 #endif
 
             }
