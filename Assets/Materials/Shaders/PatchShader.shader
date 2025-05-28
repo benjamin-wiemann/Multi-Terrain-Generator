@@ -79,7 +79,7 @@ Shader "Terrain/PatchShader"
             #pragma multi_compile _ _HEIGHTBASEDTRIBLEND
 
             // shows the terrain color on the mesh instead of sampling
-            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES
+            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES _DEBUG_CHESS_TERRAIN
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -371,6 +371,8 @@ Shader "Terrain/PatchShader"
                 #elif _DEBUG_SHOW_COORDINATES                    
                     half4 debugColor = half4( (int) round(fragIn.terrainCoordinateOS.x) / _MeshX, 0, (int) round(fragIn.terrainCoordinateOS.y) / _MeshZ , 0) / _MeshResolution;
                     return debugColor;
+                #elif _DEBUG_CHESS_TERRAIN
+                    
                 #else
                     // return half4(triblend[0], 0);
                     // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
