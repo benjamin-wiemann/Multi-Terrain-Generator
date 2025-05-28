@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using MultiTerrain.Segmentation;
 using Unity.Collections;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -22,8 +23,8 @@ namespace MultiTerrain
             Shader shader,
             List<TerrainType> terrainTypes,
             NativeArray<TerrainCombination> terrainMap,
-            int meshResolution, 
-            float meshX, 
+            int meshResolution,
+            float meshX,
             float meshZ,
             TerrainGenerator.TextureSizeEnum textureSize,
             int numSamplingClasses,
@@ -31,27 +32,27 @@ namespace MultiTerrain
         {
             List<Material> materials = new(numSamplingClasses);
             int len = terrainTypes.Count;
-            Texture2DArray diffuse = new((int) textureSize, (int) textureSize, len, TextureFormat.RGB24, true);
-            Vector4[] tilingOffset = new Vector4[len];     
+            Texture2DArray diffuse = new((int)textureSize, (int)textureSize, len, TextureFormat.RGB24, true);
+            Vector4[] tilingOffset = new Vector4[len];
 
-            Texture2DArray bump = new((int) textureSize, (int) textureSize, len, TextureFormat.RGBA32, true);
+            Texture2DArray bump = new((int)textureSize, (int)textureSize, len, TextureFormat.RGBA32, true);
             float[] bumpScale = new float[len];
 
-            Texture2DArray height = new((int) textureSize, (int) textureSize, len, TextureFormat.R8, true);
+            Texture2DArray height = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, true);
             float[] heightScale = new float[len];
             float[] blendingScale = new float[len];
 
-            Texture2DArray occlusion = new((int) textureSize, (int) textureSize, len, TextureFormat.R8, true);
+            Texture2DArray occlusion = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, true);
             float[] occlusionStrength = new float[len];
 
-            Texture2DArray smoothness = new((int) textureSize, (int) textureSize, len, TextureFormat.R8, true);
-            Texture2DArray specular = new((int) textureSize, (int) textureSize, len, TextureFormat.RGB24, true);
+            Texture2DArray smoothness = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, true);
+            Texture2DArray specular = new((int)textureSize, (int)textureSize, len, TextureFormat.RGB24, true);
             Vector4[] specColorSmoothness = new Vector4[len];
             bool specularMissing = false;
 
             Vector4[] debugTerrainColor = new Vector4[len];
 
-            for ( int i = 0; i < len; i++)
+            for (int i = 0; i < len; i++)
             {
                 TerrainType type = terrainTypes[i];
                 Graphics.CopyTexture(type._diffuse, 0, 0, diffuse, i, 0);
@@ -65,9 +66,9 @@ namespace MultiTerrain
                 // }
                 // else
                 // {
-                    specularMissing = true;                    
+                specularMissing = true;
                 // }
-                
+
                 tilingOffset[i] = new Vector4(type._tiling.x, type._tiling.y, type._offset.x, type._offset.y);
                 bumpScale[i] = type._bumpScale;
                 heightScale[i] = type._heightScale;
@@ -80,7 +81,7 @@ namespace MultiTerrain
             Shader.SetGlobalFloat("_MeshX", meshX);
             Shader.SetGlobalFloat("_MeshZ", meshZ);
 
-            Shader.SetGlobalTexture("_BaseMap", diffuse); 
+            Shader.SetGlobalTexture("_BaseMap", diffuse);
             Shader.SetGlobalVectorArray("_BaseMap_ST", tilingOffset);
 
             Shader.SetGlobalTexture("_BumpMap", bump);
@@ -94,27 +95,27 @@ namespace MultiTerrain
             Shader.SetGlobalFloatArray("_OcclusionStrength", occlusionStrength);
 
             Shader.SetGlobalTexture("_SmoothnessMap", smoothness);
-            Shader.SetGlobalVectorArray("_SpecColorSmoothness" , specColorSmoothness);
+            Shader.SetGlobalVectorArray("_SpecColorSmoothness", specColorSmoothness);
 
-            Shader.SetGlobalVectorArray("_DebugTerrainColor" , debugTerrainColor);
+            Shader.SetGlobalVectorArray("_DebugTerrainColor", debugTerrainColor);
 
-            terrainBuffer = new(terrainMap.Length, TerrainCombination.SizeInBytes );
-            terrainBuffer.SetData(terrainMap);             
+            terrainBuffer = new(terrainMap.Length, TerrainCombination.SizeInBytes);
+            terrainBuffer.SetData(terrainMap);
             Shader.SetGlobalBuffer("_TerrainMap", terrainBuffer);
-                        
-            for( int i = 0; i < numSamplingClasses; i++)
+
+            for (int i = 0; i < numSamplingClasses; i++)
             {
                 Material material = new(shader);
                 // If a material doesn't have specular maps, only a fixed specular color per material is used
                 LocalKeyword specularMapKeyword = new(shader, "_SPECULARMAP");
-                if(!specularMissing)
+                if (!specularMissing)
                 {
-                    material.SetTexture("_SpecularMap", specular);                
+                    material.SetTexture("_SpecularMap", specular);
                     material.SetKeyword(specularMapKeyword, true);
-                }                
+                }
                 else
-                {                
-                    material.SetKeyword(specularMapKeyword, false);                
+                {
+                    material.SetKeyword(specularMapKeyword, false);
                 }
                 LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
                 material.SetKeyword(heightBasedBlendKeyword, false);
@@ -122,15 +123,17 @@ namespace MultiTerrain
                 material.SetInteger("_SamplingLevel", i);
                 materials.Add(material);
             }
-            
-            
+
+
             return materials;
 
         }
 
-        internal static void SetDebugMode(DebugView debugView, ref List<Material> materials)
+        internal static void SetDebugMode(
+            DebugView debugView,
+            ref List<Material> materials)
         {
-            foreach ( Material material in materials)
+            foreach (Material material in materials)
             {
                 var shader = material.shader;
                 LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
@@ -158,9 +161,27 @@ namespace MultiTerrain
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, true);
                         break;
+
                 }
             }
-                        
+
+        }
+
+        public static void DebugSetChessTerrain(ComputeBuffer terrainBuffer, NativeArray<TerrainCombination> terrainMap, int width, int height)
+        {
+
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    int4 ids = new int4(1, 2, 0, 0);
+                    float val = (Mathf.Floor(j * 10f / height) + Mathf.Floor(i * 10f / width)) % 2f;
+                    float4 weightings = new float4(val, (val + 1f) % 2, 0f, 0f);
+                    terrainMap[j * width + i] = new TerrainCombination(ids, weightings);
+                }
+            }
+            terrainBuffer.SetData(terrainMap);
+            Shader.SetGlobalBuffer("_TerrainMap", terrainBuffer);
         }
 
 

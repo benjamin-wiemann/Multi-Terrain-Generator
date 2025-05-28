@@ -7,17 +7,19 @@ using UnityEngine.Events;
 using Unity.Mathematics;
 using MultiTerrain.Helper;
 using MultiTerrain.Segmentation;
+using MyBox;
 
 namespace MultiTerrain
 {
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class TerrainGenerator : MonoBehaviour
     {
-        [Header("Debug")]
+        [Separator("Debug")]
+        [SerializeField]    MaterialTools.DebugView _debugViewMode = MaterialTools.DebugView.None;
         [SerializeField]
-        MaterialTools.DebugView _debugViewMode = MaterialTools.DebugView.None;
+        bool _useChessMode = false;  
 
-        [Header("Mesh Properties")]
+        [Separator("Mesh Properties")]
         [SerializeField,
             Range(1, 100)] float _meshX = 10;
         [SerializeField,
@@ -25,7 +27,7 @@ namespace MultiTerrain
         [SerializeField] float _tiling = 1;
         [SerializeField] int _meshResolution = 10;
 
-        [Header("Height Map")]
+        [Separator("Height Map")]
         [SerializeField,
             Range(0.1f, 20)] float _height = 1;
         [SerializeField] float _heightScale;
@@ -35,7 +37,7 @@ namespace MultiTerrain
         [SerializeField] float _heightLacunarity;
         [SerializeField] bool _normalize = false;
 
-        [Header("Terrain Segmentation")]
+        [Separator("Terrain Segmentation")]
         [SerializeField] uint _terrainSeed;
         [SerializeField,
             Range(0.05f, 0.2f)] float _seedPointDensity = 0.1f;
@@ -51,7 +53,7 @@ namespace MultiTerrain
         [SerializeField] TextureSizeEnum _textureSize = TextureSizeEnum._2k;
         [SerializeField, Range(0.0001f, 0.1f)] float _terrainInclusionThreshold = 0.01f;
         
-        [Header("Performance")]
+        [Separator("Performance")]
         [SerializeField, Range(1, 4)] int _numSamplingClasses = 4;
 
 
@@ -214,10 +216,13 @@ namespace MultiTerrain
                 out _terrainBuffer);
             
             MaterialTools.SetDebugMode(_debugViewMode, ref _materials);
+            if (_useChessMode)
+            {
+                MaterialTools.DebugSetChessTerrain(_terrainBuffer, _terrainMap, triangleGrid.NumX, triangleGrid.NumZ);
+            }
 
             GetComponent<Renderer>().SetSharedMaterials(_materials);                      
             
-
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             _onMeshFinished?.Invoke(args);
 
