@@ -66,7 +66,6 @@ Shader "Terrain/PatchShader"
             #pragma vertex vert
             #pragma fragment frag
 
-            // Shadows
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local _HEIGHTMAP
             #pragma shader_feature_local _SPECULARMAP            
@@ -79,7 +78,7 @@ Shader "Terrain/PatchShader"
             #pragma multi_compile _ _HEIGHTBASEDTRIBLEND
 
             // shows the terrain color on the mesh instead of sampling
-            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES _DEBUG_CHESS_TERRAIN
+            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES _DEBUG_SHOW_ALBEDO  
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -125,7 +124,7 @@ Shader "Terrain/PatchShader"
             {                
                 half3 triblend = saturate(pow(normalWS, 4));
                 triblend /= max(dot(triblend, half3(1,1,1)), 0.0001);
-                half4 weighting = half4(0.6,0.2,0.1,0);
+                half4 weighting = half4(1,1,1,1);
                 triblendMat = half4x3(triblend * weighting[0], triblend * weighting[1], triblend * weighting[2], triblend * weighting[3]);
             }
 
@@ -249,11 +248,8 @@ Shader "Terrain/PatchShader"
                 out float4 terrainWeightings) // debug
             {
                 surfaceData = (SurfaceData)0; 
-                int4 terrainIds = int4(1,2,3,0);
-                float4 weightings = float4(0.6,0.2,0.1,0);     
-                TerrainCombination combination = _TerrainMap[(int) round(fragIn.terrainCoordinateOS.y *_MeshX * _MeshResolution ) + (int) round(fragIn.terrainCoordinateOS.x)];
-                // combination.indices = terrainIds;
-                // combination.weightings = weightings;
+                 
+                TerrainCombination combination = _TerrainMap[(int) floor(fragIn.terrainCoordinateOS.y) * round(_MeshX * _MeshResolution)  + (int) round(fragIn.terrainCoordinateOS.x)];
                 terrainIndices = combination.indices;
                 terrainWeightings = combination.weightings;
                  
@@ -262,28 +258,30 @@ Shader "Terrain/PatchShader"
                 // half3x3 worldToTangentY = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.normalWS, fragIn.bitangentWS));
                 half3x3 worldToTangentZ = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.bitangentWS, fragIn.normalWS));
             
-                #ifdef _HEIGHTMAP
-                    heights = SampleHeightTriplanar(triUV, terrainIndices);                    
-                    #ifdef _HEIGHTBASEDTRIBLEND
-                        triblend = GenerateTerrainBlend(fragIn.normalWS, heights, terrainWeightings);
-                    #else
-                        GenerateTriblend(fragIn.normalWS, triblend);
-                    #endif
-                    
-                    half3 viewDirTSZ = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentZ);       
-                    // triUV.x -= viewDirTSZ.zy / viewDirTSZ.x * (heights.x * _HeightScale);
-                    // triUV.y -= viewDirTSZ.xz / viewDirTSZ.y * (heights.y * _HeightScale);
-                    // triUV.z -= viewDirTSZ.xy / viewDirTSZ.z * (heights.z * _HeightScale);
-
-                    // triUV.x -= ParallaxOffset1Step( heights.x, _HeightScale, half3(viewDirTSZ.zy, viewDirTSZ.x));
-                    // triUV.y -= ParallaxOffset1Step( heights.y, _HeightScale, half3(viewDirTSZ.xz, viewDirTSZ.y));                    
-                    // triUV.z -= ParallaxOffset1Step( heights.z, _HeightScale, viewDirTSZ);
-                    viewDirTS = half3(viewDirTSZ.zy, viewDirTSZ.x);  
-                #else 
-                    heights = 0; 
+                // #ifdef _HEIGHTMAP
+                
+                heights = SampleHeightTriplanar(triUV, terrainIndices);                    
+                #ifdef _HEIGHTBASEDTRIBLEND
+                    triblend = GenerateTerrainBlend(fragIn.normalWS, heights, terrainWeightings);
+                #else
                     GenerateTriblend(fragIn.normalWS, triblend);
-                    viewDirTS = 0;
-                #endif                        
+                #endif
+                
+                half3 viewDirTSZ = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentZ);       
+                // triUV.x -= viewDirTSZ.zy / viewDirTSZ.x * (heights.x * _HeightScale);
+                // triUV.y -= viewDirTSZ.xz / viewDirTSZ.y * (heights.y * _HeightScale);
+                // triUV.z -= viewDirTSZ.xy / viewDirTSZ.z * (heights.z * _HeightScale);
+
+                // triUV.x -= ParallaxOffset1Step( heights.x, _HeightScale, half3(viewDirTSZ.zy, viewDirTSZ.x));
+                // triUV.y -= ParallaxOffset1Step( heights.y, _HeightScale, half3(viewDirTSZ.xz, viewDirTSZ.y));                    
+                // triUV.z -= ParallaxOffset1Step( heights.z, _HeightScale, viewDirTSZ);
+                viewDirTS = half3(viewDirTSZ.zy, viewDirTSZ.x);  
+                // #else 
+                //     half3 testColor = half3(0.3,0.3,0);
+                //     heights = half4x3(testColor, testColor, testColor, testColor);
+                //     GenerateTriblend(fragIn.normalWS, triblend);
+                //     viewDirTS = 0;
+                // #endif                        
 
                 // albedo textures                    
                 surfaceData.albedo = SampleAlbedoTriplanar(triUV, triblend, terrainIndices);
@@ -371,22 +369,21 @@ Shader "Terrain/PatchShader"
                 #elif _DEBUG_SHOW_COORDINATES                    
                     half4 debugColor = half4( (int) round(fragIn.terrainCoordinateOS.x) / _MeshX, 0, (int) round(fragIn.terrainCoordinateOS.y) / _MeshZ , 0) / _MeshResolution;
                     return debugColor;
-                #elif _DEBUG_CHESS_TERRAIN
-                    
+                #elif _DEBUG_SHOW_ALBEDO
+                    return half4(surfaceData.albedo, 0);
                 #else
-                    // return half4(triblend[0], 0);
+                    // return half4(triblend[3], 0);
                     // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
                     // return half4(normalWS.xyz * 0.5 + 0.5, 0);
-                    // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);         
-                    // return half4(surfaceData.albedo, 0);
+                    // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
                     // return half4(surfaceData.occlusion, 0,0, 0);
                     // return half4(surfaceData.smoothness, 0,0, 0);
-                    // return half4(heights[0], 0);
+                    return half4(heights[0], 0);
                     // return half4(surfaceData.specular, 0);
                     // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
                     // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
                     // return half4(viewDirTS * 0.5 + 0.5, 0);
-                    return color;
+                    // return color;
                 #endif
 
             }

@@ -92,7 +92,7 @@ namespace MultiTerrain
 
         public Texture2D _heightMap;
         [Range(0.005f, 0.08f)]
-        public float _heightScale = 0.005f;
+        public float _parallaxHeightScale = 0.005f;
         [Range(0.01f, 1.00f)]
         public float _triplanarBlending = 0.01f;
 
