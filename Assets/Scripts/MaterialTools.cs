@@ -16,7 +16,8 @@ namespace MultiTerrain
             None,
             TerrainColors,
             Submeshes,
-            Coordinates
+            Coordinates,
+            Albedo
         }
 
         public static List<Material> SetProperties(
@@ -39,7 +40,7 @@ namespace MultiTerrain
             float[] bumpScale = new float[len];
 
             Texture2DArray height = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, true);
-            float[] heightScale = new float[len];
+            float[] parallaxHeightScale = new float[len];
             float[] blendingScale = new float[len];
 
             Texture2DArray occlusion = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, true);
@@ -71,7 +72,7 @@ namespace MultiTerrain
 
                 tilingOffset[i] = new Vector4(type._tiling.x, type._tiling.y, type._offset.x, type._offset.y);
                 bumpScale[i] = type._bumpScale;
-                heightScale[i] = type._heightScale;
+                parallaxHeightScale[i] = type._parallaxHeightScale;
                 blendingScale[i] = type._triplanarBlending;
                 occlusionStrength[i] = type._occlusionStrength;
                 specColorSmoothness[i] = new Vector4(type._specColor.r, type._specColor.b, type._specColor.g, type._smoothness);
@@ -88,7 +89,7 @@ namespace MultiTerrain
             Shader.SetGlobalFloatArray("_BumpScale", bumpScale);
 
             Shader.SetGlobalTexture("_HeightMap", height);
-            Shader.SetGlobalFloatArray("_HeightScale", heightScale);
+            Shader.SetGlobalFloatArray("_ParallaxHeightScale", parallaxHeightScale);
             Shader.SetGlobalFloatArray("_HeightmapBlending", blendingScale);
 
             Shader.SetGlobalTexture("_OcclusionMap", occlusion);
@@ -118,7 +119,7 @@ namespace MultiTerrain
                     material.SetKeyword(specularMapKeyword, false);
                 }
                 LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
-                material.SetKeyword(heightBasedBlendKeyword, false);
+                material.SetKeyword(heightBasedBlendKeyword, true);
 
                 material.SetInteger("_SamplingLevel", i);
                 materials.Add(material);
@@ -139,27 +140,38 @@ namespace MultiTerrain
                 LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
                 LocalKeyword debugShowSubmeshes = new(shader, "_DEBUG_SHOW_SUBMESHES");
                 LocalKeyword debugShowCoordinates = new(shader, "_DEBUG_SHOW_COORDINATES");
+                LocalKeyword debugShowAlbedo = new(shader, "_DEBUG_SHOW_ALBEDO");
                 switch (debugView)
                 {
                     case DebugView.None:
                         material.SetKeyword(debugShowTerrainColors, false);
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, false);
+                        material.SetKeyword(debugShowAlbedo, false);
                         break;
                     case DebugView.TerrainColors:
                         material.SetKeyword(debugShowTerrainColors, true);
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, false);
+                        material.SetKeyword(debugShowAlbedo, false);
                         break;
                     case DebugView.Submeshes:
                         material.SetKeyword(debugShowTerrainColors, false);
                         material.SetKeyword(debugShowSubmeshes, true);
                         material.SetKeyword(debugShowCoordinates, false);
+                        material.SetKeyword(debugShowAlbedo, false);
                         break;
                     case DebugView.Coordinates:
                         material.SetKeyword(debugShowTerrainColors, false);
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, true);
+                        material.SetKeyword(debugShowAlbedo, false);
+                        break;
+                    case DebugView.Albedo:
+                        material.SetKeyword(debugShowTerrainColors, false);
+                        material.SetKeyword(debugShowSubmeshes, false);
+                        material.SetKeyword(debugShowCoordinates, false);
+                        material.SetKeyword(debugShowAlbedo, true);
                         break;
 
                 }
@@ -169,7 +181,6 @@ namespace MultiTerrain
 
         public static void DebugSetChessTerrain(ComputeBuffer terrainBuffer, NativeArray<TerrainCombination> terrainMap, int width, int height)
         {
-
             for (int i = 0; i < width; i++)
             {
                 for (int j = 0; j < height; j++)
