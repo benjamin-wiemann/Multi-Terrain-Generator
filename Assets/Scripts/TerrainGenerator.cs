@@ -15,9 +15,9 @@ namespace MultiTerrain
     public class TerrainGenerator : MonoBehaviour
     {
         [Separator("Debug")]
-        [SerializeField]    MaterialTools.DebugView _debugViewMode = MaterialTools.DebugView.None;
-        [SerializeField]
-        bool _useChessMode = false;  
+        [SerializeField]   public MaterialTools.DebugView _debugViewMode = MaterialTools.DebugView.None;
+        [ConditionalField(nameof(_debugViewMode), false, MaterialTools.DebugView.TerrainColors)]
+        bool _useChessMode;  
 
         [Separator("Mesh Properties")]
         [SerializeField,
