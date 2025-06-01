@@ -78,7 +78,7 @@ Shader "Terrain/PatchShader"
             #pragma multi_compile _ _HEIGHTBASEDTRIBLEND
 
             // shows the terrain color on the mesh instead of sampling
-            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES _DEBUG_SHOW_ALBEDO  
+            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES _DEBUG_SHOW_ALBEDO _DEBUG_UV
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -120,24 +120,25 @@ Shader "Terrain/PatchShader"
             }
 
             // Simple triblend generation
-            void GenerateTriblend(half3 normalWS, out half4x3 triblendMat)
-            {                
+            half4x3 GenerateTriblend(half3 normalWS)
+            {              
                 half3 triblend = saturate(pow(normalWS, 4));
                 triblend /= max(dot(triblend, half3(1,1,1)), 0.0001);
                 half4 weighting = half4(1,1,1,1);
-                triblendMat = half4x3(triblend * weighting[0], triblend * weighting[1], triblend * weighting[2], triblend * weighting[3]);
+                return half4x3(triblend * weighting[0], triblend * weighting[1], triblend * weighting[2], triblend * weighting[3]);
             }
 
             // Triblend based on height information from height maps
             // https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#ce80
-            void GenerateHeightTriblend(half3 normalWS, half3 heights, out half3 triblend)
+            half4x3 GenerateHeightTriblend(half3 normalWS, half3 heights)
             {                
-                triblend = abs(normalWS.xyz);
+                half3 triblend = abs(normalWS.xyz);
                 triblend /= dot(triblend, float3(1,1,1));                
                 heights += (triblend * 3.0);
                 float heightStart = max(max(heights.x, heights.y), heights.z) - _HeightmapBlending[0];
                 float3 h = max(heights - heightStart.xxx, float3(0,0,0));
                 triblend = h / dot(h, float3(1,1,1));
+                return half4x3(triblend, triblend, triblend, triblend);
             }
 
             half4x3 GenerateTerrainBlend(half3 normalWS, half4x3 heights, half4 weightings)
@@ -240,12 +241,13 @@ Shader "Terrain/PatchShader"
             void InitializeSurfaceData(
                 FragmentInput fragIn, 
                 out SurfaceData surfaceData, 
-                out half3 normalWS,         // debug
-                out half4x3 triblend,       // debug
-                out half3 viewDirTS,        // debug
-                out half4x3 heights,        // debug
-                out int4 terrainIndices,    // debug
-                out float4 terrainWeightings) // debug
+                out half3 normalWS,             // debug
+                out half4x3 triblend,           // debug
+                out half3 viewDirTS,            // debug
+                out half4x3 heights,            // debug
+                out int4 terrainIndices,        // debug
+                out float4 terrainWeightings,   // debug
+                out TriplanarUV triUV)          // debug
             {
                 surfaceData = (SurfaceData)0; 
                  
@@ -253,7 +255,7 @@ Shader "Terrain/PatchShader"
                 terrainIndices = combination.indices;
                 terrainWeightings = combination.weightings;
                  
-                TriplanarUV triUV = GenerateTriplanarUV( fragIn, terrainIndices);
+                triUV = GenerateTriplanarUV( fragIn, terrainIndices);
                 // half3x3 worldToTangentX = transpose(float3x3(fragIn.normalWS, fragIn.bitangentWS, fragIn.tangentWS.xyz));
                 // half3x3 worldToTangentY = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.normalWS, fragIn.bitangentWS));
                 half3x3 worldToTangentZ = transpose(float3x3(fragIn.tangentWS.xyz, fragIn.bitangentWS, fragIn.normalWS));
@@ -262,9 +264,9 @@ Shader "Terrain/PatchShader"
                 
                 heights = SampleHeightTriplanar(triUV, terrainIndices);                    
                 #ifdef _HEIGHTBASEDTRIBLEND
-                    triblend = GenerateTerrainBlend(fragIn.normalWS, heights, terrainWeightings);
+                    triblend = GenerateHeightTriblend(fragIn.normalWS, heights[0]); // GenerateTerrainBlend(fragIn.normalWS, heights, terrainWeightings);
                 #else
-                    GenerateTriblend(fragIn.normalWS, triblend);
+                    triblend = GenerateTriblend(fragIn.normalWS);
                 #endif
                 
                 half3 viewDirTSZ = TransformWorldToTangentDir(GetWorldSpaceNormalizeViewDir(fragIn.posWS), worldToTangentZ);       
@@ -312,6 +314,7 @@ Shader "Terrain/PatchShader"
                 half4x3 heights;
                 int4 terrainIndices;
                 float4 terrainWeightings;
+                TriplanarUV triUV;
                 // Setup SurfaceData
 				InitializeSurfaceData(
                     fragIn, 
@@ -321,7 +324,8 @@ Shader "Terrain/PatchShader"
                     viewDirTS, 
                     heights,
                     terrainIndices,
-                    terrainWeightings);
+                    terrainWeightings,
+                    triUV);
 				// Setup InputData				
 				InitializeInputData(
                     fragIn, 
@@ -371,8 +375,15 @@ Shader "Terrain/PatchShader"
                     return debugColor;
                 #elif _DEBUG_SHOW_ALBEDO
                     return half4(surfaceData.albedo, 0);
+                #elif _DEBUG_UV
+                    int ind = terrainIndices[3];
+                    half4 colX = half4(triUV.x[ind].x, triUV.x[ind].y, 0, 0 );
+                    half4 colY = half4(triUV.y[ind].x, triUV.y[ind].y, 0, 0 );
+                    half4 colZ = half4(triUV.z[ind].x, triUV.z[ind].y, 0, 0 );
+                    half4 debugColor = (colY + half4(_MeshX, _MeshZ, 0, 0 )) % 1;
+                    return debugColor;
                 #else
-                    // return half4(triblend[3], 0);
+                    // return half4(triblend[0], 0);
                     // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
                     // return half4(normalWS.xyz * 0.5 + 0.5, 0);
                     // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);

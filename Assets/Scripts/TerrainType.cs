@@ -84,8 +84,8 @@ namespace MultiTerrain
 
         [Header("Surface Shader")]     
         public Texture2D _diffuse;
-        public Vector2 _tiling;
-        public Vector2 _offset;
+        public Vector2 _tiling = new Vector2(1,1);
+        public Vector2 _offset = new Vector2(0,0);
 
         public Texture2D _normalMap;
         public float _bumpScale = 1f;

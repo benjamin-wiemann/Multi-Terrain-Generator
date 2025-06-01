@@ -22,8 +22,9 @@ half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureInd
         if (i > _SamplingLevel) 
             break;
         half3 colX = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.x[i], textureIndices[i]).xyz;
-        half3 colY = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.y[i], textureIndices[i]).xyz;
-        half3 colZ = SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.z[i], textureIndices[i]).xyz;
+        half3 colY =  SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.y[i], textureIndices[i]).xyz;
+        half3 colZ =  SAMPLE_TEXTURE2D_ARRAY(_BaseMap, sampler_BaseMap, triUV.z[i], textureIndices[i]).xyz;
+        // albedoMat[i] = colX * triblend[i].x + colY * triblend[i].y + colZ * triblend[i].z;
         albedoMat[i] = colX * triblend[i].x + colY * triblend[i].y + colZ * triblend[i].z;
     }
     [unroll]
@@ -42,8 +43,6 @@ half4x3 SampleHeightTriplanar(TriplanarUV triUV, int4 textureIndices)
     {                            
         if (i > _SamplingLevel) 
             break;      
-        // half3 testColor = half3(i* 0.25,0.5,0); 
-        // heights[i] = testColor;  
         heights[i] = half3(
             SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.x[i], textureIndices[i]).r,
             SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.y[i], textureIndices[i]).r,

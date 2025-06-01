@@ -17,7 +17,8 @@ namespace MultiTerrain
             TerrainColors,
             Submeshes,
             Coordinates,
-            Albedo
+            Albedo,
+            UV
         }
 
         public static List<Material> SetProperties(
@@ -141,6 +142,7 @@ namespace MultiTerrain
                 LocalKeyword debugShowSubmeshes = new(shader, "_DEBUG_SHOW_SUBMESHES");
                 LocalKeyword debugShowCoordinates = new(shader, "_DEBUG_SHOW_COORDINATES");
                 LocalKeyword debugShowAlbedo = new(shader, "_DEBUG_SHOW_ALBEDO");
+                LocalKeyword debugShowUV = new(shader, "_DEBUG_UV");
                 switch (debugView)
                 {
                     case DebugView.None:
@@ -148,30 +150,42 @@ namespace MultiTerrain
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, false);
                         material.SetKeyword(debugShowAlbedo, false);
+                        material.SetKeyword(debugShowUV, false);
                         break;
                     case DebugView.TerrainColors:
                         material.SetKeyword(debugShowTerrainColors, true);
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, false);
                         material.SetKeyword(debugShowAlbedo, false);
+                        material.SetKeyword(debugShowUV, false);
                         break;
                     case DebugView.Submeshes:
                         material.SetKeyword(debugShowTerrainColors, false);
                         material.SetKeyword(debugShowSubmeshes, true);
                         material.SetKeyword(debugShowCoordinates, false);
                         material.SetKeyword(debugShowAlbedo, false);
+                        material.SetKeyword(debugShowUV, false);
                         break;
                     case DebugView.Coordinates:
                         material.SetKeyword(debugShowTerrainColors, false);
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, true);
                         material.SetKeyword(debugShowAlbedo, false);
+                        material.SetKeyword(debugShowUV, false);
                         break;
                     case DebugView.Albedo:
                         material.SetKeyword(debugShowTerrainColors, false);
                         material.SetKeyword(debugShowSubmeshes, false);
                         material.SetKeyword(debugShowCoordinates, false);
                         material.SetKeyword(debugShowAlbedo, true);
+                        material.SetKeyword(debugShowUV, false);
+                        break;
+                    case DebugView.UV:
+                        material.SetKeyword(debugShowTerrainColors, false);
+                        material.SetKeyword(debugShowSubmeshes, false);
+                        material.SetKeyword(debugShowCoordinates, false);
+                        material.SetKeyword(debugShowAlbedo, false);
+                        material.SetKeyword(debugShowUV, true);
                         break;
 
                 }
