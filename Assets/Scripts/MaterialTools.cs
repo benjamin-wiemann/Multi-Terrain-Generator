@@ -22,6 +22,7 @@ namespace MultiTerrain
         }
 
         public static List<Material> SetProperties(
+            Renderer renderer,
             Shader shader,
             List<TerrainType> terrainTypes,
             NativeArray<TerrainCombination> terrainMap,
@@ -32,9 +33,10 @@ namespace MultiTerrain
             int numSamplingClasses,
             out ComputeBuffer terrainBuffer)
         {
-            List<Material> materials = new(numSamplingClasses);
+            List<Material> materials = new(numSamplingClasses);;
+            renderer.GetSharedMaterials(materials);
             int len = terrainTypes.Count;
-            Texture2DArray diffuse = new((int)textureSize, (int)textureSize, len, TextureFormat.RGB24, true);
+            Texture2DArray diffuse = new((int)textureSize, (int)textureSize, len, TextureFormat.RGB24, false);
             Vector4[] tilingOffset = new Vector4[len];
 
             Texture2DArray bump = new((int)textureSize, (int)textureSize, len, TextureFormat.RGBA32, true);
@@ -83,8 +85,8 @@ namespace MultiTerrain
             Shader.SetGlobalFloat("_MeshX", meshX);
             Shader.SetGlobalFloat("_MeshZ", meshZ);
 
-            Shader.SetGlobalTexture("_BaseMap", diffuse);
-            Shader.SetGlobalVectorArray("_BaseMap_ST", tilingOffset);
+            Shader.SetGlobalTexture("_DiffuseMap", diffuse);
+            Shader.SetGlobalVectorArray("_DiffuseST", tilingOffset);
 
             Shader.SetGlobalTexture("_BumpMap", bump);
             Shader.SetGlobalFloatArray("_BumpScale", bumpScale);
@@ -132,63 +134,59 @@ namespace MultiTerrain
         }
 
         internal static void SetDebugMode(
-            DebugView debugView,
-            ref List<Material> materials)
+            DebugView debugView)
         {
-            foreach (Material material in materials)
+            
+            GlobalKeyword debugShowTerrainColors = GlobalKeyword.Create("_DEBUG_SHOW_TERRAIN_COLORS");
+            GlobalKeyword debugShowSubmeshes = GlobalKeyword.Create("_DEBUG_SHOW_SUBMESHES");
+            GlobalKeyword debugShowCoordinates = GlobalKeyword.Create("_DEBUG_SHOW_COORDINATES");
+            GlobalKeyword debugShowAlbedo = GlobalKeyword.Create("_DEBUG_SHOW_ALBEDO");
+            GlobalKeyword debugShowUV = GlobalKeyword.Create("_DEBUG_UV");
+            switch (debugView)
             {
-                var shader = material.shader;
-                LocalKeyword debugShowTerrainColors = new(shader, "_DEBUG_SHOW_TERRAIN_COLORS");
-                LocalKeyword debugShowSubmeshes = new(shader, "_DEBUG_SHOW_SUBMESHES");
-                LocalKeyword debugShowCoordinates = new(shader, "_DEBUG_SHOW_COORDINATES");
-                LocalKeyword debugShowAlbedo = new(shader, "_DEBUG_SHOW_ALBEDO");
-                LocalKeyword debugShowUV = new(shader, "_DEBUG_UV");
-                switch (debugView)
-                {
-                    case DebugView.None:
-                        material.SetKeyword(debugShowTerrainColors, false);
-                        material.SetKeyword(debugShowSubmeshes, false);
-                        material.SetKeyword(debugShowCoordinates, false);
-                        material.SetKeyword(debugShowAlbedo, false);
-                        material.SetKeyword(debugShowUV, false);
-                        break;
-                    case DebugView.TerrainColors:
-                        material.SetKeyword(debugShowTerrainColors, true);
-                        material.SetKeyword(debugShowSubmeshes, false);
-                        material.SetKeyword(debugShowCoordinates, false);
-                        material.SetKeyword(debugShowAlbedo, false);
-                        material.SetKeyword(debugShowUV, false);
-                        break;
-                    case DebugView.Submeshes:
-                        material.SetKeyword(debugShowTerrainColors, false);
-                        material.SetKeyword(debugShowSubmeshes, true);
-                        material.SetKeyword(debugShowCoordinates, false);
-                        material.SetKeyword(debugShowAlbedo, false);
-                        material.SetKeyword(debugShowUV, false);
-                        break;
-                    case DebugView.Coordinates:
-                        material.SetKeyword(debugShowTerrainColors, false);
-                        material.SetKeyword(debugShowSubmeshes, false);
-                        material.SetKeyword(debugShowCoordinates, true);
-                        material.SetKeyword(debugShowAlbedo, false);
-                        material.SetKeyword(debugShowUV, false);
-                        break;
-                    case DebugView.Albedo:
-                        material.SetKeyword(debugShowTerrainColors, false);
-                        material.SetKeyword(debugShowSubmeshes, false);
-                        material.SetKeyword(debugShowCoordinates, false);
-                        material.SetKeyword(debugShowAlbedo, true);
-                        material.SetKeyword(debugShowUV, false);
-                        break;
-                    case DebugView.UV:
-                        material.SetKeyword(debugShowTerrainColors, false);
-                        material.SetKeyword(debugShowSubmeshes, false);
-                        material.SetKeyword(debugShowCoordinates, false);
-                        material.SetKeyword(debugShowAlbedo, false);
-                        material.SetKeyword(debugShowUV, true);
-                        break;
+                case DebugView.None:
+                    Shader.SetKeyword(debugShowTerrainColors, false);
+                    Shader.SetKeyword(debugShowSubmeshes, false);
+                    Shader.SetKeyword(debugShowCoordinates, false);
+                    Shader.SetKeyword(debugShowAlbedo, false);
+                    Shader.SetKeyword(debugShowUV, false);
+                    break;
+                case DebugView.TerrainColors:
+                    Shader.SetKeyword(debugShowTerrainColors, true);
+                    Shader.SetKeyword(debugShowSubmeshes, false);
+                    Shader.SetKeyword(debugShowCoordinates, false);
+                    Shader.SetKeyword(debugShowAlbedo, false);
+                    Shader.SetKeyword(debugShowUV, false);
+                    break;
+                case DebugView.Submeshes:
+                    Shader.SetKeyword(debugShowTerrainColors, false);
+                    Shader.SetKeyword(debugShowSubmeshes, true);
+                    Shader.SetKeyword(debugShowCoordinates, false);
+                    Shader.SetKeyword(debugShowAlbedo, false);
+                    Shader.SetKeyword(debugShowUV, false);
+                    break;
+                case DebugView.Coordinates:
+                    Shader.SetKeyword(debugShowTerrainColors, false);
+                    Shader.SetKeyword(debugShowSubmeshes, false);
+                    Shader.SetKeyword(debugShowCoordinates, true);
+                    Shader.SetKeyword(debugShowAlbedo, false);
+                    Shader.SetKeyword(debugShowUV, false);
+                    break;
+                case DebugView.Albedo:
+                    Shader.SetKeyword(debugShowTerrainColors, false);
+                    Shader.SetKeyword(debugShowSubmeshes, false);
+                    Shader.SetKeyword(debugShowCoordinates, false);
+                    Shader.SetKeyword(debugShowAlbedo, true);
+                    Shader.SetKeyword(debugShowUV, false);
+                    break;
+                case DebugView.UV:
+                    Shader.SetKeyword(debugShowTerrainColors, false);
+                    Shader.SetKeyword(debugShowSubmeshes, false);
+                    Shader.SetKeyword(debugShowCoordinates, false);
+                    Shader.SetKeyword(debugShowAlbedo, false);
+                    Shader.SetKeyword(debugShowUV, true);
+                    break;
 
-                }
             }
 
         }
