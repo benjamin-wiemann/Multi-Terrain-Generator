@@ -203,8 +203,9 @@ namespace MultiTerrain
                 meshData);
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh); 
 
-            _terrainBuffer?.Release();
+            // _terrainBuffer?.Release();
             _materials = MaterialTools.SetProperties(
+                GetComponent<Renderer>(),
                 _terrainShader,
                 _terrainTypes,
                 _terrainMap,
@@ -215,13 +216,13 @@ namespace MultiTerrain
                 _numSamplingClasses,
                 out _terrainBuffer);
             
-            MaterialTools.SetDebugMode(_debugViewMode, ref _materials);
+            MaterialTools.SetDebugMode(_debugViewMode);
             if (_useChessMode)
             {
                 MaterialTools.DebugSetChessTerrain(_terrainBuffer, _terrainMap, triangleGrid.NumX, triangleGrid.NumZ);
             }
 
-            GetComponent<Renderer>().SetSharedMaterials(_materials);                      
+            // GetComponent<Renderer>().SetSharedMaterials(_materials);                      
             
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             _onMeshFinished?.Invoke(args);
@@ -281,10 +282,8 @@ namespace MultiTerrain
                     type._name = type._name.Substring(0, 125);
                 }
             }
-            if( _materials != null)
-            {
-                MaterialTools.SetDebugMode(_debugViewMode, ref _materials);
-            }
+            MaterialTools.SetDebugMode(_debugViewMode);
+            
         }
 
         void OnDestroy()
