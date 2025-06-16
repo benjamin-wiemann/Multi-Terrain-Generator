@@ -4,6 +4,12 @@ Shader "Terrain/PatchShader"
     Properties
     {
         _SamplingLevel ("Sampling Level", Integer) = 3
+        _DiffuseMap ("Diffuse", 2DArray) = "" {}
+        _NormalMap ("Normal", 2DArray) = "" {}
+        _SpecularMap ("Specular", 2DArray) = "" {}
+        _SmoothnessMap ("Smoothness", 2DArray) = "" {}
+        _OcclusionMap ("Occlusion", 2DArray) = "" {}
+        _HeightMap ("Height", 2DArray) = "" {}
     }
     SubShader
     {
@@ -38,11 +44,11 @@ Shader "Terrain/PatchShader"
         float4 _DebugTerrainColor[MAX_NUMBER_MATERIALS];
 
         TEXTURE2D_ARRAY(_DiffuseMap); 	    SAMPLER(sampler_DiffuseMap);
-        TEXTURE2D_ARRAY(_BumpMap); 	    SAMPLER(sampler_BumpMap);
-        TEXTURE2D_ARRAY(_SpecularMap); 	SAMPLER(sampler_SpecularMap);
-        TEXTURE2D_ARRAY(_SmoothnessMap); SAMPLER(sampler_SmoothnessMap);
+        TEXTURE2D_ARRAY(_NormalMap); 	    SAMPLER(sampler_NormalMap);
+        TEXTURE2D_ARRAY(_SpecularMap); 	    SAMPLER(sampler_SpecularMap);
+        TEXTURE2D_ARRAY(_SmoothnessMap);    SAMPLER(sampler_SmoothnessMap);
         TEXTURE2D_ARRAY(_OcclusionMap); 	SAMPLER(sampler_OcclusionMap);
-        TEXTURE2D_ARRAY(_HeightMap);     SAMPLER(sampler_HeightMap);
+        TEXTURE2D_ARRAY(_HeightMap);        SAMPLER(sampler_HeightMap);
 
 		ENDHLSL
 
@@ -68,7 +74,6 @@ Shader "Terrain/PatchShader"
             #pragma vertex vert
             #pragma fragment frag
 
-            #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local _HEIGHTMAP
             #pragma shader_feature_local _SPECULARMAP            
             // flip UVs horizontally to correct for back side projection
@@ -304,107 +309,107 @@ Shader "Terrain/PatchShader"
             
             }
 
-            half4 frag (FragmentInput fragIn) : SV_Target
-            {  
-                return SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, fragIn.posWS.xz, 0);
-            }
-
             // half4 frag (FragmentInput fragIn) : SV_Target
-            // {                 
-	            
-			// 	SurfaceData surfaceData;
-            //     InputData inputData;
-            //     half3 normalWS;
-            //     half4x3 triblend;
-            //     half3 viewDirTS;
-            //     half4x3 heights;
-            //     int4 terrainIndices;
-            //     float4 terrainWeightings;
-            //     TriplanarUV triUV;
-            //     // Setup SurfaceData
-			// 	InitializeSurfaceData(
-            //         fragIn, 
-            //         surfaceData, 
-            //         normalWS, 
-            //         triblend, 
-            //         viewDirTS, 
-            //         heights,
-            //         terrainIndices,
-            //         terrainWeightings,
-            //         triUV);
-			// 	// Setup InputData				
-			// 	InitializeInputData(
-            //         fragIn, 
-            //         normalWS, 
-            //         inputData);
-
-			// 	half4 color = UniversalFragmentPBR(inputData, surfaceData);
-            //     // half4 color = UniversalFragmentBlinnPhong(inputData, surfaceData);
-
-			// 	// Fog
-			// 	color.rgb = MixFog(color.rgb, inputData.fogCoord);
-				
-            //     #ifdef _DEBUG_SHOW_TERRAIN_COLORS
-            //         half4 debugColor = 0;
-            //         int i;
-            //         [unroll]
-            //         for( i = 0; i < 3; i++)
-            //             debugColor[i] = dot(half4(
-            //                 _DebugTerrainColor[terrainIndices[0]][i], 
-            //                 _DebugTerrainColor[terrainIndices[1]][i],
-            //                 _DebugTerrainColor[terrainIndices[2]][i],
-            //                 _DebugTerrainColor[terrainIndices[3]][i]),
-            //                 terrainWeightings);                                
-            //         return debugColor;
-            //     #elif _DEBUG_SHOW_SUBMESHES
-            //         half4 submeshTest = 0;
-            //         [unroll]
-            //         for( int i = 0; i < 4; i++)
-            //         {
-            //             if(i == _SamplingLevel )
-            //             {
-            //                 if(i == 3)
-            //                 {
-            //                     submeshTest[0] = 1;
-            //                     submeshTest[1] = 1;
-            //                 }
-            //                 else
-            //                 {
-            //                     submeshTest[i] = 1;    
-            //                 }                            
-            //                 break;
-            //             }                    
-            //         }                
-            //         return submeshTest;
-            //     #elif _DEBUG_SHOW_COORDINATES                    
-            //         half4 debugColor = half4( (int) round(fragIn.terrainCoordinateOS.x) / _MeshX, 0, (int) round(fragIn.terrainCoordinateOS.y) / _MeshZ , 0) / _MeshResolution;
-            //         return debugColor;
-            //     #elif _DEBUG_SHOW_ALBEDO
-            //         // return half4(surfaceData.albedo, 0);
-            //         return SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, fragIn.posWS.xz, 0);
-            //     #elif _DEBUG_UV
-            //         int ind = terrainIndices[0];
-            //         half4 colX = half4(triUV.x[ind].x, triUV.x[ind].y, 0, 0 );
-            //         half4 colY = half4(triUV.y[ind].x, triUV.y[ind].y, 0, 0 );
-            //         half4 colZ = half4(triUV.z[ind].x, triUV.z[ind].y, 0, 0 );
-            //         half4 debugColor = (colY + half4(_MeshX, _MeshZ, 0, 0 )) % 1;
-            //         return debugColor;
-            //     #else
-            //         // return half4(triblend[0], 0);
-            //         // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
-            //         // return half4(normalWS.xyz * 0.5 + 0.5, 0);
-            //         // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
-            //         // return half4(surfaceData.occlusion, 0,0, 0);
-            //         // return half4(surfaceData.smoothness, 0,0, 0);
-            //         return half4(heights[0], 0);
-            //         // return half4(surfaceData.specular, 0);
-            //         // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
-            //         // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
-            //         // return half4(viewDirTS * 0.5 + 0.5, 0);
-            //         // return color;
-            //     #endif
-
+            // {  
+            //     return SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, fragIn.posWS.xz * 0.2, 0);
             // }
+
+            half4 frag (FragmentInput fragIn) : SV_Target
+            {                 
+	            
+				SurfaceData surfaceData;
+                InputData inputData;
+                half3 normalWS;
+                half4x3 triblend;
+                half3 viewDirTS;
+                half4x3 heights;
+                int4 terrainIndices;
+                float4 terrainWeightings;
+                TriplanarUV triUV;
+                // Setup SurfaceData
+				InitializeSurfaceData(
+                    fragIn, 
+                    surfaceData, 
+                    normalWS, 
+                    triblend, 
+                    viewDirTS, 
+                    heights,
+                    terrainIndices,
+                    terrainWeightings,
+                    triUV);
+				// Setup InputData				
+				InitializeInputData(
+                    fragIn, 
+                    normalWS, 
+                    inputData);
+
+				half4 color = UniversalFragmentPBR(inputData, surfaceData);
+                // half4 color = UniversalFragmentBlinnPhong(inputData, surfaceData);
+
+				// Fog
+				color.rgb = MixFog(color.rgb, inputData.fogCoord);
+				
+                #ifdef _DEBUG_SHOW_TERRAIN_COLORS
+                    half4 debugColor = 0;
+                    int i;
+                    [unroll]
+                    for( i = 0; i < 3; i++)
+                        debugColor[i] = dot(half4(
+                            _DebugTerrainColor[terrainIndices[0]][i], 
+                            _DebugTerrainColor[terrainIndices[1]][i],
+                            _DebugTerrainColor[terrainIndices[2]][i],
+                            _DebugTerrainColor[terrainIndices[3]][i]),
+                            terrainWeightings);                                
+                    return debugColor;
+                #elif _DEBUG_SHOW_SUBMESHES
+                    half4 submeshTest = 0;
+                    [unroll]
+                    for( int i = 0; i < 4; i++)
+                    {
+                        if(i == _SamplingLevel )
+                        {
+                            if(i == 3)
+                            {
+                                submeshTest[0] = 1;
+                                submeshTest[1] = 1;
+                            }
+                            else
+                            {
+                                submeshTest[i] = 1;    
+                            }                            
+                            break;
+                        }                    
+                    }                
+                    return submeshTest;
+                #elif _DEBUG_SHOW_COORDINATES                    
+                    half4 debugColor = half4( (int) round(fragIn.terrainCoordinateOS.x) / _MeshX, 0, (int) round(fragIn.terrainCoordinateOS.y) / _MeshZ , 0) / _MeshResolution;
+                    return debugColor;
+                #elif _DEBUG_SHOW_ALBEDO
+                    return half4(surfaceData.albedo, 0);
+                    // return SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, fragIn.posWS.xz, 0);
+                #elif _DEBUG_UV
+                    int ind = terrainIndices[0];
+                    half4 colX = half4(triUV.x[ind].x, triUV.x[ind].y, 0, 0 );
+                    half4 colY = half4(triUV.y[ind].x, triUV.y[ind].y, 0, 0 );
+                    half4 colZ = half4(triUV.z[ind].x, triUV.z[ind].y, 0, 0 );
+                    half4 debugColor = (colY + half4(_MeshX, _MeshZ, 0, 0 )) % 1;
+                    return debugColor;
+                #else
+                    // return half4(triblend[0], 0);
+                    // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
+                    // return half4(normalWS.xyz * 0.5 + 0.5, 0);
+                    // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
+                    // return half4(surfaceData.occlusion, 0,0, 0);
+                    // return half4(surfaceData.smoothness, 0,0, 0);
+                    // return half4(heights[0], 0);
+                    // return half4(surfaceData.specular, 0);
+                    // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                
+                    // return half4(inputData.viewDirectionWS.xyz * 0.5 + 0.5, 0);
+                    // return half4(viewDirTS * 0.5 + 0.5, 0);
+                    return color;
+                #endif
+
+            }
             ENDHLSL
         }
 

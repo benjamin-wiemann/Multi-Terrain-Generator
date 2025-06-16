@@ -1,66 +1,10 @@
-﻿using Unity.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 using Unity.Mathematics;
-using MultiTerrain.Helper;
 
 namespace MultiTerrain
 {
 
-    /// <summary>
-    /// Terrain type struct to be used with Burst and Jobs 
-    /// </summary>
-    [System.Serializable]
-    public struct TerrainTypeStruct
-    {
-        public FixedString128Bytes Name { get; }
-        public float3 Color { get; }
-        public uint NumTrianglePairs { get; }
-        public float Height { get; }
-        public float NoiseScale { get; }
-        public int NumOctaves { get; }
-        public float Persistance { get; }
-        public float Lacunarity { get; }
-        public float HeightOffset { get; }
-
-        public TerrainTypeStruct(
-            string name, 
-            float3 color,
-            float height = 1,
-            float noiseScale = 1,
-            int numOctaves = 1,
-            float persistance = 1,
-            float lacunarity = 1,
-            float heightOffset = 0,
-            uint numTrianglePairs = 0
-            )
-        {
-            Name = new FixedString128Bytes(name);
-            Color = color;
-            NumTrianglePairs = numTrianglePairs;
-            Height      = height;
-            NoiseScale = noiseScale;
-            NumOctaves = numOctaves; 
-            Persistance = persistance;
-            Lacunarity = lacunarity;
-            HeightOffset = heightOffset;
-        }
-
-        public static TerrainTypeStruct Convert(TerrainType type)
-        {
-            return new TerrainTypeStruct(
-                type._name, 
-                new float3(type._color.r, type._color.g, type._color.b),
-                type._height,
-                type._noiseScale,
-                type._numOctaves,
-                type._persistance,
-                type._lacunarity,
-                type._heightOffset
-                );
-        }
-        
-    }
 
     /// <summary>
     /// Standard terrain type modifiable in inspector
@@ -70,22 +14,22 @@ namespace MultiTerrain
     {
         public bool _active = true;
         public string _name;
-        public Color _color;   
-        
+        public Color _color;
+
         [Header("Height Map")]
-        [Range(0.1f, 20)] 
+        [Range(0.1f, 20)]
         public float _height = 1;
         public float _noiseScale;
         public int _numOctaves;
-        [Range(0, 1f)] 
+        [Range(0, 1f)]
         public float _persistance;
         public float _lacunarity;
         public float _heightOffset;
 
-        [Header("Surface Shader")]     
+        [Header("Surface Shader")]
         public Texture2D _diffuse;
-        public Vector2 _tiling = new Vector2(1,1);
-        public Vector2 _offset = new Vector2(0,0);
+        public Vector2 _tiling = new Vector2(1, 1);
+        public Vector2 _offset = new Vector2(0, 0);
 
         public Texture2D _normalMap;
         public float _bumpScale = 1f;
@@ -100,11 +44,25 @@ namespace MultiTerrain
         public float _occlusionStrength = 0.5f;
 
         public Texture2D _smoothnessMap;
-        [Range(0f,1f)]
+        [Range(0f, 1f)]
         public float _smoothness = 0.3f;
 
         public Texture2D _specularMap;
         public Color _specColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+        
+        public static TerrainTypeStruct Convert(TerrainType type)
+        {
+            return new TerrainTypeStruct(
+                type._name, 
+                new float3(type._color.r, type._color.g, type._color.b),
+                type._height,
+                type._noiseScale,
+                type._numOctaves,
+                type._persistance,
+                type._lacunarity,
+                type._heightOffset
+                );
+        }
         
     }
 }

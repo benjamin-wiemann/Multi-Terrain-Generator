@@ -115,23 +115,23 @@ namespace MultiTerrain
             NativeArray<int2> coordinates = new(
                 triangleGrid.NumX * triangleGrid.NumZ,
                 Allocator.Persistent);
-            int numTerrainTypes = 0;
+            int numActiveTerrainTypes = 0;
             foreach( TerrainType type in _terrainTypes )
             {
                 if(type._active)
                 {
-                    numTerrainTypes++;
+                    numActiveTerrainTypes++;
                 }
             }
             int numSubmeshes = 4;            
             NativeArray<int> submeshCounters = new (numSubmeshes, Allocator.Persistent);
-            NativeList<TerrainTypeStruct> types = new(numTerrainTypes, Allocator.Persistent);
+            NativeList<TerrainTypeStruct> types = new(numActiveTerrainTypes, Allocator.Persistent);
             
             foreach (TerrainType terrainType in _terrainTypes)
             {
                 if (terrainType._active)
                 {                    
-                    types.Add(TerrainTypeStruct.Convert(terrainType));                    
+                    types.Add(TerrainType.Convert(terrainType));                    
                 }
             }
                        
@@ -203,27 +203,27 @@ namespace MultiTerrain
                 meshData);
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, _mesh); 
 
-            // _terrainBuffer?.Release();
-            _materials = MaterialTools.SetProperties(
+            _terrainBuffer?.Release();
+            List<Material> materials = MaterialTools.SetProperties(
                 GetComponent<Renderer>(),
                 _terrainShader,
                 _terrainTypes,
+                numActiveTerrainTypes,
                 _terrainMap,
-                _meshResolution, 
-                _meshX, 
-                _meshZ, 
-                _textureSize, 
+                _meshResolution,
+                _meshX,
+                _meshZ,
+                _textureSize,
                 _numSamplingClasses,
                 out _terrainBuffer);
             
             MaterialTools.SetDebugMode(_debugViewMode);
-            if (_useChessMode)
-            {
-                MaterialTools.DebugSetChessTerrain(_terrainBuffer, _terrainMap, triangleGrid.NumX, triangleGrid.NumZ);
-            }
+            // if (_useChessMode)
+            // {
+            //     MaterialTools.DebugSetChessTerrain(_terrainBuffer, _terrainMap, triangleGrid.NumX, triangleGrid.NumZ);
+            // }
 
-            // GetComponent<Renderer>().SetSharedMaterials(_materials);                      
-            
+            GetComponent<Renderer>().SetSharedMaterials(materials);    
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
             _onMeshFinished?.Invoke(args);
 
@@ -239,6 +239,7 @@ namespace MultiTerrain
 
         void OnValidate()
         {
+            
             if (_meshX < 1)
             {
                 _meshX = 1;

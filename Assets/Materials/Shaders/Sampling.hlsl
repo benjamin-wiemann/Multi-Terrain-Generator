@@ -61,9 +61,9 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
         if (i > _SamplingLevel) 
             break;
         // tangent space normal maps
-        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x[i], textureIndices[i]));
-        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x[i], textureIndices[i]));
-        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_BumpMap, sampler_BumpMap, triUV.x[i], textureIndices[i]));
+        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
+        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
+        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
         half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
 
         // flip normal maps' x axis to account for flipped UVs
