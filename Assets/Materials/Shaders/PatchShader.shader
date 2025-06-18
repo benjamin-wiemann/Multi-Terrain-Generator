@@ -8,8 +8,8 @@ Shader "Terrain/PatchShader"
         _NormalMap ("Normal", 2DArray) = "" {}
         _SpecularMap ("Specular", 2DArray) = "" {}
         _SmoothnessMap ("Smoothness", 2DArray) = "" {}
-        _OcclusionMap ("Occlusion", 2DArray) = "" {}
-        _HeightMap ("Height", 2DArray) = "" {}
+        // _OcclusionMap ("Occlusion", 2DArray) = "" {}
+        // _HeightMap ("Height", 2DArray) = "" {}
     }
     SubShader
     {

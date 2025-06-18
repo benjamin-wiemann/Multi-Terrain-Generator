@@ -164,7 +164,7 @@ public class TestSuite
     [Test]
     public void TopKSorterGetsCorrectTopFour()
     {
-        Int9 ids = new Int9(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        Int9 ids = new Int9(1, 2, 3, 4, 5, 6, 7, 8, 9, 9);
         Float9 values = new Float9( 0.4f, 0.3f, 0.1f, 0.8f, 0.9f, 0.2f, 0.7f, 0f, 0.5f);
         TopKSorter sorter = new(ids, values);
         int4 topIds;
@@ -177,6 +177,26 @@ public class TestSuite
         Assert.That(topValues[1], Is.EqualTo(0.8f));
         Assert.That(topValues[2], Is.EqualTo(0.7f));
         Assert.That(topValues[3], Is.EqualTo(0.5f));
+
+    }
+
+    [Test]
+    public void TopKSorterGetsCorrectTopThree()
+    {
+        Int9 ids = new Int9(0, 2, 1, 0, 0, 0, 0, 0, 0, 3);
+        Float9 values = new Float9(0, 0, 1, 0, 0, 0, 0, 0, 0);
+        TopKSorter sorter = new(ids, values);
+        int4 topIds;
+        float4 topValues;
+        int numAboveThreshold;
+        int k = 3;
+        float threshold = 0.0025f;
+        sorter.GetKHighestValues(k, threshold, out topIds, out topValues, out numAboveThreshold);
+        Assert.That(topValues[0], Is.EqualTo(1));
+        Assert.That(topValues[1], Is.EqualTo(0));
+        Assert.That(topIds[0], Is.EqualTo(1));
+        Assert.That(topIds[1], Is.Not.EqualTo(1));
+        Assert.That(numAboveThreshold, Is.EqualTo(1));
 
     }
 

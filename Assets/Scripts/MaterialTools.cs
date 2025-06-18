@@ -40,17 +40,17 @@ namespace MultiTerrain
             Texture2DArray diffuse = new((int)textureSize, (int)textureSize, len, TextureFormat.RGB24, mipCount, false);
             Vector4[] tilingOffset = new Vector4[len];
 
-            Texture2DArray normal = new((int)textureSize, (int)textureSize, len, TextureFormat.RGBA32, mipCount, false);
+            Texture2DArray normal = new((int)textureSize, (int)textureSize, len, TextureFormat.RGBA32, mipCount, true);
             float[] bumpScale = new float[len];
 
-            Texture2DArray height = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, false);
+            Texture2DArray height = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, true);
             float[] parallaxHeightScale = new float[len];
             float[] blendingScale = new float[len];
 
-            Texture2DArray occlusion = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, false);
+            Texture2DArray occlusion = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, true);
             float[] occlusionStrength = new float[len];
 
-            Texture2DArray smoothness = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, false);
+            Texture2DArray smoothness = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, true);
             Texture2DArray specular = new((int)textureSize, (int)textureSize, len, TextureFormat.RGB24, mipCount, false);
             Vector4[] specColorSmoothness = new Vector4[len];
             bool specularMissing = false;

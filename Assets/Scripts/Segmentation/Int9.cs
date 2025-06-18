@@ -23,7 +23,7 @@ namespace MultiTerrain.Segmentation
         public static int SizeInBytes { get=> sizeof(int) * 9 + sizeof(uint); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Int9(int a, int b, int c, int d, int e, int f, int g, int h, int i)
+        public Int9(int a, int b, int c, int d, int e, int f, int g, int h, int i, uint count)
         {
             this.a = a;
             this.b = b;
@@ -34,7 +34,7 @@ namespace MultiTerrain.Segmentation
             this.g = g;
             this.h = h;
             this.i = i;
-            _pointer = 9;
+            _pointer = count;
         }
 
         public unsafe int this[uint index]

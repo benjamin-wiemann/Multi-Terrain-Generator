@@ -1,8 +1,7 @@
 using System;
-using Unity.Collections;
 using Unity.Mathematics;
+using static Unity.Mathematics.math;
 using Unity.Burst;
-using System.Threading;
 using MultiTerrain.Segmentation;
 
 namespace MultiTerrain.Helper
@@ -79,7 +78,7 @@ namespace MultiTerrain.Helper
         // Builds a max heap
         private void BuildMaxHeap()
         {
-            for (int i = ((int) _ids.Length / 2) - 1; i >= 0; i--)
+            for (int i = (int) ceil((float) _ids.Length / 2f) - 1; i >= 0; i--)
             {
                 HeapifyDown((uint) i, _count);
             }

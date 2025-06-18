@@ -35,7 +35,7 @@ namespace MultiTerrain
             {
                 int* arrayData = (int*)NativeArrayUnsafeUtility.GetUnsafePtr(integers);
                 if (index > integers.Length - 1)
-                    throw new IndexOutOfRangeException();
+                    throw new IndexOutOfRangeException(String.Format("Index {0} is invald for an array length of {1}", index, integers.Length));
                 var idx = Interlocked.Increment(ref *(arrayData + index));
                 return idx;
             }
