@@ -13,5 +13,7 @@ Build/
 UserSettings
 **/InitTestScene*
 Assets/Materials/Textures/
+Assets/Scenes/
+Assets/Timelines/
 /GeneratedTextures
 /Recordings
