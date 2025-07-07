@@ -18,7 +18,8 @@ namespace MultiTerrain
             Submeshes,
             Coordinates,
             Albedo,
-            UV
+            UV,
+            Triblend
         }
 
         public static List<Material> SetProperties(
@@ -156,6 +157,7 @@ namespace MultiTerrain
             GlobalKeyword debugShowCoordinates = GlobalKeyword.Create("_DEBUG_SHOW_COORDINATES");
             GlobalKeyword debugShowAlbedo = GlobalKeyword.Create("_DEBUG_SHOW_ALBEDO");
             GlobalKeyword debugShowUV = GlobalKeyword.Create("_DEBUG_UV");
+            GlobalKeyword debugShowTriblend = GlobalKeyword.Create("_DEBUG_TRIBLEND");
             switch (debugView)
             {
                 case DebugView.None:
@@ -164,6 +166,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowCoordinates, false);
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
+                    Shader.SetKeyword(debugShowTriblend, false);
                     break;
                 case DebugView.TerrainColors:
                     Shader.SetKeyword(debugShowTerrainColors, true);
@@ -171,6 +174,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowCoordinates, false);
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
+                    Shader.SetKeyword(debugShowTriblend, false);
                     break;
                 case DebugView.Submeshes:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -178,6 +182,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowCoordinates, false);
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
+                    Shader.SetKeyword(debugShowTriblend, false);
                     break;
                 case DebugView.Coordinates:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -185,6 +190,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowCoordinates, true);
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
+                    Shader.SetKeyword(debugShowTriblend, false);
                     break;
                 case DebugView.Albedo:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -192,6 +198,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowCoordinates, false);
                     Shader.SetKeyword(debugShowAlbedo, true);
                     Shader.SetKeyword(debugShowUV, false);
+                    Shader.SetKeyword(debugShowTriblend, false);
                     break;
                 case DebugView.UV:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -199,6 +206,15 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowCoordinates, false);
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, true);
+                    Shader.SetKeyword(debugShowTriblend, false);
+                    break;
+                case DebugView.Triblend:
+                    Shader.SetKeyword(debugShowTerrainColors, false);
+                    Shader.SetKeyword(debugShowSubmeshes, false);
+                    Shader.SetKeyword(debugShowCoordinates, false);
+                    Shader.SetKeyword(debugShowAlbedo, false);
+                    Shader.SetKeyword(debugShowUV, false);
+                    Shader.SetKeyword(debugShowTriblend, true);
                     break;
 
             }

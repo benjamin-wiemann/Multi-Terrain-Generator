@@ -21,9 +21,9 @@ half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureInd
     {                       
         if (i > _SamplingLevel) 
             break;
-        half3 colX =    SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.x[i], textureIndices[i]).xyz;
-        half3 colY =    SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.y[i], textureIndices[i]).xyz;
-        half3 colZ =    SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.z[i], textureIndices[i]).xyz;
+        half3 colX = SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.x[i], textureIndices[i]).xyz;
+        half3 colY = SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.y[i], textureIndices[i]).xyz;
+        half3 colZ = SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.z[i], textureIndices[i]).xyz;
         albedoMat[i] = colX * triblend[i].x + colY * triblend[i].y + colZ * triblend[i].z;
     }
     [unroll]
