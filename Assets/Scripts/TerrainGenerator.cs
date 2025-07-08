@@ -218,10 +218,10 @@ namespace MultiTerrain
                 out _terrainBuffer);
             
             MaterialTools.SetDebugMode(_debugViewMode);
-            // if (_useChessMode)
-            // {
-            //     MaterialTools.DebugSetChessTerrain(_terrainBuffer, _terrainMap, triangleGrid.NumX, triangleGrid.NumZ);
-            // }
+            if (_useChessMode)
+            {
+                MaterialTools.DebugSetChessTerrain(_terrainBuffer, _terrainMap, triangleGrid.NumX, triangleGrid.NumZ);
+            }
 
             GetComponent<Renderer>().SetSharedMaterials(materials);    
             Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
