@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using Unity.Mathematics;
+using MultiTerrain.Helper;
 
 namespace MultiTerrain
 {

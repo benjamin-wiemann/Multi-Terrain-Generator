@@ -179,7 +179,7 @@ Shader "Terrain/PatchShader"
 
             // Generates triplanar UV according to 
             // https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a#ce80
-            // but for up to 
+            // but for up to 4 different textures
             TriplanarUV GenerateTriplanarUV(FragmentInput fragIn, int4 textureIndices)
             {             
                 TriplanarUV triUV = (TriplanarUV) 0;  
