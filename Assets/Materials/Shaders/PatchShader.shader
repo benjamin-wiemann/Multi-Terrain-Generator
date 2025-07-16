@@ -341,7 +341,6 @@ Shader "Terrain/PatchShader"
                     inputData);
 
 				half4 color = UniversalFragmentPBR(inputData, surfaceData);
-                // half4 color = UniversalFragmentBlinnPhong(inputData, surfaceData);
 
 				// Fog
 				color.rgb = MixFog(color.rgb, inputData.fogCoord);
@@ -391,7 +390,7 @@ Shader "Terrain/PatchShader"
                     half4 debugColor = (colY + half4(_MeshX, _MeshZ, 0, 0 )) % 1;
                     return debugColor;
                 #elif _DEBUG_TRIBLEND
-                    return half4(triblend[0] + triblend[1] + triblend[2], 0);
+                    return half4(triblend[0] + triblend[1] + triblend[2] + triblend[3], 0);
                 #else
                     
                     // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
@@ -411,33 +410,33 @@ Shader "Terrain/PatchShader"
             ENDHLSL
         }
 
-        // Pass {
-		// 	Name "ShadowCaster"
-		// 	Tags { "LightMode"="ShadowCaster" }
+        Pass {
+			Name "ShadowCaster"
+			Tags { "LightMode"="ShadowCaster" }
 
-		// 	ZWrite On
-		// 	ZTest LEqual
+			ZWrite On
+			ZTest LEqual
 
-		// 	HLSLPROGRAM
-		// 	#pragma vertex ShadowPassVertex
-		// 	#pragma fragment ShadowPassFragment
+			HLSLPROGRAM
+			#pragma vertex ShadowPassVertex
+			#pragma fragment ShadowPassFragment
 
-		// 	// Material Keywords
-		// 	#pragma shader_feature_local_fragment _ALPHATEST_ON
-		// 	#pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+			// Material Keywords
+			#pragma shader_feature_local_fragment _ALPHATEST_ON
+			#pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
 
-		// 	// GPU Instancing
-		// 	#pragma multi_compile_instancing
-		// 	//#pragma multi_compile _ DOTS_INSTANCING_ON
+			// GPU Instancing
+			#pragma multi_compile_instancing
+			//#pragma multi_compile _ DOTS_INSTANCING_ON
 
-		// 	// Universal Pipeline Keywords
-		// 	// (v11+) This is used during shadow map generation to differentiate between directional and punctual (point/spot) light shadows, as they use different formulas to apply Normal Bias
-		// 	#pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+			// Universal Pipeline Keywords
+			// (v11+) This is used during shadow map generation to differentiate between directional and punctual (point/spot) light shadows, as they use different formulas to apply Normal Bias
+			#pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-		// 	#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
-		// 	#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
-		// 	#include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
-        //     ENDHLSL
-        // }
+			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
+			#include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
+            ENDHLSL
+        }
     }
 }

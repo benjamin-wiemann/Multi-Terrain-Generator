@@ -61,9 +61,9 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
         if (i > _SamplingLevel) 
             break;
         // tangent space normal maps
-        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
-        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
-        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
+        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
+        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
+        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
         half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
 
         // flip normal maps' x axis to account for flipped UVs
@@ -147,9 +147,9 @@ half SampleOcclusionTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureI
         triOcclusion.x = SampleOcclusion(triUV.x[i], textureIndices[i]);
         triOcclusion.y = SampleOcclusion(triUV.y[i], textureIndices[i]);
         triOcclusion.z = SampleOcclusion(triUV.z[i], textureIndices[i]);
-        occlusionVec[i] = dot(triOcclusion, triblend[i]) * _OcclusionStrength[textureIndices[i]];
+        occlusionVec[i] = dot(triOcclusion, triblend[i]);
     }
-    return triOcclusion.x; //return dot(occlusionVec, half4(1,1,1,1));
+    return dot(occlusionVec, half4(1,1,1,1));
 }
 
 half SampleSmoothnessTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices){
@@ -163,7 +163,7 @@ half SampleSmoothnessTriplanar(TriplanarUV triUV, half4x3 triblend, int4 texture
         triSmoothness.x = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.x[i], textureIndices[i]).r;
         triSmoothness.y = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.y[i], textureIndices[i]).r;                                    
         triSmoothness.z = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.z[i], textureIndices[i]).r;
-        smoothnessVec[i] = dot(triSmoothness, triblend[i]) * (1 - _SpecColorSmoothness[textureIndices[i]].a);
+        smoothnessVec[i] = LerpWhiteTo(dot(triSmoothness, triblend[i]), _SpecColorSmoothness[textureIndices[i]].a);
     }
     return dot(smoothnessVec, half4(1, 1, 1, 1));
 }

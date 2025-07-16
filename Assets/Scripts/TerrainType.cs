@@ -42,6 +42,7 @@ namespace MultiTerrain
         public float _triplanarBlending = 0.01f;
 
         public Texture2D _occlusionMap;
+        [Range(0.001f, 1.00f)]
         public float _occlusionStrength = 0.5f;
 
         public Texture2D _smoothnessMap;
