@@ -121,6 +121,10 @@ namespace MultiTerrain
             terrainBuffer.SetData(terrainMap);
             Shader.SetGlobalBuffer("_TerrainMap", terrainBuffer);
 
+            // GlobalKeyword triplanarUVOffset = GlobalKeyword.Create("_TRIPLANAR_UV_OFFSET");
+            // Shader.SetKeyword(triplanarUVOffset, true);
+
+
             for (int i = 0; i < numSamplingClasses; i++)
             {
                 Material material = new(shader);
@@ -142,6 +146,8 @@ namespace MultiTerrain
                 }
                 LocalKeyword heightBasedBlendKeyword = new(shader, "_HEIGHTBASEDTRIBLEND");
                 material.SetKeyword(heightBasedBlendKeyword, true);
+                LocalKeyword triplanarUVOffset = new(shader, "_TRIPLANAR_UV_OFFSET");
+                material.SetKeyword(triplanarUVOffset, true);
 
                 material.SetInteger("_SamplingLevel", i);
                 materials.Add(material);

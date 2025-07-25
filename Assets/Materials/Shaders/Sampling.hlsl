@@ -72,12 +72,6 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
         if (i > _SamplingLevel) 
             break;
 
-        // flip UVs for backside projection
-        #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
-            triUV.x[i] *= axisSign.x;
-            triUV.x[i] *= axisSign.y;
-            triUV.x[i] *= -axisSign.z;
-        #endif    
         // tangent space normal maps
         half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
         half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
