@@ -303,7 +303,7 @@ Shader "Terrain/PatchShader"
                 surfaceData.normalTS = TransformWorldToTangent(normalWS, worldToTangentZ);
 
                 surfaceData.occlusion = SampleOcclusionTriplanar(triUV, triblend, terrainIndices);                
-                surfaceData.smoothness = 1 - SampleSmoothnessTriplanar(triUV, triblend, terrainIndices);
+                surfaceData.smoothness = SampleSmoothnessTriplanar(triUV, triblend, terrainIndices);
                 surfaceData.specular = SampleSpecularTriplanar(triUV, triblend, terrainIndices);
                 surfaceData.emission = 0; 
                 surfaceData.metallic = 0.0h;  
@@ -391,13 +391,12 @@ Shader "Terrain/PatchShader"
                     return debugColor;
                 #elif _DEBUG_TRIBLEND
                     return half4(triblend[0] + triblend[1] + triblend[2] + triblend[3], 0);
-                #else
-                    
+                #else                    
                     // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
                     // return half4(normalWS.xyz * 0.5 + 0.5, 0);
                     // return half4(inputData.normalWS.xyz * 0.5 + 0.5, 0);
-                    // return half4(surfaceData.occlusion, 0,0, 0);
-                    // return half4(surfaceData.smoothness, 0,0, 0);
+                    // return half4(surfaceData.occlusion, surfaceData.occlusion, surfaceData.occlusion, 0);
+                    // return half4(surfaceData.smoothness, surfaceData.smoothness, surfaceData.smoothness, 0);
                     // return half4(heights[0].g, heights[0].g, heights[0].g, 0);
                     // return half4(surfaceData.specular, 0);
                     // return half4(surfaceData.normalTS *0.5 + 0.5, 0);                

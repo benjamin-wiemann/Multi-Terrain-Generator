@@ -289,7 +289,7 @@ namespace MultiTerrain
 
         void OnDestroy()
         {
-            _terrainBuffer.Release();
+            _terrainBuffer?.Release();
         }
 
     }

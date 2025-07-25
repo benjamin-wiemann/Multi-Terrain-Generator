@@ -52,52 +52,65 @@ half4x3 SampleHeightTriplanar(TriplanarUV triUV, int4 textureIndices)
 
 half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 triblend, int4 textureIndices)
 {
-    half4x3 normalWSMat = 0;
-    half3 normalOut;
+    // prepare world normals for x, y and z plane
+    half3 absVertNormal = abs(fragIn.normalWS);
+    half3 normalOut = 0;
+    
+    // swizzle world normals to match tangent space
+    half3 normalTSXOut = half3(fragIn.normalWS.zy, absVertNormal.x);
+    half3 normalTSYOut = half3(fragIn.normalWS.xz, absVertNormal.y);
+    half3 normalTSZOut = half3(fragIn.normalWS.xy, absVertNormal.z);
+    
+    half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
+
+    half3 triblendPerPlane = 0;
+
     int i;
     [unroll]
     for (i = 0; i < 4; i++)
     {                       
         if (i > _SamplingLevel) 
             break;
-        // tangent space normal maps
-        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
-        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
-        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
-        half3 axisSign = fragIn.normalWS < 0 ? -1 : 1;
 
+        // flip UVs for backside projection
+        #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
+            triUV.x[i] *= axisSign.x;
+            triUV.x[i] *= axisSign.y;
+            triUV.x[i] *= -axisSign.z;
+        #endif    
+        // tangent space normal maps
+        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
+        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
+        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.z[i], textureIndices[i]));
+        
         // flip normal maps' x axis to account for flipped UVs
         #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
             normalTSX.x *= axisSign.x;
             normalTSY.x *= axisSign.y;
             normalTSZ.x *= -axisSign.z;
         #endif
-
-        half3 absVertNormal = abs(fragIn.normalWS);
-        // swizzle world normals to match tangent space and apply reoriented normal mapping blend
-        normalTSX = blendRNM(half3(fragIn.normalWS.zy, absVertNormal.x), normalTSX);
-        normalTSY = blendRNM(half3(fragIn.normalWS.xz, absVertNormal.y), normalTSY);
-        normalTSZ = blendRNM(half3(fragIn.normalWS.xy, absVertNormal.z), normalTSZ);
-
-        // apply world space sign to tangent space Z
-        normalTSX.z *= axisSign.x;
-        normalTSY.z *= axisSign.y;
-        normalTSZ.z *= axisSign.z;
         
-        // swizzle tangent normals to match world normal and blend together
-        normalWSMat[i] = normalize(
-            normalTSX.zyx * triblend[i].x +
-            normalTSY.xzy * triblend[i].y +
-            normalTSZ.xyz * triblend[i].z
-        );
-    }
-    [unroll]
-    for (i = 0; i < 3; i++)
-    {
-        normalOut[i] = dot(half4(normalWSMat[0][i], normalWSMat[1][i], normalWSMat[2][i], normalWSMat[3][i]), half4(1,1,1,1));
+        // apply reoriented normal mapping blend 
+        // use linear interpolation to rotate normalTSOut proportionally to the current terrain weighting (only approximation)
+        normalTSXOut = lerp(normalTSXOut, blendRNM(normalTSXOut, normalTSX), triblend[i].x);
+        normalTSYOut = lerp(normalTSYOut, blendRNM(normalTSYOut, normalTSY), triblend[i].y);
+        normalTSZOut = lerp(normalTSZOut, blendRNM(normalTSZOut, normalTSZ), triblend[i].z);
+
+        triblendPerPlane += triblend[i];
     }
 
-    return normalize(normalOut);
+    // apply world space sign to tangent space Z
+    normalTSXOut.z *= axisSign.x;
+    normalTSYOut.z *= axisSign.y;
+    normalTSZOut.z *= axisSign.z;
+    
+    // swizzle tangent normals to match world normal and blend together
+    return normalize(
+        normalTSXOut.zyx * triblendPerPlane.x +
+        normalTSYOut.xzy * triblendPerPlane.y +
+        normalTSZOut.xyz * triblendPerPlane.z
+    );
+    
 }
 
 half3 SampleSpecularTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices) {
@@ -163,7 +176,7 @@ half SampleSmoothnessTriplanar(TriplanarUV triUV, half4x3 triblend, int4 texture
         triSmoothness.x = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.x[i], textureIndices[i]).r;
         triSmoothness.y = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.y[i], textureIndices[i]).r;                                    
         triSmoothness.z = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.z[i], textureIndices[i]).r;
-        smoothnessVec[i] = LerpWhiteTo(dot(triSmoothness, triblend[i]), _SpecColorSmoothness[textureIndices[i]].a);
+        smoothnessVec[i] = dot(1 - triSmoothness, triblend[i]) * _SpecColorSmoothness[textureIndices[i]].a;
     }
     return dot(smoothnessVec, half4(1, 1, 1, 1));
 }
