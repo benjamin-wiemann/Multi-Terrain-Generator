@@ -46,6 +46,8 @@ namespace MultiTerrain
         [SerializeField] float _noiseOffset = 1f;
         [SerializeField] float _borderGranularity = 1;
         [SerializeField] float _borderSmoothness = 1f;
+        [Range(0.001f, 0.1f)]
+        [SerializeField] float _terrainTransitionBlending = 0.01f;
         [SerializeField] List<TerrainType> _terrainTypes = new();
         [SerializeField] public bool autoUpdate;
         [SerializeField] MeshFinishedEvent _onMeshFinished;
@@ -213,6 +215,7 @@ namespace MultiTerrain
                 _meshResolution,
                 _meshX,
                 _meshZ,
+                _terrainTransitionBlending,
                 _textureSize,
                 _numSamplingClasses,
                 out _terrainBuffer);

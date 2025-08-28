@@ -21,7 +21,8 @@ namespace MultiTerrain
             Coordinates,
             Albedo,
             UV,
-            Triblend
+            Triblend,
+            TriblendTransition
         }
 
         public static List<Material> SetProperties(
@@ -33,6 +34,7 @@ namespace MultiTerrain
             int meshResolution,
             float meshX,
             float meshZ,
+            float terrainTransitionBlending,
             TerrainGenerator.TextureSizeEnum textureSize,
             int numSamplingClasses,
             out ComputeBuffer terrainBuffer)
@@ -48,7 +50,7 @@ namespace MultiTerrain
 
             Texture2DArray height = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, true);
             float[] parallaxHeightScale = new float[_maxNumMaterials];
-            float[] blendingScale = new float[_maxNumMaterials];
+            float[] triplanarBlendingScale = new float[_maxNumMaterials];
 
             Texture2DArray occlusion = new((int)textureSize, (int)textureSize, len, TextureFormat.R8, mipCount, true);
             float[] occlusionStrength = new float[_maxNumMaterials];
@@ -86,7 +88,7 @@ namespace MultiTerrain
                         tilingOffset[terrainIndex] = new Vector4(type._tiling.x, type._tiling.y, type._offset.x, type._offset.y);
                         bumpScale[terrainIndex] = type._bumpScale;
                         parallaxHeightScale[terrainIndex] = type._parallaxHeightScale;
-                        blendingScale[terrainIndex] = type._triplanarBlending;
+                        triplanarBlendingScale[terrainIndex] = type._triplanarBlending;
                         occlusionStrength[terrainIndex] = type._occlusionStrength;
                         specColorSmoothness[terrainIndex] = new Vector4(type._specColor.r, type._specColor.b, type._specColor.g, type._smoothness);
                         debugTerrainColor[terrainIndex] = new Vector4(type._color.r, type._color.g, type._color.b, 0);
@@ -98,6 +100,7 @@ namespace MultiTerrain
             Shader.SetGlobalInteger("_MeshResolution", meshResolution);
             Shader.SetGlobalFloat("_MeshX", meshX);
             Shader.SetGlobalFloat("_MeshZ", meshZ);
+            Shader.SetGlobalFloat("_TerrainTransitionBlending", terrainTransitionBlending);
 
             // Shader.SetGlobalTexture("_DiffuseMap", diffuse);
             Shader.SetGlobalVectorArray("_DiffuseST", tilingOffset);
@@ -107,7 +110,7 @@ namespace MultiTerrain
 
             // Shader.SetGlobalTexture("_HeightMap", height);
             Shader.SetGlobalFloatArray("_ParallaxHeightScale", parallaxHeightScale);
-            Shader.SetGlobalFloatArray("_HeightmapBlending", blendingScale);
+            Shader.SetGlobalFloatArray("_TriplanarBlending", triplanarBlendingScale);
 
             // Shader.SetGlobalTexture("_OcclusionMap", occlusion);
             Shader.SetGlobalFloatArray("_OcclusionStrength", occlusionStrength);
@@ -166,6 +169,7 @@ namespace MultiTerrain
             GlobalKeyword debugShowAlbedo = GlobalKeyword.Create("_DEBUG_SHOW_ALBEDO");
             GlobalKeyword debugShowUV = GlobalKeyword.Create("_DEBUG_UV");
             GlobalKeyword debugShowTriblend = GlobalKeyword.Create("_DEBUG_TRIBLEND");
+            GlobalKeyword debugShowTriblendTransition = GlobalKeyword.Create("_DEBUG_TRIBLEND_TRANSITION");
             switch (debugView)
             {
                 case DebugView.None:
@@ -175,6 +179,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
                     Shader.SetKeyword(debugShowTriblend, false);
+                    Shader.SetKeyword(debugShowTriblendTransition, false);
                     break;
                 case DebugView.TerrainColors:
                     Shader.SetKeyword(debugShowTerrainColors, true);
@@ -183,6 +188,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
                     Shader.SetKeyword(debugShowTriblend, false);
+                    Shader.SetKeyword(debugShowTriblendTransition, false);
                     break;
                 case DebugView.Submeshes:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -191,6 +197,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
                     Shader.SetKeyword(debugShowTriblend, false);
+                    Shader.SetKeyword(debugShowTriblendTransition, false);
                     break;
                 case DebugView.Coordinates:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -199,6 +206,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
                     Shader.SetKeyword(debugShowTriblend, false);
+                    Shader.SetKeyword(debugShowTriblendTransition, false);
                     break;
                 case DebugView.Albedo:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -207,6 +215,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowAlbedo, true);
                     Shader.SetKeyword(debugShowUV, false);
                     Shader.SetKeyword(debugShowTriblend, false);
+                    Shader.SetKeyword(debugShowTriblendTransition, false);
                     break;
                 case DebugView.UV:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -215,6 +224,7 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, true);
                     Shader.SetKeyword(debugShowTriblend, false);
+                    Shader.SetKeyword(debugShowTriblendTransition, false);
                     break;
                 case DebugView.Triblend:
                     Shader.SetKeyword(debugShowTerrainColors, false);
@@ -223,6 +233,16 @@ namespace MultiTerrain
                     Shader.SetKeyword(debugShowAlbedo, false);
                     Shader.SetKeyword(debugShowUV, false);
                     Shader.SetKeyword(debugShowTriblend, true);
+                    Shader.SetKeyword(debugShowTriblendTransition, false);
+                    break;
+                case DebugView.TriblendTransition:
+                    Shader.SetKeyword(debugShowTerrainColors, false);
+                    Shader.SetKeyword(debugShowSubmeshes, false);
+                    Shader.SetKeyword(debugShowCoordinates, false);
+                    Shader.SetKeyword(debugShowAlbedo, false);
+                    Shader.SetKeyword(debugShowUV, false);
+                    Shader.SetKeyword(debugShowTriblend, false);
+                    Shader.SetKeyword(debugShowTriblendTransition, true);
                     break;
 
             }

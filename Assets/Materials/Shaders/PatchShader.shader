@@ -31,6 +31,7 @@ Shader "Terrain/PatchShader"
         int _MeshResolution;
         float _MeshX;
         float _MeshZ;
+        float _TerrainTransitionBlending;
         
 
 		float4 _DiffuseST[MAX_NUMBER_MATERIALS];
@@ -39,7 +40,7 @@ Shader "Terrain/PatchShader"
 		float _OcclusionStrength[MAX_NUMBER_MATERIALS];
 		float _BumpScale[MAX_NUMBER_MATERIALS];
         float _HeightScale[MAX_NUMBER_MATERIALS];
-        float _HeightmapBlending[MAX_NUMBER_MATERIALS];
+        float _TriplanarBlending[MAX_NUMBER_MATERIALS];
               
         float4 _DebugTerrainColor[MAX_NUMBER_MATERIALS];
 
@@ -84,8 +85,8 @@ Shader "Terrain/PatchShader"
             // indicates if triplanar blend is based on height information
             #pragma multi_compile _ _HEIGHTBASEDTRIBLEND
 
-            // shows the terrain color on the mesh instead of sampling
-            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES _DEBUG_SHOW_ALBEDO _DEBUG_UV _DEBUG_TRIBLEND
+            // shows different debug modes on the mesh 
+            #pragma multi_compile _ _DEBUG_SHOW_SUBMESHES _DEBUG_SHOW_TERRAIN_COLORS _DEBUG_SHOW_COORDINATES _DEBUG_SHOW_ALBEDO _DEBUG_UV _DEBUG_TRIBLEND _DEBUG_TRIBLEND_TRANSITION
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
@@ -141,14 +142,23 @@ Shader "Terrain/PatchShader"
                 half3 triblend = abs(normalWS.xyz);
                 triblend /= dot(triblend, float3(1,1,1));                
                 heights += (triblend * 3.0);
-                float heightStart = max(max(heights.x, heights.y), heights.z) - _HeightmapBlending[0];
+                float heightStart = max(max(heights.x, heights.y), heights.z) - _TriplanarBlending[0];
                 float3 h = max(heights - heightStart.xxx, float3(0,0,0));
                 triblend = h / dot(h, float3(1,1,1));
                 return half4x3(triblend, triblend, triblend, triblend);
             }
 
+            // A function measuring equality of the components of a vector. Uses Herfindahl–Hirschman Index.
+            half ComponentEquality(half4 x)
+            {
+                half invS = rcp(x.x + x.y + x.z + x.w); 
+                half4 p = x * invS;
+                half hhi = dot(p, p);
+                return (1.0h - hhi) / (1.0h - 0.25h);
+            }
 
-            half4x3 GenerateTerrainBlend(half3 normalWS, half4x3 heights, half4 weightings)
+
+            half4x3 GenerateTerrainBlend(half3 normalWS, half4x3 heights, half4 weightings, half4 terrainIndices)
             {                
                 half3 triblend = abs(normalWS.xyz);;
                 triblend /= dot(triblend, half3(1,1,1));
@@ -163,7 +173,19 @@ Shader "Terrain/PatchShader"
                     heights[i] = heights[i] * weightings[i] + triblend;
                     heightStart = max(max(max(heights[i].x, heights[i].y), heights[i].z), heightStart);
                 }
-                heightStart -= _HeightmapBlending[0];
+                               
+                half blending = 0;
+                
+                blending = dot( half4( 
+                    _TriplanarBlending[terrainIndices[0]], 
+                    _TriplanarBlending[terrainIndices[1]],
+                    _TriplanarBlending[terrainIndices[2]],
+                    _TriplanarBlending[terrainIndices[3]]), 
+                    weightings);
+                half blendingType = smoothstep(0.1, 0.5, ComponentEquality(weightings));
+                blending = lerp(blending, _TerrainTransitionBlending, blendingType);
+                 
+                heightStart -= blending;
                 half4x3 h = max(heights - heightStart, half4x3(0,0,0,0,0,0,0,0,0,0,0,0));
                 half3 ones = half3(1, 1, 1);
                 // normalize each row by the sum of the  
@@ -271,7 +293,7 @@ Shader "Terrain/PatchShader"
                 
                 heights = SampleHeightTriplanar(triUV, terrainIndices);                    
                 #ifdef _HEIGHTBASEDTRIBLEND
-                    triblend = GenerateTerrainBlend(fragIn.normalWS, heights, terrainWeightings);
+                    triblend = GenerateTerrainBlend(fragIn.normalWS, heights, terrainWeightings, terrainIndices);
                     // triblend = GenerateHeightTriblend(fragIn.normalWS, heights[1]);
                 #else
                     triblend = GenerateTriblend(fragIn.normalWS);
@@ -389,8 +411,15 @@ Shader "Terrain/PatchShader"
                     half4 colZ = half4(triUV.z[ind].x, triUV.z[ind].y, 0, 0 );
                     half4 debugColor = (colY + half4(_MeshX, _MeshZ, 0, 0 )) % 1;
                     return debugColor;
-                #elif _DEBUG_TRIBLEND
+                #elif _DEBUG_TRIBLEND                   
                     return half4(triblend[0] + triblend[1] + triblend[2] + triblend[3], 0);
+                #elif _DEBUG_TRIBLEND_TRANSITION
+                    half4 triblendColor = 0;
+                    int i;
+                    [unroll]
+                    for( i = 0; i < 4; i++)
+                        triblendColor += (triblend[i].r + triblend[i].b + triblend[i].g) * _DebugTerrainColor[terrainIndices[i]];                             
+                    return triblendColor;
                 #else                    
                     // return half4(fragIn.normalWS.xyz * 0.5 + 0.5, 0);
                     // return half4(normalWS.xyz * 0.5 + 0.5, 0);
