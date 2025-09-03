@@ -43,7 +43,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _meshResolution
-    value: 3
+    value: 10
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _height
@@ -71,7 +71,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainSeed
-    value: 24
+    value: 74
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _seedPointDensity
@@ -87,15 +87,15 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _borderGranularity
-    value: 0.39
+    value: 0.55
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _borderSmoothness
-    value: 0.49
+    value: 0.31
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.size
-    value: 3
+    value: 4
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._active
@@ -131,15 +131,15 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._numOctaves
-    value: 1
+    value: 2
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._persistance
-    value: 0.25
+    value: 0.106
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._lacunarity
-    value: 1.26
+    value: 2.96
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._heightOffset
@@ -183,7 +183,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._triplanarBlending
-    value: 0.01
+    value: 0.001
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._occlusionMap
@@ -191,7 +191,7 @@ Preset:
     objectReference: {fileID: 2800000, guid: 2d50d7cf2b4dd9144bf6c6a25b6cc0ba, type: 3}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._occlusionStrength
-    value: 0.5
+    value: 0.32
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._smoothnessMap
@@ -199,7 +199,7 @@ Preset:
     objectReference: {fileID: 2800000, guid: 3c7fb81c5e3eccb4a89912d69d632ebf, type: 3}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._smoothness
-    value: 0.321
+    value: 0.249
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[0]._specularMap
@@ -307,7 +307,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[1]._triplanarBlending
-    value: 0.01
+    value: 0.001
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[1]._occlusionMap
@@ -315,7 +315,7 @@ Preset:
     objectReference: {fileID: 2800000, guid: c5c7be69e3c86ee4b8d6e5c53459eeeb, type: 3}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[1]._occlusionStrength
-    value: 0.5
+    value: 0.835
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[1]._smoothnessMap
@@ -323,7 +323,7 @@ Preset:
     objectReference: {fileID: 2800000, guid: 9b6e9afe28f9c214a925cd35694bd3e5, type: 3}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[1]._smoothness
-    value: 0.321
+    value: 0.5
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[1]._specularMap
@@ -391,7 +391,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._heightOffset
-    value: 2.05
+    value: 1.66
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._diffuse
@@ -431,7 +431,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._triplanarBlending
-    value: 0.01
+    value: 0.001
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._occlusionMap
@@ -439,7 +439,7 @@ Preset:
     objectReference: {fileID: 2800000, guid: e622bbd4972959645bfa06a809ce9d83, type: 3}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._occlusionStrength
-    value: 0.5
+    value: 0.404
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._smoothnessMap
@@ -447,7 +447,7 @@ Preset:
     objectReference: {fileID: 2800000, guid: 47605056a6e55e24f9e81c920bc83ac6, type: 3}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._smoothness
-    value: 0.164
+    value: 0.5
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainTypes.Array.data[2]._specularMap
@@ -470,6 +470,130 @@ Preset:
     value: 0.5
     objectReference: {fileID: 0}
   - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._active
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._name
+    value: Sand_2
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._color.r
+    value: 0.8584906
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._color.g
+    value: 0.85010284
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._color.b
+    value: 0.77345145
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._color.a
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._height
+    value: 1.2
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._noiseScale
+    value: 6.28
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._numOctaves
+    value: 2
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._persistance
+    value: 0.266
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._lacunarity
+    value: 1.37
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._heightOffset
+    value: 0.18
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._diffuse
+    value: 
+    objectReference: {fileID: 2800000, guid: 8db37aa487353cf4da83236582b76c6c, type: 3}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._tiling.x
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._tiling.y
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._offset.x
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._offset.y
+    value: 0
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._normalMap
+    value: 
+    objectReference: {fileID: 2800000, guid: 6c9614792a3b36640ae7881b21e73c19, type: 3}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._bumpScale
+    value: 1
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._heightMap
+    value: 
+    objectReference: {fileID: 2800000, guid: 40ec6c4f2af4bf341971dccffc9065ca, type: 3}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._parallaxHeightScale
+    value: 0.005
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._triplanarBlending
+    value: 0.001
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._occlusionMap
+    value: 
+    objectReference: {fileID: 2800000, guid: 1158df06d12dfb94f835a678237a6642, type: 3}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._occlusionStrength
+    value: 0.404
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._smoothnessMap
+    value: 
+    objectReference: {fileID: 2800000, guid: fd99f07a85cb27246ad4ed64f17cc1bf, type: 3}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._smoothness
+    value: 0.5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._specularMap
+    value: 
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._specColor.r
+    value: 0.5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._specColor.g
+    value: 0.5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._specColor.b
+    value: 0.5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
+    propertyPath: _terrainTypes.Array.data[3]._specColor.a
+    value: 0.5
+    objectReference: {fileID: 0}
+  - target: {fileID: 0}
     propertyPath: autoUpdate
     value: 0
     objectReference: {fileID: 0}
@@ -483,15 +607,15 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _onMeshFinished.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-    value: UnityEngine.GameObject, UnityEngine
+    value: MultiTerrain.DebugTools.TerrainMapVisualizer, GameAssembly
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _onMeshFinished.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-    value: 
+    value: OnMeshGenerationFinished
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _onMeshFinished.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-    value: 1
+    value: 0
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _onMeshFinished.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgument
@@ -499,7 +623,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _onMeshFinished.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
-    value: 
+    value: UnityEngine.Object, UnityEngine
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _onMeshFinished.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_IntArgument
@@ -519,7 +643,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _onMeshFinished.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
-    value: 2
+    value: 1
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainShader
@@ -531,7 +655,7 @@ Preset:
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _terrainInclusionThreshold
-    value: 0.001
+    value: 0.0001
     objectReference: {fileID: 0}
   - target: {fileID: 0}
     propertyPath: _numSamplingClasses

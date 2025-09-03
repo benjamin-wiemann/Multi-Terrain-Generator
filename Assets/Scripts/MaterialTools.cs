@@ -1,5 +1,5 @@
 
-using System;
+using System.IO;
 using System.Collections.Generic;
 using MultiTerrain.Segmentation;
 using Unity.Collections;
@@ -59,6 +59,17 @@ namespace MultiTerrain
             Texture2DArray specular = new((int)textureSize, (int)textureSize, len, TextureFormat.RGB24, mipCount, false);
             Vector4[] specColorSmoothness = new Vector4[_maxNumMaterials];
             bool specularMissing = false;
+            
+            byte[] fileData = File.ReadAllBytes("./Assets/Materials/NoiseTextures/perlin_noise.png");
+            Texture2D noiseTexture = new(256, 256, TextureFormat.R8, false);
+            if (noiseTexture.LoadImage(fileData)) 
+            {
+                noiseTexture.Apply();
+            }
+            else
+            {
+                Debug.LogError("Failed to load noise texture");
+            }
 
             Vector4[] debugTerrainColor = new Vector4[_maxNumMaterials];
 
@@ -102,20 +113,15 @@ namespace MultiTerrain
             Shader.SetGlobalFloat("_MeshZ", meshZ);
             Shader.SetGlobalFloat("_TerrainTransitionBlending", terrainTransitionBlending);
 
-            // Shader.SetGlobalTexture("_DiffuseMap", diffuse);
             Shader.SetGlobalVectorArray("_DiffuseST", tilingOffset);
 
-            // Shader.SetGlobalTexture("_NormalMap", normal);
             Shader.SetGlobalFloatArray("_BumpScale", bumpScale);
 
-            // Shader.SetGlobalTexture("_HeightMap", height);
             Shader.SetGlobalFloatArray("_ParallaxHeightScale", parallaxHeightScale);
             Shader.SetGlobalFloatArray("_TriplanarBlending", triplanarBlendingScale);
 
-            // Shader.SetGlobalTexture("_OcclusionMap", occlusion);
             Shader.SetGlobalFloatArray("_OcclusionStrength", occlusionStrength);
 
-            // Shader.SetGlobalTexture("_SmoothnessMap", smoothness);
             Shader.SetGlobalVectorArray("_SpecColorSmoothness", specColorSmoothness);
 
             Shader.SetGlobalVectorArray("_DebugTerrainColor", debugTerrainColor);
@@ -124,10 +130,7 @@ namespace MultiTerrain
             terrainBuffer.SetData(terrainMap);
             Shader.SetGlobalBuffer("_TerrainMap", terrainBuffer);
 
-            // GlobalKeyword triplanarUVOffset = GlobalKeyword.Create("_TRIPLANAR_UV_OFFSET");
-            // Shader.SetKeyword(triplanarUVOffset, true);
-
-
+            
             for (int i = 0; i < numSamplingClasses; i++)
             {
                 Material material = new(shader);
@@ -136,6 +139,8 @@ namespace MultiTerrain
                 material.SetTexture("_HeightMap", height);
                 material.SetTexture("_OcclusionMap", occlusion);
                 material.SetTexture("_SmoothnessMap", smoothness);
+
+                material.SetTexture("_Noise", noiseTexture);
                 // If a material doesn't have specular maps, only a fixed specular color per material is used
                 LocalKeyword specularMapKeyword = new(shader, "_SPECULARMAP");
                 if (!specularMissing)

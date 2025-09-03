@@ -11,6 +11,53 @@ half3 blendRNM(half3 n1, half3 n2)
     return n1 * dot(n1, n2) / n1.z - n2;
 }
 
+float sum( half3 v ) { return v.x+v.y+v.z; }
+
+// Sampling technique to avoid texture repetition
+// https://iquilezles.org/articles/texturerepetition/
+void SampleTextureNoTile( Texture2DArray textureName, SamplerState samplerName, half2 uv, int textureIndex, out half4 cola, out half4 colb, out half fraction )
+{
+    // sample variation pattern    
+    half k = SAMPLE_TEXTURE2D( _Noise, sampler_Noise, 0.2*uv ).x; // cheap (cache friendly) lookup    
+    
+    // compute index    
+    half index = k*8.0;
+    half i = floor( index );
+    fraction = frac( index );
+
+    // offsets for the different virtual patterns    
+    half2 offsetA = sin( half2(3.0,7.0)*(i+0.0)); // can replace with any other hash    
+    half2 offsetB = sin( half2(3.0,7.0)*(i+1.0)); // can replace with any other hash    
+
+    // compute derivatives for mip-mapping    
+    half2 dx = ddx(uv), dy = ddy(uv);
+    
+    // sample the two closest virtual patterns    
+    cola = SAMPLE_TEXTURE2D_ARRAY_GRAD( textureName, samplerName, uv + offsetA, textureIndex, dx, dy );
+    colb = SAMPLE_TEXTURE2D_ARRAY_GRAD( textureName, samplerName, uv + offsetB, textureIndex, dx, dy );
+  
+}
+
+half3 SampleColorNoTile( Texture2DArray textureName, SamplerState samplerName, half2 uv, int textureIndex )
+{
+    half4 cola, colb;
+    half fraction;
+    SampleTextureNoTile( textureName, samplerName, uv, textureIndex, cola, colb, fraction);
+    // interpolate between the two virtual patterns    
+    return lerp( cola.xyz, colb.xyz, smoothstep(0.2,0.8,fraction-0.1*sum(cola.xyz-colb.xyz)) );
+}
+
+half3 SampleNormalNoTile( Texture2DArray textureName, SamplerState samplerName, half2 uv, int textureIndex )
+{
+    half4 normalA, normalB;
+    half fraction;
+    SampleTextureNoTile( textureName, samplerName, uv, textureIndex, normalA, normalB, fraction);
+    // return blendRNM(UnpackNormal(normalA), UnpackNormal(normalB));
+    half3 normA = UnpackNormal(normalA).xyz;
+    half3 normB = UnpackNormal(normalB).xyz;
+    return lerp( normA, normB, smoothstep(0.2,0.8,fraction-0.1*sum(normA-normB)) );
+}
+
 half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureIndices)
 {
     half4x3 albedoMat = 0;
@@ -21,9 +68,9 @@ half3 SampleAlbedoTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureInd
     {                       
         if (i > _SamplingLevel) 
             break;
-        half3 colX = SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.x[i], textureIndices[i]).xyz;
-        half3 colY = SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.y[i], textureIndices[i]).xyz;
-        half3 colZ = SAMPLE_TEXTURE2D_ARRAY(_DiffuseMap, sampler_DiffuseMap, triUV.z[i], textureIndices[i]).xyz;
+        half3 colX = SampleColorNoTile(_DiffuseMap, sampler_DiffuseMap, triUV.x[i], textureIndices[i]);
+        half3 colY = SampleColorNoTile(_DiffuseMap, sampler_DiffuseMap, triUV.y[i], textureIndices[i]);
+        half3 colZ = SampleColorNoTile(_DiffuseMap, sampler_DiffuseMap, triUV.z[i], textureIndices[i]);
         albedoMat[i] = colX * triblend[i].x + colY * triblend[i].y + colZ * triblend[i].z;
     }
     [unroll]
@@ -43,9 +90,9 @@ half4x3 SampleHeightTriplanar(TriplanarUV triUV, int4 textureIndices)
         if (i > _SamplingLevel) 
             break;      
         heights[i] = half3(
-            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.x[i], textureIndices[i]).r,
-            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.y[i], textureIndices[i]).r,
-            SAMPLE_TEXTURE2D_ARRAY(_HeightMap, sampler_HeightMap, triUV.z[i], textureIndices[i]).r);         
+            SampleColorNoTile(_HeightMap, sampler_HeightMap, triUV.x[i], textureIndices[i]).r,
+            SampleColorNoTile(_HeightMap, sampler_HeightMap, triUV.y[i], textureIndices[i]).r,
+            SampleColorNoTile(_HeightMap, sampler_HeightMap, triUV.z[i], textureIndices[i]).r);         
     }
     return heights;
 }
@@ -73,9 +120,9 @@ half3 SampleNormalWSTriplanar(FragmentInput fragIn, TriplanarUV triUV, half4x3 t
             break;
 
         // tangent space normal maps
-        half3 normalTSX = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]));
-        half3 normalTSY = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]));
-        half3 normalTSZ = UnpackNormal(SAMPLE_TEXTURE2D_ARRAY(_NormalMap, sampler_NormalMap, triUV.z[i], textureIndices[i]));
+        half3 normalTSX = SampleNormalNoTile(_NormalMap, sampler_NormalMap, triUV.x[i], textureIndices[i]);
+        half3 normalTSY = SampleNormalNoTile(_NormalMap, sampler_NormalMap, triUV.y[i], textureIndices[i]);
+        half3 normalTSZ = SampleNormalNoTile(_NormalMap, sampler_NormalMap, triUV.z[i], textureIndices[i]);
         
         // flip normal maps' x axis to account for flipped UVs
         #if defined(TRIPLANAR_CORRECT_PROJECTED_U)
@@ -117,9 +164,9 @@ half3 SampleSpecularTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureI
         if (i > _SamplingLevel) 
             break;
         #ifdef _SPECULARMAP
-            half3 specularX = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.x[i], textureIndices[i]).xyz;
-            half3 specularY = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.y[i], textureIndices[i]).xyz;
-            half3 specularZ = SAMPLE_TEXTURE2D_ARRAY(_SpecularMap, sampler_SpecularMap, triUV.z[i], textureIndices[i]).xyz;
+            half3 specularX = SampleColorNoTile(_SpecularMap, sampler_SpecularMap, triUV.x[i], textureIndices[i]).xyz;
+            half3 specularY = SampleColorNoTile(_SpecularMap, sampler_SpecularMap, triUV.y[i], textureIndices[i]).xyz;
+            half3 specularZ = SampleColorNoTile(_SpecularMap, sampler_SpecularMap, triUV.z[i], textureIndices[i]).xyz;
             specMat[i] = specularX * triblend[i].x + specularY * triblend[i].y + specularZ * triblend[i].z;
         #else
             specMat[i] = _SpecColorSmoothness[textureIndices[i]].rgb;
@@ -135,9 +182,9 @@ half3 SampleSpecularTriplanar(TriplanarUV triUV, half4x3 triblend, int4 textureI
 
 half SampleOcclusion(float2 uv, int textureIndex) {
         #if defined(SHADER_API_GLES)
-            return SAMPLE_TEXTURE2D_ARRAY(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).r;
+            return SampleColorNoTile(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).r;
         #else
-            half occ = SAMPLE_TEXTURE2D_ARRAY(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).r;
+            half occ = SampleColorNoTile(_OcclusionMap, sampler_OcclusionMap, uv, textureIndex).r;
             return LerpWhiteTo(occ, _OcclusionStrength[textureIndex]);
         #endif
 }
@@ -167,9 +214,9 @@ half SampleSmoothnessTriplanar(TriplanarUV triUV, half4x3 triblend, int4 texture
         if (i > _SamplingLevel) 
             break;
         half3 triSmoothness;
-        triSmoothness.x = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.x[i], textureIndices[i]).r;
-        triSmoothness.y = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.y[i], textureIndices[i]).r;                                    
-        triSmoothness.z = SAMPLE_TEXTURE2D_ARRAY(_SmoothnessMap, sampler_SmoothnessMap, triUV.z[i], textureIndices[i]).r;
+        triSmoothness.x = SampleColorNoTile(_SmoothnessMap, sampler_SmoothnessMap, triUV.x[i], textureIndices[i]).r;
+        triSmoothness.y = SampleColorNoTile(_SmoothnessMap, sampler_SmoothnessMap, triUV.y[i], textureIndices[i]).r;                                    
+        triSmoothness.z = SampleColorNoTile(_SmoothnessMap, sampler_SmoothnessMap, triUV.z[i], textureIndices[i]).r;
         smoothnessVec[i] = dot(1 - triSmoothness, triblend[i]) * _SpecColorSmoothness[textureIndices[i]].a;
     }
     return dot(smoothnessVec, half4(1, 1, 1, 1));
