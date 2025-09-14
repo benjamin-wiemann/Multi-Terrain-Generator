@@ -227,7 +227,7 @@ namespace MultiTerrain
             }
 
             GetComponent<Renderer>().SetSharedMaterials(materials);    
-            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.ToArray());
+            Event.MeshGenFinishedEventArgs args = new (numVerticesX, numVerticesY, _heightMap, _terrainMap, types.AsArray().ToArray());
             _onMeshFinished?.Invoke(args);
 
             _minNoiseValues.Dispose();

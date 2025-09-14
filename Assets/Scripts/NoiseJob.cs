@@ -48,12 +48,12 @@ namespace MultiTerrain
         private NativeArray<TerrainCombination> _terrainMap;
 
         [NativeDisableContainerSafetyRestriction]
-        private NativeArray<TerrainTypeStruct> _terrainTypes;
+        private NativeList<TerrainTypeStruct> _terrainTypes;
 
 
         public static void ScheduleParallel( 
             NativeArray<TerrainCombination> terrainMap,
-            NativeArray<TerrainTypeStruct> terrainTypes,
+            NativeList<TerrainTypeStruct> terrainTypes,
             int mapWidth,
             int mapHeight,
             float scale,
